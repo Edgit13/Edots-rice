@@ -10,6 +10,17 @@ import QtQuick.Layouts
 ShellRoot {
     id: root
 
+    // IPC: дозволяє прив'язати клавішу напряму (напр. Super+Space в
+    // mango/binds.conf) до відкриття лаунчера з фокусом на пошуку одразу,
+    // в обхід hover -> клік по іконці. Виклик ззовні:
+    //   qs ipc call launcher open
+    IpcHandler {
+        target: "launcher"
+        function open(): void {
+            root.activeSurface = "launcher"
+        }
+    }
+
     // Reusable trigger icon used in the hover bar.
     // Emits activated() on click so callers can stay in the enclosing scope.
     component TriggerIcon: Text {

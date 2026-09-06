@@ -71,6 +71,26 @@ Item {
                         font: searchInput.font
                     }
                 }
+
+                // "Оновити список" — DesktopEntries сканує .desktop-файли
+                // один раз при старті qs і не завжди ловить щойно
+                // встановлені програми. Quickshell.reload(true) — офіційний
+                // документований hard reload шела, перестворює QML-дерево
+                // (включно з DesktopEntries) без потреби вбивати процес
+                // вручну ззовні.
+                Text {
+                    text: "\ue5d5" // refresh
+                    color: rescanHover.hovered ? Colors.accent : Colors.grey2
+                    font { family: "Material Symbols Rounded"; pixelSize: 14 }
+
+                    HoverHandler { id: rescanHover }
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -4
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: Quickshell.reload(true)
+                    }
+                }
             }
         }
 
