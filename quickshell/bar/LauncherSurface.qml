@@ -7,11 +7,13 @@ Item {
 
     signal appLaunched()
 
-    onVisibleChanged: {
-        if (visible) {
-            LauncherService.reset()
-            searchInput.forceActiveFocus()
-        }
+    Component.onCompleted: {
+        // Loader створює цей Item заново щоразу, коли активується
+        // (не просто показує/ховає), тож onVisibleChanged тут не
+        // надійний — Component.onCompleted гарантовано спрацьовує
+        // рівно один раз при кожному відкритті.
+        LauncherService.reset()
+        searchInput.forceActiveFocus()
     }
 
     function launchAndClose() {

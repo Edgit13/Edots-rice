@@ -140,9 +140,15 @@ ShellRoot {
             exclusionMode: ExclusionMode.Ignore
             exclusiveZone: 0
 
-            // OnDemand — keyboard focus only when a surface is open,
-            // so Escape doesn't steal keys from other windows in idle/hover.
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
+            // OnDemand для решти станів (Escape не краде клавіатуру в
+            // інших вікон у idle/hover) — але Exclusive, коли відкрито
+            // поверхню з полем вводу (launcher), бо OnDemand віддає
+            // клавіатуру лише ПІСЛЯ кліку мишкою по вікну, а launcher
+            // відкривається і без кліку (IPC/Super+Space) — саме тому
+            // доводилось наводитись мишкою, щоб почати друкувати.
+            WlrLayershell.keyboardFocus: root.activeSurface === "launcher"
+                ? WlrKeyboardFocus.Exclusive
+                : WlrKeyboardFocus.OnDemand
 
             anchors {
                 top: true
