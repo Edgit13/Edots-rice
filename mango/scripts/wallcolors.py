@@ -229,6 +229,29 @@ def write_kdeglobals(p: dict):
         ("Colors:Selection", "ForegroundNormal"): rgb(p["bg0"]),
         ("Colors:View", "BackgroundNormal"): rgb(p["bg1"]),
         ("Colors:View", "ForegroundNormal"): rgb(p["fg"]),
+        # Раніше НЕ оновлювались — саме тому лишались застиглими на
+        # початкових значеннях "Ricelin"-схеми і не міняли колір за шпалерою.
+        # [WM] — це саме тайтлбар/рамка активного/неактивного вікна
+        # (те, що видно як кольорову смужку зверху Dolphin).
+        ("Colors:Header", "BackgroundNormal"): rgb(p["bg1"]),
+        ("Colors:Header", "BackgroundAlternate"): rgb(p["bg3"]),
+        ("Colors:Header", "ForegroundNormal"): rgb(p["fg"]),
+        ("Colors:Header", "ForegroundActive"): rgb(p["accent"]),
+        ("Colors:Header][Inactive", "BackgroundNormal"): rgb(p["bg1"]),
+        ("Colors:Header][Inactive", "BackgroundAlternate"): rgb(p["bg3"]),
+        ("Colors:Header][Inactive", "ForegroundNormal"): rgb(p["fg"]),
+        ("Colors:Tooltip", "BackgroundNormal"): rgb(p["bg2"]),
+        ("Colors:Tooltip", "BackgroundAlternate"): rgb(p["bg3"]),
+        ("Colors:Tooltip", "ForegroundNormal"): rgb(p["fg"]),
+        ("Colors:Complementary", "BackgroundNormal"): rgb(p["bg0"]),
+        ("Colors:Complementary", "BackgroundAlternate"): rgb(p["bg2"]),
+        ("Colors:Complementary", "ForegroundNormal"): rgb(p["fg"]),
+        ("WM", "activeBackground"): rgb(p["bg2"]),
+        ("WM", "activeBlend"): rgb(p["accent"]),
+        ("WM", "activeForeground"): rgb(p["fg"]),
+        ("WM", "inactiveBackground"): rgb(p["bg1"]),
+        ("WM", "inactiveBlend"): rgb(p["bg1"]),
+        ("WM", "inactiveForeground"): rgb(p["grey1"]),
     }
     for (section, key), value in mapping.items():
         if not cfg.has_section(section):

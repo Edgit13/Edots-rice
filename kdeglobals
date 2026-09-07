@@ -35,8 +35,8 @@ ForegroundPositive=121,204,210
 ForegroundVisited=223,159,193
 
 [Colors:Complementary]
-BackgroundAlternate=26,25,10
-BackgroundNormal=15,14,6
+BackgroundAlternate=15,41,34
+BackgroundNormal=6,15,12
 DecorationFocus=#cdb9fb
 DecorationHover=#cdb9fb
 ForegroundActive=228,224,103
@@ -44,27 +44,27 @@ ForegroundInactive=129,127,49
 ForegroundLink=#8fc9fc
 ForegroundNegative=#ffb3b4
 ForegroundNeutral=#fcb38a
-ForegroundNormal=231,230,218
+ForegroundNormal=218,231,227
 ForegroundPositive=#00e479
 ForegroundVisited=#ebb2ff
 
 [Colors:Header]
-BackgroundAlternate=41,40,15
-BackgroundNormal=26,25,10
+BackgroundAlternate=21,55,46
+BackgroundNormal=10,26,22
 DecorationFocus=#cdb9fb
 DecorationHover=#cdb9fb
-ForegroundActive=228,224,103
+ForegroundActive=116,231,200
 ForegroundInactive=129,127,49
 ForegroundLink=#8fc9fc
 ForegroundNegative=#ffb3b4
 ForegroundNeutral=#fcb38a
-ForegroundNormal=231,230,218
+ForegroundNormal=218,231,227
 ForegroundPositive=#00e479
 ForegroundVisited=#ebb2ff
 
 [Colors:Header][Inactive]
-BackgroundAlternate=41,40,15
-BackgroundNormal=26,25,10
+BackgroundAlternate=21,55,46
+BackgroundNormal=10,26,22
 DecorationFocus=#cdb9fb
 DecorationHover=#cdb9fb
 ForegroundActive=228,224,103
@@ -72,7 +72,7 @@ ForegroundInactive=129,127,49
 ForegroundLink=#8fc9fc
 ForegroundNegative=#ffb3b4
 ForegroundNeutral=#fcb38a
-ForegroundNormal=231,230,218
+ForegroundNormal=218,231,227
 ForegroundPositive=#00e479
 ForegroundVisited=#ebb2ff
 
@@ -91,8 +91,8 @@ ForegroundPositive=121,204,210
 ForegroundVisited=223,159,193
 
 [Colors:Tooltip]
-BackgroundAlternate=55,54,21
-BackgroundNormal=41,40,15
+BackgroundAlternate=21,55,46
+BackgroundNormal=15,41,34
 DecorationFocus=#cdb9fb
 DecorationHover=#cdb9fb
 ForegroundActive=228,224,103
@@ -100,7 +100,7 @@ ForegroundInactive=129,127,49
 ForegroundLink=#8fc9fc
 ForegroundNegative=#ffb3b4
 ForegroundNeutral=#fcb38a
-ForegroundNormal=231,230,218
+ForegroundNormal=218,231,227
 ForegroundPositive=#00e479
 ForegroundVisited=#ebb2ff
 
@@ -173,11 +173,11 @@ View Style=DetailTree
 Theme=freedesktop
 
 [WM]
-activeBackground=41,40,15
-activeBlend=228,224,103
+activeBackground=15,41,34
+activeBlend=116,231,200
 activeFont=Google Sans Flex,10,-1,5,500,0,0,0,0,0,0,0,0,0,0,1,Medium
-activeForeground=231,230,218
-inactiveBackground=26,25,10
-inactiveBlend=26,25,10
-inactiveForeground=129,127,49
+activeForeground=218,231,227
+inactiveBackground=10,26,22
+inactiveBlend=10,26,22
+inactiveForeground=49,129,108
 
