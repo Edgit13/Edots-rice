@@ -1,19 +1,32 @@
 pragma ComponentBehavior: Bound
 
 import "root:/"
+import "root:/settings"
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 
+// ==========================================================================
+// PillShell.qml (Phase 4) — уся геометрія/стиль/анімації пігулки читаються
+// з Config (Config.get). Фабричні значення — Defaults.qml; reset в UI
+// повертає саме їх.
+//
+// Фікси відносно попередньої версії:
+//   1) openSurface/toggleSurface перенесено в delegate Variants + коренева
+//      властивість activePillWindow — ліквідує "ReferenceError: pill is not
+//      defined" під ComponentBehavior: Bound.
+//   2) SettingsSurface отримує required rootWindow інлайн при конструюванні
+//      (не в onLoaded) — ліквідує warning "Required property rootWindow
+//      was not initialized".
+// ==========================================================================
+
 ShellRoot {
     id: root
 
-    // IPC: дозволяє прив'язати клавішу напряму (напр. Super+Space в
-    // mango/binds.conf) до відкриття лаунчера з фокусом на пошуку одразу,
-    // в обхід hover -> клік по іконці. Виклик ззовні:
-    //   qs ipc call launcher open
+    // IPC: дозволяє прив'язати клавішу напряму (напр. Super+Space у
+    // mango/binds.conf) до відкриття лаунчера з фокусом на пошуку одразу.
     IpcHandler {
         target: "launcher"
         function open(): void {
@@ -22,7 +35,6 @@ ShellRoot {
     }
 
     // Reusable trigger icon used in the hover bar.
-    // Emits activated() on click so callers can stay in the enclosing scope.
     component TriggerIcon: Text {
         required property string glyph
         property color hoverColor: Colors.accent
@@ -45,16 +57,19 @@ ShellRoot {
         }
     }
 
+    // Під ComponentBehavior: Bound id `pill` НЕ видно зі scope ShellRoot
+    // (він живе в delegate Variants) — тому перемикання поверхень делегуємо
+    // самому вікну, а сюди тримаємо посилання на останній delegate.
+    property var activePillWindow: null
+
     function openSurface(surface) {
-        activeSurface = surface
-        pill.forceActiveFocus()
+        if (activePillWindow)
+            activePillWindow.openSurface(surface)
     }
 
     function toggleSurface(surface) {
-        if (activeSurface === surface)
-            activeSurface = "idle"
-        else
-            openSurface(surface)
+        if (activePillWindow)
+            activePillWindow.toggleSurface(surface)
     }
 
     IpcHandler {
@@ -93,6 +108,16 @@ ShellRoot {
         function close(): void { root.activeSurface = "idle" }
     }
 
+    // Full Settings application (Phase 3) — overlay window, not a pill surface.
+    SettingsWindow { id: settingsWindow }
+
+    IpcHandler {
+        target: "settingsapp"
+        function open(): void { settingsWindow.open() }
+        function toggle(): void { settingsWindow.toggle() }
+        function close(): void { settingsWindow.close() }
+    }
+
     Process {
         id: notificationsProc
         command: ["sh", "-c", "swaync-client -t"]
@@ -102,10 +127,13 @@ ShellRoot {
     // "idle" (only clock) | "hover" (workspaces + clock + triggers) | surface name
     property string activeSurface: "idle"
 
-    readonly property int idleHeight: 36
-    readonly property int idleHorizontalPadding: 20
-    readonly property int expandedWidth: 480
-    readonly property int expandedHeight: 300
+    // ---- pill geometry / style (Phase 4: live from Config) ----
+    readonly property int idleHeight: Config.get("pill", "idleHeight")
+    readonly property int idleHorizontalPadding: Config.get("pill", "idleHorizontalPadding")
+    readonly property int expandedWidth: Config.get("pill", "expandedWidth")
+    readonly property int expandedHeight: Config.get("pill", "expandedHeight")
+
+    readonly property int exclusionZoneGap: Config.get("bar", "exclusionZoneGap")
 
     Variants {
         model: Quickshell.screens
@@ -115,7 +143,7 @@ ShellRoot {
             screen: modelData
 
             exclusionMode: ExclusionMode.Normal
-            exclusiveZone: root.idleHeight + 5
+            exclusiveZone: root.idleHeight + root.exclusionZoneGap
 
             anchors {
                 top: true
@@ -123,7 +151,7 @@ ShellRoot {
                 right: true
             }
 
-            implicitHeight: root.idleHeight + 5
+            implicitHeight: root.idleHeight + root.exclusionZoneGap
             color: "transparent"
             mask: Region {}
         }
@@ -137,15 +165,29 @@ ShellRoot {
             required property var modelData
             screen: modelData
 
+            // Surface switching lives HERE, inside the delegate, because the
+            // `pill` id is only in scope within this component.
+            function openSurface(surface) {
+                root.activeSurface = surface
+                pill.forceActiveFocus()
+            }
+
+            function toggleSurface(surface) {
+                if (root.activeSurface === surface)
+                    root.activeSurface = "idle"
+                else
+                    openSurface(surface)
+            }
+
+            // Multiple screens -> multiple delegates; the last one to
+            // complete wins. Only affects forceActiveFocus target.
+            Component.onCompleted: root.activePillWindow = pillWindow
+
             exclusionMode: ExclusionMode.Ignore
             exclusiveZone: 0
 
-            // OnDemand для решти станів (Escape не краде клавіатуру в
-            // інших вікон у idle/hover) — але Exclusive, коли відкрито
-            // поверхню з полем вводу (launcher), бо OnDemand віддає
-            // клавіатуру лише ПІСЛЯ кліку мишкою по вікну, а launcher
-            // відкривається і без кліку (IPC/Super+Space) — саме тому
-            // доводилось наводитись мишкою, щоб почати друкувати.
+            // Exclusive, коли відкрито поверхню з полем вводу (launcher), бо
+            // OnDemand віддає клавіатуру лише ПІСЛЯ кліку мишкою по вікну.
             WlrLayershell.keyboardFocus: root.activeSurface === "launcher"
                 ? WlrKeyboardFocus.Exclusive
                 : WlrKeyboardFocus.OnDemand
@@ -163,13 +205,13 @@ ShellRoot {
             Rectangle {
                 id: pill
                 anchors.top: parent.top
-                anchors.topMargin: GameModeState.active ? 0 : 4
+                anchors.topMargin: GameModeState.active ? 0 : Config.get("pill", "idleTopMargin")
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 // Central Escape handler — surfaces do not each manage their own.
                 focus: true
                 Keys.onEscapePressed: (event) => {
-                    if (root.activeSurface !== "idle") {
+                    if (Config.get("behavior", "escapeCloses") && root.activeSurface !== "idle") {
                         root.activeSurface = "idle"
                         event.accepted = true
                     }
@@ -187,54 +229,66 @@ ShellRoot {
 
                 // Full stadium in idle/hover; soft corner radius when a surface is open.
                 radius: GameModeState.active ? 0
-                    : ((root.activeSurface === "idle" || root.activeSurface === "hover") ? height / 2 : 28)
+                    : ((root.activeSurface === "idle" || root.activeSurface === "hover")
+                        ? height / 2 : Config.get("pill", "expandedRadius"))
 
-                color: Qt.rgba(Colors.bg0.r, Colors.bg0.g, Colors.bg0.b, 0.97)
+                color: Qt.rgba(Colors.bg0.r, Colors.bg0.g, Colors.bg0.b,
+                               Config.get("pill", "backgroundOpacity"))
                 clip: true
 
-                border.width: GameModeState.active ? 0 : (pillHover.hovered ? 2 : 1)
+                border.width: GameModeState.active ? 0
+                    : (pillHover.hovered ? Config.get("pill", "borderWidthHover")
+                                         : Config.get("pill", "borderWidthDefault"))
                 border.color: Qt.rgba(Colors.accent.r, Colors.accent.g, Colors.accent.b,
                     pillHover.hovered ? 0.70 : pillGlow.opacity)
 
-                scale: (pillHover.hovered && !GameModeState.active) ? 1.03 : 1.0
+                scale: (pillHover.hovered && !GameModeState.active)
+                    ? Config.get("pill", "hoverScale") : 1.0
                 transformOrigin: Item.Center
 
                 HoverHandler {
                     id: pillHover
-                    // idle <-> hover only; open surfaces close via Escape or background click.
                     onHoveredChanged: {
+                        if (!Config.get("behavior", "hoverOpens"))
+                            return
                         if (hovered && root.activeSurface === "idle") {
                             root.activeSurface = "hover"
-                        } else if (!hovered && root.activeSurface === "hover") {
+                        } else if (!hovered && root.activeSurface === "hover"
+                                   && Config.get("behavior", "autoCollapse")) {
                             root.activeSurface = "idle"
                         }
                     }
                 }
 
                 SequentialAnimation {
-                    running: !GameModeState.active
+                    running: Config.get("pill", "glowEnabled") && !GameModeState.active
                     loops: Animation.Infinite
-                    NumberAnimation { target: pillGlow; property: "opacity"; to: 0.42; duration: 1600; easing.type: Easing.InOutSine }
-                    NumberAnimation { target: pillGlow; property: "opacity"; to: 0.18; duration: 1600; easing.type: Easing.InOutSine }
+                    NumberAnimation { target: pillGlow; property: "opacity";
+                        to: Config.get("pill", "glowMaxOpacity");
+                        duration: Config.get("pill", "glowBreathDuration") / 2; easing.type: Easing.InOutSine }
+                    NumberAnimation { target: pillGlow; property: "opacity";
+                        to: Config.get("pill", "glowMinOpacity");
+                        duration: Config.get("pill", "glowBreathDuration") / 2; easing.type: Easing.InOutSine }
                 }
                 QtObject {
                     id: pillGlow
-                    property real opacity: 0.18
+                    property real opacity: Config.get("pill", "glowMinOpacity")
                 }
 
-                Behavior on width  { NumberAnimation { duration: 320; easing.type: Easing.OutBack; easing.overshoot: 1.05 } }
-                Behavior on height { NumberAnimation { duration: 320; easing.type: Easing.OutBack; easing.overshoot: 1.05 } }
-                Behavior on radius { NumberAnimation { duration: 220 } }
-                Behavior on scale  { NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 1.8 } }
-                Behavior on border.width { NumberAnimation { duration: 160 } }
-                Behavior on border.color { ColorAnimation  { duration: 160 } }
+                Behavior on width  { NumberAnimation { duration: Config.get("pill", "morphDuration"); easing.type: Easing.OutBack; easing.overshoot: Config.get("pill", "morphOvershoot") } }
+                Behavior on height { NumberAnimation { duration: Config.get("pill", "morphDuration"); easing.type: Easing.OutBack; easing.overshoot: Config.get("pill", "morphOvershoot") } }
+                Behavior on radius { NumberAnimation { duration: Config.get("pill", "radiusTransitionDuration") } }
+                Behavior on scale  { NumberAnimation { duration: Config.get("pill", "scaleDuration"); easing.type: Easing.OutBack; easing.overshoot: Config.get("pill", "scaleOvershoot") } }
+                Behavior on border.width { NumberAnimation { duration: Config.get("pill", "borderTransitionDuration") } }
+                Behavior on border.color { ColorAnimation  { duration: Config.get("pill", "borderTransitionDuration") } }
 
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    // Close only a real open surface; hover collapses via its own HoverHandler.
                     onClicked: {
-                        if (root.activeSurface !== "idle" && root.activeSurface !== "hover")
+                        if (Config.get("behavior", "clickOutsideCloses")
+                            && root.activeSurface !== "idle"
+                            && root.activeSurface !== "hover")
                             root.activeSurface = "idle"
                     }
                 }
@@ -301,9 +355,10 @@ ShellRoot {
                 }
 
                 // ---- surfaces — loaded on demand, unloaded when closed ----
+                // margins: Config "surfaces.margins"
 
                 Loader {
-                    anchors.fill: parent; anchors.margins: 14
+                    anchors.fill: parent; anchors.margins: Config.get("surfaces", "margins")
                     active: root.activeSurface === "wallpaper"
                     opacity: active ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -311,7 +366,7 @@ ShellRoot {
                 }
 
                 Loader {
-                    anchors.fill: parent; anchors.margins: 14
+                    anchors.fill: parent; anchors.margins: Config.get("surfaces", "margins")
                     active: root.activeSurface === "media"
                     opacity: active ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -319,7 +374,7 @@ ShellRoot {
                 }
 
                 Loader {
-                    anchors.fill: parent; anchors.margins: 14
+                    anchors.fill: parent; anchors.margins: Config.get("surfaces", "margins")
                     active: root.activeSurface === "power"
                     opacity: active ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -327,7 +382,7 @@ ShellRoot {
                 }
 
                 Loader {
-                    anchors.fill: parent; anchors.margins: 14
+                    anchors.fill: parent; anchors.margins: Config.get("surfaces", "margins")
                     active: root.activeSurface === "mixer"
                     opacity: active ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -335,7 +390,7 @@ ShellRoot {
                 }
 
                 Loader {
-                    anchors.fill: parent; anchors.margins: 14
+                    anchors.fill: parent; anchors.margins: Config.get("surfaces", "margins")
                     active: root.activeSurface === "clipboard"
                     opacity: active ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -343,16 +398,19 @@ ShellRoot {
                 }
 
                 Loader {
-                    anchors.fill: parent; anchors.margins: 14
+                    anchors.fill: parent; anchors.margins: Config.get("surfaces", "margins")
                     active: root.activeSurface === "launcher"
                     opacity: active ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
                     sourceComponent: LauncherSurface {}
-                    onLoaded: item.appLaunched.connect(function() { root.activeSurface = "idle" })
+                    onLoaded: item.appLaunched.connect(function() {
+                        if (Config.get("behavior", "closeOnLaunch"))
+                            root.activeSurface = "idle"
+                    })
                 }
 
                 Loader {
-                    anchors.fill: parent; anchors.margins: 14
+                    anchors.fill: parent; anchors.margins: Config.get("surfaces", "margins")
                     active: root.activeSurface === "wifi"
                     opacity: active ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
@@ -360,16 +418,17 @@ ShellRoot {
                 }
 
                 Loader {
-                    anchors.fill: parent; anchors.margins: 14
+                    anchors.fill: parent; anchors.margins: Config.get("surfaces", "margins")
                     active: root.activeSurface === "settings"
                     opacity: active ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
-                    sourceComponent: SettingsSurface {}
-                    onLoaded: item.rootWindow = root
+                    // required property передається ІНЛАЙН при конструюванні —
+                    // присвоєння в onLoaded давало warning про required prop.
+                    sourceComponent: SettingsSurface { rootWindow: root }
                 }
 
                 Loader {
-                    anchors.fill: parent; anchors.margins: 14
+                    anchors.fill: parent; anchors.margins: Config.get("surfaces", "margins")
                     active: root.activeSurface === "link"
                     opacity: active ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 150 } }
