@@ -20,6 +20,8 @@ ColumnLayout {
     property real stepSize: 1
     property int decimals: 0
     property string suffix: ""
+    property bool isSettingsControl: true
+    visible: SettingsSearch.matches(label)
 
     Layout.fillWidth: true
     spacing: 6

@@ -14,6 +14,8 @@ Rectangle {
     property string description: ""
     required property string buttonText
     signal clicked()
+    property bool isSettingsControl: true
+    visible: SettingsSearch.matches(label)
 
     Layout.fillWidth: true
     implicitHeight: btnInner.implicitHeight + 20

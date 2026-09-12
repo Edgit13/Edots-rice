@@ -16,6 +16,8 @@ ColumnLayout {
     property string description: ""
     property var options: []
     property bool expanded: false
+    property bool isSettingsControl: true
+    visible: SettingsSearch.matches(label)
 
     Layout.fillWidth: true
     spacing: 6

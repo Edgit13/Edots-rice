@@ -23,6 +23,7 @@ Item {
     readonly property var categories: [
         { name: "Pill" },
         { name: "Animations" },
+        { name: "Bar" },
         { name: "Presets" },
         { name: "System" },
         { name: "About" }
@@ -113,6 +114,81 @@ Item {
 
         // ---------------------------------------------------------- content
 
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            spacing: 0
+
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.topMargin: 12
+            Layout.leftMargin: 16
+            Layout.rightMargin: 16
+            Layout.bottomMargin: 8
+            implicitHeight: 30
+            radius: 9
+            color: Colors.bg2
+            border.width: 1
+            border.color: searchInput.activeFocus
+                ? Colors.accent
+                : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.12)
+
+            RowLayout {
+                anchors.fill: parent
+                anchors.leftMargin: 10
+                anchors.rightMargin: 10
+                spacing: 8
+
+                Text {
+                    text: "\uef7a"
+                    color: Colors.grey1
+                    font { family: "Material Symbols Rounded"; pixelSize: 14 }
+                }
+
+                TextInput {
+                    id: searchInput
+                    Layout.fillWidth: true
+                    verticalAlignment: TextInput.AlignVCenter
+                    color: Colors.fg
+                    font { family: "SF Pro Display"; pixelSize: 11 }
+                    clip: true
+
+                    Text {
+                        anchors.fill: parent
+                        verticalAlignment: Text.AlignVCenter
+                        visible: searchInput.text.length === 0
+                        text: "Search settings\u2026"
+                        color: Colors.grey1
+                        font: searchInput.font
+                    }
+
+                    onTextChanged: SettingsSearch.query = text
+                    Keys.onEscapePressed: {
+                        searchInput.text = ""
+                        SettingsSearch.clear()
+                    }
+                }
+
+                Text {
+                    visible: SettingsSearch.active
+                    text: "\u00d7"
+                    color: clearHover.hovered ? Colors.red : Colors.grey1
+                    font { family: "SF Pro Display"; pixelSize: 14 }
+
+                    HoverHandler { id: clearHover }
+                    MouseArea {
+                        anchors.fill: parent
+                        anchors.margins: -4
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            searchInput.text = ""
+                            SettingsSearch.clear()
+                        }
+                    }
+                }
+            }
+        }
+
         Flickable {
             id: flick
             Layout.fillWidth: true
@@ -142,7 +218,7 @@ Item {
                     Layout.bottomMargin: 14
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
-                    visible: app.currentIndex === 0
+                    visible: app.currentIndex === 0 || SettingsSearch.active
                 }
                 PageAnimations {
                     Layout.fillWidth: true
@@ -150,7 +226,15 @@ Item {
                     Layout.bottomMargin: 14
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
-                    visible: app.currentIndex === 1
+                    visible: app.currentIndex === 1 || SettingsSearch.active
+                }
+                PageBar {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 2 || SettingsSearch.active
                 }
                 PagePresets {
                     Layout.fillWidth: true
@@ -158,7 +242,7 @@ Item {
                     Layout.bottomMargin: 14
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
-                    visible: app.currentIndex === 2
+                    visible: app.currentIndex === 3 || SettingsSearch.active
                 }
                 PageSystem {
                     Layout.fillWidth: true
@@ -166,7 +250,7 @@ Item {
                     Layout.bottomMargin: 14
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
-                    visible: app.currentIndex === 3
+                    visible: app.currentIndex === 4 || SettingsSearch.active
                 }
                 PageAbout {
                     Layout.fillWidth: true
@@ -174,9 +258,10 @@ Item {
                     Layout.bottomMargin: 14
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
-                    visible: app.currentIndex === 4
+                    visible: app.currentIndex === 5 || SettingsSearch.active
                 }
             }
         }
+        }   // content ColumnLayout
     }
 }

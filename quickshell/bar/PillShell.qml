@@ -113,6 +113,19 @@ ShellRoot {
     // Full Settings application (Phase 3) — overlay window, not a pill surface.
     SettingsWindow { id: settingsWindow }
 
+    // Великий центр керування (Phase 6)
+    DashboardWindow { id: dashboardWindow }
+
+    // Примусова інстанціація CompositorFx (blur -> MangoWM config)
+    property var compositorFxRef: CompositorFx
+
+    IpcHandler {
+        target: "dashboard"
+        function open(): void { dashboardWindow.open() }
+        function toggle(): void { dashboardWindow.toggle() }
+        function close(): void { dashboardWindow.close() }
+    }
+
     IpcHandler {
         target: "settingsapp"
         function open(): void { settingsWindow.open() }
@@ -136,6 +149,29 @@ ShellRoot {
     readonly property int expandedHeight: Config.get("pill", "expandedHeight")
 
     readonly property int exclusionZoneGap: Config.get("bar", "exclusionZoneGap")
+    readonly property bool barOnBottom: Config.get("bar", "position") === "bottom"
+
+    // ---- module system (Phase 5): data-driven hover bar ----
+    readonly property var triggerGlyphs: ({
+        wallpaper: "\ue1bc", media: "\ue405", wifi: "\ue63e", link: "\ue1a7",
+        power: "\uf8c7", mixer: "\ue429", clipboard: "\ue14f",
+        notifications: "\ue7f4", launcher: "\ue5c3", settings: "\ue8b8"
+    })
+
+    function isTriggerIcon(id) { return root.triggerGlyphs[id] !== undefined }
+    function glyphFor(id) { return root.triggerGlyphs[id] || "\ue5c3" }
+
+    function activateModule(id) {
+        if (id === "notifications") {
+            notificationsProc.running = true
+            return
+        }
+        if (id === "settings") {
+            settingsWindow.toggle()
+            return
+        }
+        root.activeSurface = id
+    }
 
     Variants {
         model: Quickshell.screens
@@ -148,7 +184,8 @@ ShellRoot {
             exclusiveZone: root.idleHeight + root.exclusionZoneGap
 
             anchors {
-                top: true
+                top: !root.barOnBottom
+                bottom: root.barOnBottom
                 left: true
                 right: true
             }
@@ -206,8 +243,10 @@ ShellRoot {
 
             Rectangle {
                 id: pill
-                anchors.top: parent.top
+                anchors.top: root.barOnBottom ? undefined : parent.top
+                anchors.bottom: root.barOnBottom ? parent.bottom : undefined
                 anchors.topMargin: GameModeState.active ? 0 : Config.get("pill", "idleTopMargin")
+                anchors.bottomMargin: GameModeState.active ? 0 : Config.get("pill", "idleTopMargin")
                 anchors.horizontalCenter: parent.horizontalCenter
 
                 // Central Escape handler — surfaces do not each manage their own.
@@ -322,38 +361,49 @@ ShellRoot {
 
                     Behavior on opacity { NumberAnimation { duration: Anim.ms(150) } }
 
-                    Workspaces { Layout.alignment: Qt.AlignVCenter }
+                    Repeater {
+                        model: Config.get("modules", "order") || []
+                        RowLayout {
+                            required property var modelData
+                            required property int index
+                            spacing: 10
+                            visible: !!Config.get("modules", modelData)
 
-                    Rectangle {
-                        width: 1
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.fillHeight: true
-                        Layout.topMargin: 4
-                        Layout.bottomMargin: 4
-                        color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.15)
+                            readonly property bool wide: modelData === "workspaces" || modelData === "clock"
+                            readonly property bool prevWide: {
+                                const order = Config.get("modules", "order") || []
+                                if (index <= 0)
+                                    return false
+                                const p = order[index - 1]
+                                return p === "workspaces" || p === "clock"
+                            }
+
+                            Rectangle {
+                                visible: index > 0 && (wide || prevWide)
+                                width: 1
+                                Layout.alignment: Qt.AlignVCenter
+                                Layout.fillHeight: true
+                                Layout.topMargin: 4
+                                Layout.bottomMargin: 4
+                                color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.15)
+                            }
+
+                            Workspaces {
+                                visible: modelData === "workspaces"
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+                            Clock {
+                                visible: modelData === "clock"
+                                Layout.alignment: Qt.AlignVCenter
+                            }
+                            TriggerIcon {
+                                visible: root.isTriggerIcon(modelData)
+                                glyph: root.glyphFor(modelData)
+                                hoverColor: modelData === "power" ? Colors.red : Colors.accent
+                                onActivated: root.activateModule(modelData)
+                            }
+                        }
                     }
-
-                    Clock { Layout.alignment: Qt.AlignVCenter }
-
-                    Rectangle {
-                        width: 1
-                        Layout.alignment: Qt.AlignVCenter
-                        Layout.fillHeight: true
-                        Layout.topMargin: 4
-                        Layout.bottomMargin: 4
-                        color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.15)
-                    }
-
-                    TriggerIcon { glyph: "\ue1bc"; onActivated: root.activeSurface = "wallpaper" }
-                    TriggerIcon { glyph: "\ue405"; onActivated: root.activeSurface = "media" }
-                    TriggerIcon { glyph: "\ue63e"; onActivated: root.activeSurface = "wifi" }
-                    TriggerIcon { glyph: "\ue1a7"; onActivated: root.activeSurface = "link" }
-                    TriggerIcon { glyph: "\uf8c7"; hoverColor: Colors.red; onActivated: root.activeSurface = "power" }
-                    TriggerIcon { glyph: "\ue429"; onActivated: root.activeSurface = "mixer" }
-                    TriggerIcon { glyph: "\ue14f"; onActivated: root.activeSurface = "clipboard" }
-                    TriggerIcon { glyph: "\ue7f4"; onActivated: notificationsProc.running = true }
-                    TriggerIcon { glyph: "\ue5c3"; onActivated: root.activeSurface = "launcher" }
-                    TriggerIcon { glyph: "\ue8b8"; onActivated: root.activeSurface = "settings" }
                 }
 
                 // ---- surfaces — loaded on demand, unloaded when closed ----

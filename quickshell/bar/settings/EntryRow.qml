@@ -15,6 +15,8 @@ ColumnLayout {
     property string placeholder: ""
     property string buttonText: "OK"
     signal submitted(string text)
+    property bool isSettingsControl: true
+    visible: SettingsSearch.matches(label)
 
     Layout.fillWidth: true
     spacing: 6

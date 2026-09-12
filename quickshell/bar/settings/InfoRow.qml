@@ -12,6 +12,8 @@ Rectangle {
     id: infoRowRoot
     required property string title
     required property string detail
+    property bool isSettingsControl: true
+    visible: SettingsSearch.matches(title)
 
     Layout.fillWidth: true
     implicitHeight: infoCol.implicitHeight + 20

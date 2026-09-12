@@ -13,6 +13,8 @@ RowLayout {
     required property string configKey
     required property string label
     property string description: ""
+    property bool isSettingsControl: true
+    visible: SettingsSearch.matches(label)
 
     Layout.fillWidth: true
     spacing: 10
