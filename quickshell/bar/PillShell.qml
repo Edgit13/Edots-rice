@@ -218,7 +218,11 @@ ShellRoot {
             // `pill` id is only in scope within this component.
             function openSurface(surface) {
                 root.activeSurface = surface
-                pill.forceActiveFocus()
+                // launcher: фокус НЕ віддаємо пігулці — LauncherSurface сам ставить
+                // його на searchInput у onCompleted; pill.forceActiveFocus тут
+                // викрадав фокус, і доводилось клікати мишкою перед друком.
+                if (surface !== "launcher")
+                    pill.forceActiveFocus()
             }
 
             function toggleSurface(surface) {
