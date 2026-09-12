@@ -140,12 +140,12 @@ Singleton {
         const v = root.coerceValid(category, key, value)
         if (v === undefined)
             return false
-        if (!root.current[category])
-            root.current[category] = {}
-        root.current[category][key] = v
-        // var-властивості не сповіщають про зміни у вкладених об'єктах —
-        // перезаписуємо посилання, щоб бінди оновились.
-        root.current = root.current
+        // НОВИЙ об'єкт на кожному рівні: Qt 6 пропускає change-notify, якщо
+        // var-властивості присвоїти ТОЙ САМИЙ об'єкт (root.current =
+        // root.current мовчки не сповіщав — live-бінди оновлювались лише
+        // після перезапуску).
+        const catObj = Object.assign({}, root.current[category], { [key]: v })
+        root.current = Object.assign({}, root.current, { [category]: catObj })
         root.save()
         return true
     }
@@ -157,10 +157,9 @@ Singleton {
             console.warn("Config.resetKey: невідомий ключ", category + "." + key)
             return false
         }
-        if (!root.current[category])
-            root.current[category] = {}
-        root.current[category][key] = root.defaults[category][key]
-        root.current = root.current
+        const catObj = Object.assign({}, root.current[category],
+            { [key]: root.defaults[category][key] })
+        root.current = Object.assign({}, root.current, { [category]: catObj })
         root.save()
         return true
     }
@@ -170,9 +169,8 @@ Singleton {
             console.warn("Config.resetCategory: невідома категорія", category)
             return false
         }
-        const next = root.current
-        next[category] = JSON.parse(JSON.stringify(root.defaults[category]))
-        root.current = next
+        root.current = Object.assign({}, root.current,
+            { [category]: JSON.parse(JSON.stringify(root.defaults[category])) })
         root.save()
         return true
     }

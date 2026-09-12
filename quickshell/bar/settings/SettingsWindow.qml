@@ -59,7 +59,7 @@ PanelWindow {
         color: "#000000"
         opacity: win.visible ? 0.4 : 0
 
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+        Behavior on opacity { NumberAnimation { duration: Anim.ms(200) } }
 
         MouseArea {
             anchors.fill: parent
@@ -81,7 +81,7 @@ PanelWindow {
         scale: win.visible ? 1.0 : 0.96
         opacity: win.visible ? 1.0 : 0.0
 
-        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack; easing.overshoot: 1.1 } }
+        Behavior on scale { NumberAnimation { duration: Anim.ms(260); easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
         Behavior on opacity { NumberAnimation { duration: 120 } }
 
         Keys.onEscapePressed: win.close()

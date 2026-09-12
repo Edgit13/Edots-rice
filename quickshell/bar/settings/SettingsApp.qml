@@ -8,21 +8,36 @@ import QtQuick.Controls  // ScrollBar
 import QtQuick.Layouts
 
 // ==========================================================================
-// SettingsApp.qml — каркас Settings UI: бічна панель + контент.
-// Категорії data-driven; нові сторінки додаються в `categories` фазами 4+.
+// SettingsApp.qml — каркас Settings UI (Phase 4 fix: plain-файли).
+//
+// Усунуто root cause невидимого контенту: inline-компоненти у JS-контексті
+// (var-масив + Loader.sourceComponent) давали silent undefined у цьому білді
+// (Loader.status=Ready, item=null). Тепер сторінки — звичайні компоненти
+// однієї директорії, інстанційовані декларативно з visible-гейтом;
+// стан сторінок зберігається між перемиканнями.
 // ==========================================================================
 
 Item {
     id: app
 
     readonly property var categories: [
-        { name: "Pill",     page: SettingsPages.PagePill },
-        { name: "Presets", page: SettingsPages.PagePresets },
-        { name: "System",  page: SettingsPages.PageSystem },
-        { name: "About",   page: SettingsPages.PageAbout }
+        { name: "Pill" },
+        { name: "Animations" },
+        { name: "Presets" },
+        { name: "System" },
+        { name: "About" }
     ]
 
     property int currentIndex: 0
+
+    // М'який fade-in контенту при перемиканні вкладок
+    SequentialAnimation {
+        id: pageSwitchAnim
+        PropertyAction { target: pageCol; property: "opacity"; value: 0 }
+        NumberAnimation { target: pageCol; property: "opacity"; to: 1; duration: Anim.ms(140); easing.type: Easing.OutCubic }
+    }
+
+    onCurrentIndexChanged: pageSwitchAnim.restart()
 
     RowLayout {
         anchors.fill: parent
@@ -58,16 +73,25 @@ Item {
                         radius: 8
                         color: app.currentIndex === index
                             ? Qt.rgba(Colors.accent.r, Colors.accent.g, Colors.accent.b, 0.18)
-                            : "transparent"
+                            : (sideHover.hovered
+                                ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.06)
+                                : "transparent")
+
+                        Behavior on color { ColorAnimation { duration: Anim.ms(120) } }
 
                         Text {
                             anchors.left: parent.left
                             anchors.leftMargin: 10
                             anchors.verticalCenter: parent.verticalCenter
                             text: modelData.name
-                            color: app.currentIndex === index ? Colors.accent : Colors.grey1
+                            color: app.currentIndex === index ? Colors.accent
+                                : (sideHover.hovered ? Colors.fg : Colors.grey1)
                             font { family: "SF Pro Display"; pixelSize: 12; weight: app.currentIndex === index ? 600 : 500 }
+
+                            Behavior on color { ColorAnimation { duration: Anim.ms(120) } }
                         }
+
+                        HoverHandler { id: sideHover }
 
                         MouseArea {
                             anchors.fill: parent
@@ -90,6 +114,7 @@ Item {
         // ---------------------------------------------------------- content
 
         Flickable {
+            id: flick
             Layout.fillWidth: true
             Layout.fillHeight: true
             clip: true
@@ -111,14 +136,45 @@ Item {
                 width: parent.width
                 spacing: 12
 
-                Loader {
+                PagePill {
                     Layout.fillWidth: true
-                    Layout.preferredHeight: item ? item.implicitHeight : 0
                     Layout.topMargin: 14
                     Layout.bottomMargin: 14
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
-                    sourceComponent: app.categories[app.currentIndex].page
+                    visible: app.currentIndex === 0
+                }
+                PageAnimations {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 1
+                }
+                PagePresets {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 2
+                }
+                PageSystem {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 3
+                }
+                PageAbout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 4
                 }
             }
         }
