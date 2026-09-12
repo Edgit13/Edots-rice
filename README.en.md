@@ -3,7 +3,11 @@
 A minimal and functional **MangoWM** + **Quickshell** config.
 **[Українська версія](README.md)**
 
-![Edots](screenshots/preview.png)
+![Edots](screenshots/banner.png)
+
+| Dashboard | Notch |
+|---|---|
+| ![Dashboard](screenshots/dashboard.png) | ![Notch](screenshots/notch.png) |
 
 ## Features
 

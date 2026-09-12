@@ -3,7 +3,11 @@
 Лаконічний та функціональний конфіг для **MangoWM** + **Quickshell**.
 **[English version](README.en.md)**
 
-![Edots](screenshots/preview.png)
+![Edots](screenshots/banner.png)
+
+| Dashboard | Notch |
+|---|---|
+| ![Dashboard](screenshots/dashboard.png) | ![Notch](screenshots/notch.png) |
 
 ## Фічі
 
