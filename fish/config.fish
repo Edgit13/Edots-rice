@@ -60,3 +60,7 @@ if not string match -q -- "$PNPM_HOME/bin" $PATH
     set -gx PATH "$PNPM_HOME/bin" $PATH
 end
 # pnpm end
+
+# Created by `pipx` on 2026-09-11 08:17:07
+set PATH $PATH /home/eduard/.local/bin
+set -gx BROWSER /usr/bin/firefox
