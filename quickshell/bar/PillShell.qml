@@ -116,6 +116,9 @@ ShellRoot {
     // Великий центр керування (Phase 6)
     DashboardWindow { id: dashboardWindow }
 
+    // Task Manager (Phase 7): порт test-implementions + utimer + upkg
+    TaskManagerWindow { id: taskManagerWindow }
+
     // Примусова інстанціація CompositorFx (blur -> MangoWM config)
     property var compositorFxRef: CompositorFx
 
@@ -124,6 +127,13 @@ ShellRoot {
         function open(): void { dashboardWindow.open() }
         function toggle(): void { dashboardWindow.toggle() }
         function close(): void { dashboardWindow.close() }
+    }
+
+    IpcHandler {
+        target: "tasks"
+        function open(): void { taskManagerWindow.open() }
+        function toggle(): void { taskManagerWindow.toggle() }
+        function close(): void { taskManagerWindow.close() }
     }
 
     IpcHandler {
