@@ -65,3 +65,7 @@ qs -p ~/.config/quickshell/bar/shell.qml ipc call settingsapp toggle
 qs -p ~/.config/quickshell/bar/shell.qml ipc call dashboard toggle
 qs -p ~/.config/quickshell/bar/shell.qml ipc call tasks toggle
 ```
+
+## Nix adaptation
+
+See [nix/README.md](nix/README.md) — NixOS + home-manager modules (mango flake, quickshell, capture stack).
