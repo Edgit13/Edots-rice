@@ -74,3 +74,18 @@
 nix flake check          # у теці nix/ репо (потребує flake-репо як git)
 nix eval .#nixosModules.edots --apply 'x: x ? config'   # швидкий sanity
 ```
+
+## Повний автоматичний шлях (install.sh на NixOS)
+
+`./install.sh` на NixOS виконує:
+1. `sudo`, вмикає flakes (`experimental-features`), якщо ще ні.
+2. Якщо `/etc/nixos/flake.nix` вже існує — НЕ лізе в нього (покаже сніпет для
+   ручного підключення inputs/modулів).
+3. Інакше: генерує `nix/local-user.nix` під поточного юзера, збирає
+   `nix#edots` (імпортує ваш `/etc/nixos/configuration.nix` як є) і виконує
+   `sudo nixos-rebuild switch --flake <repo>/nix#edots --impure`.
+4. Після успіху — просить reboot. Сесія за замовчуванням: MangoWM.
+
+Бар стартує systemd user-сервісом (`edots-bar`) з явним `-p` до вашого
+`shell.qml` + `Restart=on-failure` — після сліпу/падіння піднімається саме
+ваш конфіг, а не дефолтний.

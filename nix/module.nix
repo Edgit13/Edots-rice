@@ -1,4 +1,4 @@
-# module.nix — NixOS-частина Edots: пакети, шрифти, системні сервіси rice.
+# module.nix — NixOS-частина Edots: пакети, шрифти, сервіси rice.
 { config, lib, pkgs, ... }:
 
 let
@@ -13,7 +13,6 @@ in
 
     fonts.packages = rice.fonts;
 
-    # --- Аудіо / мережа / bluetooth (як у поточній системі) ---
     services.pipewire = {
       enable = true;
       alsa.enable = true;
@@ -24,15 +23,24 @@ in
     services.bluetooth.enable = true;
     networking.networkmanager.enable = true;
 
-    # --- MangoWM як сесія ---
-    # Варіант A (flake input mango): programs.mango.enable = true;
-    #   + services.displayManager.defaultSession = "mango";
-    # Варіант B (без flake): nixpkgs pkgs.mangowc + власна .desktop-сесія (див. README).
-
-    # Портали/змінні Wayland
     xdg.portal = {
       enable = true;
       extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
+    };
+
+    # ── Бар: systemd user-сервіс із ЯВНИМ шляхом до конфіга.
+    # Фікс «після сліпу стартує дефолтний конф»: ніхто ніколи не запускає
+    # голий `qs`; після resume/падіння — Restart повертає саме твій shell.qml.
+    systemd.user.services.edots-bar = {
+      description = "Edots Quickshell bar (explicit -p, survives resume)";
+      wantedBy = [ "graphical-session.target" ];
+      partOf = [ "graphical-session.target" ];
+      after = [ "graphical-session.target" ];
+      serviceConfig = {
+        ExecStart = "${pkgs.quickshell}/bin/qs -p %h/.config/quickshell/bar/shell.qml";
+        Restart = "on-failure";
+        RestartSec = 2;
+      };
     };
   };
 }

@@ -1,0 +1,9 @@
+# local-user.nix — ГЕНЕРУЄТЬСЯ install.sh автоматично, НЕ КОМІТИТИ.
+# Підключає home-manager модуль rice для вашого користувача.
+{ ... }:
+{
+  home-manager.users.CHANGE_ME = {
+    imports = [ ./home.nix ];
+    edots.home.enable = true;
+  };
+}
