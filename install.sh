@@ -23,6 +23,21 @@ c_ok()    { printf '\033[32m[✓]\033[0m %s\n' "$*"; }
 
 FAILED=()
 
+# ── Конфлікти: [S]пропустити / [D]дописати / [П]ерезаписати ──
+# Друкує рішення у stdout: skip | append | overwrite
+ask_conflict() {
+  local path="$1" a
+  while true; do
+    read -r -p "  '$path' вже існує — [S]пропустити / [D]дописати / [П]ерезаписати? [S/d/p]: " a
+    case "$a" in
+      [Dd]*)  echo "append"; return ;;
+      [ПпPp]*) echo "overwrite"; return ;;
+      [Ss]*|"") echo "skip"; return ;;
+      *) c_warn "Введи s, d або p." ;;
+    esac
+  done
+}
+
 # ───────────────────── визначення ОС (ДО будь-яких дій) ─────────────────────
 detect_os() {
   if [ -r /etc/os-release ] && grep -q '^ID=nixos$' /etc/os-release; then
@@ -54,13 +69,31 @@ case "$wp_answer" in
       c_info "Репо шпалер вже є — оновлюю (git pull)..."
       if git -C "$WALLPAPERS_DIR" pull --ff-only; then c_ok "шпалери оновлено"
       else c_warn "git pull для шпалер не вдався"; FAILED+=("wallpapers:pull"); fi
+    elif [ -e "$WALLPAPERS_DIR" ]; then
+      action=$(ask_conflict "$WALLPAPERS_DIR")
+      case "$action" in
+        overwrite)
+          wp_backup="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
+          mkdir -p "$wp_backup"
+          mv "$WALLPAPERS_DIR" "$wp_backup/Wallpapers"
+          c_warn "старі шпалери перенесено в $wp_backup/Wallpapers"
+          mkdir -p "$(dirname "$WALLPAPERS_DIR")"
+          git clone "$WALLPAPERS_REPO" "$WALLPAPERS_DIR" && c_ok "шпалери склоновано"             || { c_warn "git clone шпалер не вдався"; FAILED+=("wallpapers:clone"); }
+          ;;
+        append)
+          wp_tmp=$(mktemp -d)
+          if git clone "$WALLPAPERS_REPO" "$wp_tmp/Wallpapers" 2>/dev/null; then
+            cp -rn "$wp_tmp/Wallpapers/." "$WALLPAPERS_DIR/" && c_ok "дописано (нові файли, існуючі не чіпав)"
+          else
+            c_warn "git clone шпалер не вдався"; FAILED+=("wallpapers:clone")
+          fi
+          rm -rf "$wp_tmp"
+          ;;
+        *)
+          c_info "Шпалери пропущено."
+          ;;
+      esac
     else
-      if [ -e "$WALLPAPERS_DIR" ]; then
-        wp_backup="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
-        mkdir -p "$wp_backup"
-        mv "$WALLPAPERS_DIR" "$wp_backup/Wallpapers"
-        c_warn "існуючу $WALLPAPERS_DIR перенесено в $wp_backup/Wallpapers"
-      fi
       mkdir -p "$(dirname "$WALLPAPERS_DIR")"
       c_info "Клоную шпалери..."
       if git clone "$WALLPAPERS_REPO" "$WALLPAPERS_DIR"; then c_ok "шпалери склоновано"
@@ -83,36 +116,41 @@ else
 fi
 cd "$REPO_DIR" || exit 1
 
+# Генерація nix/local-user.nix
+write_lunix() {
+  cat > "$REPO_DIR/nix/local-user.nix" <<EOF
+{ ... }:
+{
+  home-manager.users.$USER = {
+    imports = [ ./home.nix ];
+    edots.home.enable = true;
+  };
+}
+EOF
+}
+
 # ════════════════════════ NIXOS ════════════════════════
 install_nixos() {
-  c_info "Виявлено NixOS — пакети й симлінки керуються NixOS + home-manager."
+  c_info "Виявлено NixOS — повний автоматичний шлях."
+  command -v nix >/dev/null 2>&1 || { c_err "nix не знайдено у PATH."; exit 1; }
+  sudo -v
 
-  if ! command -v nix >/dev/null 2>&1; then
-    c_err "nix не знайдено у PATH — це не повинно трапитись на NixOS."
-    exit 1
+  # 1. Flakes
+  if ! nix show-config 2>/dev/null | grep -qE 'experimental-features.*flakes'; then
+    c_info "Вмикаю flakes (experimental-features)..."
+    printf 'extra-experimental-features = nix-command flakes\n' | sudo tee -a /etc/nix/nix.conf >/dev/null
+    sudo systemctl restart nix-daemon 2>/dev/null || true
   fi
 
-  # Валідація nix/-flake (не фатально: перший run качає inputs)
-  if [ -f "$REPO_DIR/nix/flake.nix" ]; then
-    c_info "Валідую nix/ (flake check)..."
-    if nix --extra-experimental-features 'nix-command flakes' flake check "$REPO_DIR/nix" --no-write-lock-file 2>&1 | tail -5; then
-      c_ok "nix/ валідний"
-    else
-      c_warn "flake check не пройшов (може треба мережа/inputs) — модулі все одно в ./nix"
-      FAILED+=("nix:flake-check")
-    fi
-  else
-    c_warn "nix/ відсутній у репо — онови репозиторій (git pull)."
-    FAILED+=("nix:no-flake-dir")
-  fi
+  # 2. Якщо система вже на flakes — не ліземо автоматично
+  if [ -f /etc/nixos/flake.nix ]; then
+    cat << 'EOF2'
+─────────────────────────────────────────────────────────────
+/etc/nixos/flake.nix ВЖЕ ІСНУЄ — автовпровадження небезпечне.
 
-  cat << 'EOF'
+Додай у свій flake вручну:
 
-─────────────────── ПІДКЛЮЧЕННЯ ДО ТВОГО FLAKE ───────────────────
-
-У flake.nix твоєї NixOS-конфігурації додай:
-
-  inputs.edots.url = "github:Edgit13/Edots-rice";   # або path:/home/you/Dotfiles
+  inputs.edots.url = "path:~/Dotfiles";   # або github:Edgit13/Edots-rice
   inputs.edots.inputs.nixpkgs.follows = "nixpkgs";
   inputs.mango.url = "github:mangowm/mango";
   inputs.mango.inputs.nixpkgs.follows = "nixpkgs";
@@ -121,21 +159,66 @@ install_nixos() {
   inputs.mango.nixosModules.mango
   inputs.edots.nixosModules.edots
   { edots.enable = true; programs.mango.enable = true;
-    services.displayManager.defaultSession = "mango"; }
+    services.displayManager.defaultSession = "mango";
+    home-manager.useUserPackages = true;
+    home-manager.users.YOU = { imports = [ inputs.edots.homeManagerModules.edots ]; edots.home.enable = true; }; }
 
-У home-manager:
-  inputs.edots.homeManagerModules.edots
-  { edots.home.enable = true; }
+Потім: sudo nixos-rebuild switch --flake .#HOST
+─────────────────────────────────────────────────────────────
+EOF2
+    exit 0
+  fi
 
-Потім:  sudo nixos-rebuild switch --flake .#HOST
+  # 3. Легасі-конфігурація: перевірка наявності
+  if [ ! -f /etc/nixos/hardware-configuration.nix ]; then
+    c_err "немає /etc/nixos/hardware-configuration.nix — спочатку: sudo nixos-generate-config"
+    exit 1
+  fi
 
-Деталі та відомі прогалини (SF Pro, AUR-only, snapd):  nix/README.md
-EOF
+  # 4. local-user.nix під поточного юзера (+ .gitignore), з меню конфліктів
+  LUNIX="$REPO_DIR/nix/local-user.nix"
+  if [ -f "$LUNIX" ]; then
+    action=$(ask_conflict "nix/local-user.nix")
+    case "$action" in
+      skip)
+        c_info "local-user.nix не чіпаю."
+        ;;
+      append)
+        printf '\n  # додано install.sh %s\n  home-manager.users.%s = {\n    imports = [ ./home.nix ];\n    edots.home.enable = true;\n  };\n' "$(date +%F)" "$USER" >> "$LUNIX"
+        c_ok "local-user.nix дописано"
+        ;;
+      *)
+        mv "$LUNIX" "$LUNIX.bak-$(date +%Y%m%d-%H%M%S)"
+        write_lunix
+        ;;
+    esac
+  else
+    write_lunix
+  fi
+  grep -q 'nix/local-user.nix' "$REPO_DIR/.gitignore" 2>/dev/null || \
+    echo 'nix/local-user.nix' >> "$REPO_DIR/.gitignore"
+  c_ok "nix/local-user.nix -> юзер $USER"
 
-  c_warn "НЕ запускай sync.sh на NixOS — симлінками керує home-manager (home.nix)."
-  c_warn "AUR-only (quicksnip, anydesk, viber...) — вручну/flake; snapd на NixOS немає."
-  c_warn "SF Pro Display — пропріетарний, постав вручну у ~/.local/share/fonts/"
-  c_warn "  (або зміни appearance.uiFont/monoFont у Defaults.qml на наявний шрифт)."
+  # 5. Rebuild (імпортує ваш configuration.nix як є)
+  c_info "Збираю систему: nixos-rebuild switch --flake $REPO_DIR/nix#edots (перший раз качає inputs, може бути довго)..."
+  if sudo nixos-rebuild switch --flake "$REPO_DIR/nix#edots" --impure; then
+    c_ok "nixos-rebuild: успіх"
+  else
+    c_err "nixos-rebuild не вдався — лог вище. Після виправлення повтори:"
+    c_err "  sudo nixos-rebuild switch --flake $REPO_DIR/nix#edots --impure"
+    exit 1
+  fi
+
+  # 6. Готово
+  echo
+  c_ok "ВСЕ ВСТАНОВЛЕНО. Сесія за замовчуванням: MangoWM (з Edots rice)."
+  c_info "Бар стартує systemd user-сервісом edots-bar (explicit -p, Restart=on-failure) — після сліпу завжди твій конфіг."
+  c_warn "Якщо у mango/autostart.conf є ручний запуск qs — прибери його, щоб не було двох інстансів."
+  read -r -p "Перезавантажити зараз? [y/N]: " rb
+  case "$rb" in
+    [Yy]*) sudo reboot ;;
+    *) c_info "Перезавантажся сам, коли будеш готовий." ;;
+  esac
 }
 
 # ════════════════════════ ARCH-BASED ════════════════════════
