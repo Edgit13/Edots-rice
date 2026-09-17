@@ -28,9 +28,15 @@ for a in "$@"; do
     --password=*) USER_PASS="${a#--password=}" ;;
     -h|--help)
       echo "Використання: $0 [--auto] [--disk=nvme0n1] [--user=імя] [--password=пароль]"
+      echo "Або через env: EDOTS_AUTO=1 EDOTS_DISK=sda EDOTS_USER=eduard $0"
       exit 0 ;;
   esac
 done
+# env-фолбэки (зручно для 'curl | env EDOTS_AUTO=1 bash')
+[ "${EDOTS_AUTO:-0}" = "1" ] && AUTO=1
+[ -n "${EDOTS_DISK:-}" ] && DISK_ARG="$EDOTS_DISK"
+[ -n "${EDOTS_USER:-}" ] && USER_NAME="$EDOTS_USER"
+[ -n "${EDOTS_PASSWORD:-}" ] && USER_PASS="$EDOTS_PASSWORD"
 
 # ─────────────────────────── логування ────────────────────────────
 c_info()  { printf '\033[36m[i]\033[0m %s\n' "$*"; }
@@ -80,7 +86,9 @@ WALLPAPERS_DIR="$HOME/Pictures/Wallpapers"
 echo
 echo "Шпалери зберігаються в окремому репозиторії: $WALLPAPERS_REPO"
 echo "Якщо погодишся — вони скачаються в: $WALLPAPERS_DIR"
+if [ "$AUTO" = "1" ]; then wp_answer="y"; else
 read -r -p "Поставити шпалери? [y/N]: " wp_answer
+fi
 case "$wp_answer" in
   [Yy]*)
     if [ -d "$WALLPAPERS_DIR/.git" ]; then
@@ -354,6 +362,10 @@ EOF2
     echo "  [a] — АВТО: розмітити диск + встановити NixOS з rice"
     echo "  [m] — вручну (друкую кроки)"
     echo "  [s] — скіп (спробувати rebuild live-сесії)"
+    if [ "$AUTO" = "1" ]; then
+      MODE="install"
+      c_warn "AUTO: вибрано режим установки [a]."
+    else
     read -r -p "Вибір [a/m/s]: " m
     case "$m" in
       [Aa]*) MODE="install" ;;
@@ -370,6 +382,7 @@ EOF3
         exit 0 ;;
       *) MODE="rebuild" ;;
     esac
+    fi
   fi
 
   # 4. local-user.nix (спільне)
