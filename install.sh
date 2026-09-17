@@ -15,6 +15,23 @@ set -uo pipefail
 REPO_URL="https://github.com/Edgit13/Edots-rice.git"
 REPO_DIR="${EDOTS_DIR:-$HOME/Dotfiles}"
 
+# ── Прапорці: --auto (без питань) / --disk= / --user= / --password= ──
+AUTO=0
+DISK_ARG=""
+USER_NAME="${USER:-user}"
+USER_PASS="edots"
+for a in "$@"; do
+  case "$a" in
+    --auto) AUTO=1 ;;
+    --disk=*) DISK_ARG="${a#--disk=}" ;;
+    --user=*) USER_NAME="${a#--user=}" ;;
+    --password=*) USER_PASS="${a#--password=}" ;;
+    -h|--help)
+      echo "Використання: $0 [--auto] [--disk=nvme0n1] [--user=імя] [--password=пароль]"
+      exit 0 ;;
+  esac
+done
+
 # ─────────────────────────── логування ────────────────────────────
 c_info()  { printf '\033[36m[i]\033[0m %s\n' "$*"; }
 c_warn()  { printf '\033[33m[!]\033[0m %s\n' "$*"; }
@@ -27,6 +44,7 @@ FAILED=()
 # Друкує рішення у stdout: skip | append | overwrite
 ask_conflict() {
   local path="$1" a
+  if [ "$AUTO" = "1" ]; then echo "${2:-skip}"; return; fi
   while true; do
     read -r -p "  '$path' вже існує — [S]пропустити / [D]дописати / [П]ерезаписати? [S/d/p]: " a
     case "$a" in
@@ -70,7 +88,7 @@ case "$wp_answer" in
       if git -C "$WALLPAPERS_DIR" pull --ff-only; then c_ok "шпалери оновлено"
       else c_warn "git pull для шпалер не вдався"; FAILED+=("wallpapers:pull"); fi
     elif [ -e "$WALLPAPERS_DIR" ]; then
-      action=$(ask_conflict "$WALLPAPERS_DIR")
+      action=$(ask_conflict "$WALLPAPERS_DIR" skip)
       case "$action" in
         overwrite)
           wp_backup="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
@@ -109,7 +127,22 @@ esac
 if [ -d "$REPO_DIR/.git" ]; then
   c_info "Репо вже є в $REPO_DIR — пропускаю clone."
 elif [ -d "$REPO_DIR" ]; then
-  c_warn "$REPO_DIR існує, але це не git-репо. Клонуй вручну або онови REPO_DIR."
+  action=$(ask_conflict "$REPO_DIR" skip)
+  case "$action" in
+    overwrite)
+      repo_backup="$REPO_DIR.bak-$(date +%Y%m%d-%H%M%S)"
+      mv "$REPO_DIR" "$repo_backup"
+      c_warn "старий $REPO_DIR перенесено в $repo_backup"
+      git clone "$REPO_URL" "$REPO_DIR" || { c_err "git clone не вдався"; exit 1; }
+      ;;
+    append)
+      c_info "Використовую існуючий $REPO_DIR як є."
+      ;;
+    *)
+      c_err "Пропущено клон репо — без репо далі неможливо."
+      exit 1
+      ;;
+  esac
 else
   c_info "Клоную репозиторій у $REPO_DIR..."
   git clone "$REPO_URL" "$REPO_DIR" || { c_err "git clone не вдався"; exit 1; }
@@ -121,13 +154,13 @@ write_lunix() {
   cat > "$REPO_DIR/nix/local-user.nix" <<EOF
 { osConfig, lib, ... }:
 {
-  users.users.$USER = {
+  users.users.$USER_NAME = {
     isNormalUser = lib.mkDefault true;
-    initialPassword = lib.mkDefault "edots";   # ПІСЛЯ ПЕРШОГО ВХОДУ: passwd
+    initialPassword = lib.mkDefault "$USER_PASS";   # ПІСЛЯ ПЕРШОГО ВХОДУ: passwd
     extraGroups = [ "wheel" "networkmanager" "libvirtd" "input" ];
   };
 
-  home-manager.users.$USER = {
+  home-manager.users.$USER_NAME = {
     imports = [ ./home.nix ];
     edots.home.enable = true;
     home.stateVersion = lib.mkDefault osConfig.system.stateVersion;
@@ -142,13 +175,13 @@ write_lunix() {
   cat > "$REPO_DIR/nix/local-user.nix" <<EOF
 { osConfig, lib, ... }:
 {
-  users.users.$USER = {
+  users.users.$USER_NAME = {
     isNormalUser = lib.mkDefault true;
-    initialPassword = lib.mkDefault "edots";   # ПІСЛЯ ПЕРШОГО ВХОДУ: passwd
+    initialPassword = lib.mkDefault "$USER_PASS";   # ПІСЛЯ ПЕРШОГО ВХОДУ: passwd
     extraGroups = [ "wheel" "networkmanager" "libvirtd" "input" ];
   };
 
-  home-manager.users.$USER = {
+  home-manager.users.$USER_NAME = {
     imports = [ ./home.nix ];
     edots.home.enable = true;
     home.stateVersion = lib.mkDefault osConfig.system.stateVersion;
@@ -168,14 +201,28 @@ nixos_auto_install() {
     return 1
   fi
 
-  # --- список дисків ---
+  # --- вибір диска ---
   echo
   echo "Доступні диски:"
   lsblk -d -e 7,11 -o NAME,SIZE,MODEL | sed 's/^/  /'
   echo
-  read -r -p "Введи ім'я цільового диска (напр. nvme0n1 або sda), або Enter — відміна: " DISK
-  [ -n "$DISK" ] || { c_info "Відмінено."; return 1; }
-  DISK="/dev/$DISK"
+  if [ -n "$DISK_ARG" ]; then
+    DISK="$DISK_ARG"
+  elif [ "$AUTO" = "1" ]; then
+    # AUTO: якщо рівно один кандидат — беремо його з відліком
+    mapfile -t CAND < <(lsblk -d -n -e 7,11 -o NAME)
+    if [ "${#CAND[@]}" -eq 1 ]; then
+      c_warn "AUTO: вибрано єдиний диск ${CAND[0]} — ВСЕ БУДЕ ЗНИЩЕНО через 5с (Ctrl+C — відміна)!"
+      sleep 5
+      DISK="${CAND[0]}"
+    else
+      c_err "AUTO: кілька дисків — вкажи: $0 --auto --disk=<імя>"
+      return 1
+    fi
+  else
+    read -r -p "Введи ім'я цільового диска (напр. nvme0n1 або sda), або Enter — відміна: " DISK
+    [ -n "$DISK" ] || { c_info "Відмінено."; return 1; }
+  fi
   [ -b "$DISK" ] || { c_err "$DISK не існує."; return 1; }
 
   # --- безпека: відмова, якщо хоч один розділ змонтований ---
@@ -186,10 +233,15 @@ nixos_auto_install() {
 
   # --- підтвердження введенням імені ---
   base=$(basename "$DISK")
-  read -r -p "ПІДТВЕРДЖЕННЯ: введи ще раз '$base' для ЗНИЩЕННЯ всіх даних на ньому: " CONFIRM
-  if [ "$CONFIRM" != "$base" ]; then
-    c_info "Не збігається — відмінено."
-    return 1
+  if [ "$AUTO" = "1" ]; then
+    c_warn "AUTO: $base буде повністю знищено. Продовжую..."
+    sleep 2
+  else
+    read -r -p "ПІДТВЕРДЖЕННЯ: введи ще раз '$base' для ЗНИЩЕННЯ всіх даних на ньому: " CONFIRM
+    if [ "$CONFIRM" != "$base" ]; then
+      c_info "Не збігається — відмінено."
+      return 1
+    fi
   fi
 
   command -v sgdisk >/dev/null 2>&1 || { c_err "sgdisk немає на образі — ручна установка."; return 1; }
@@ -238,6 +290,11 @@ nixos_auto_install() {
 
   echo
   c_ok "ГОТОВО. Після reboot: sddm → сесія MangoWM → логін: $USER / edots → одразу 'passwd'."
+  if [ "$AUTO" = "1" ]; then
+    c_warn "AUTO: перезавантаження через 5 секунд..."
+    sleep 5
+    sudo reboot
+  fi
   read -r -p "Перезавантажити зараз? [y/N]: " rb
   case "$rb" in
     [Yy]*) sudo reboot ;;
@@ -318,7 +375,7 @@ EOF3
   # 4. local-user.nix (спільне)
   LUNIX="$REPO_DIR/nix/local-user.nix"
   if [ -f "$LUNIX" ]; then
-    action=$(ask_conflict "nix/local-user.nix")
+    action=$(ask_conflict "nix/local-user.nix" overwrite)
     case "$action" in
       skip) c_info "local-user.nix не чіпаю." ;;
       append)
@@ -333,7 +390,7 @@ EOF3
   fi
   grep -q 'nix/local-user.nix' "$REPO_DIR/.gitignore" 2>/dev/null || \
     echo 'nix/local-user.nix' >> "$REPO_DIR/.gitignore"
-  c_ok "nix/local-user.nix -> юзер $USER"
+  c_ok "nix/local-user.nix -> юзер $USER_NAME"
 
   # 5. Режим
   if [ "$MODE" = "install" ]; then
