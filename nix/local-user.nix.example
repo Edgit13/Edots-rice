@@ -1,9 +1,16 @@
 # local-user.nix — ГЕНЕРУЄТЬСЯ install.sh автоматично, НЕ КОМІТИТИ.
-# Підключає home-manager модуль rice для вашого користувача.
-{ ... }:
+# Користувач (з групами для віртуалок/мережі) + home-manager модуль rice.
+{ osConfig, lib, ... }:
 {
+  users.users.CHANGE_ME = {
+    isNormalUser = lib.mkDefault true;
+    initialPassword = lib.mkDefault "edots";   # ПІСЛЯ ПЕРШОГО ВХОДУ: passwd
+    extraGroups = [ "wheel" "networkmanager" "libvirtd" "input" ];
+  };
+
   home-manager.users.CHANGE_ME = {
     imports = [ ./home.nix ];
     edots.home.enable = true;
+    home.stateVersion = lib.mkDefault osConfig.system.stateVersion;
   };
 }

@@ -89,3 +89,11 @@ nix eval .#nixosModules.edots --apply 'x: x ? config'   # швидкий sanity
 Бар стартує systemd user-сервісом (`edots-bar`) з явним `-p` до вашого
 `shell.qml` + `Restart=on-failure` — після сліпу/падіння піднімається саме
 ваш конфіг, а не дефолтний.
+
+## Feature flags (module.nix)
+
+`edots.bluetooth.enable` (true) · `edots.virtualization.enable` (true — libvirtd/QEMU/virt-manager,
+користувача додано в групу `libvirtd`) · `edots.vmGuest` (`none|virtualbox|vmware` — guest additions,
+якщо NixOS ВСЕРЕДИНІ ВМ) · `edots.steam.enable` · `edots.printing.enable` · `edots.flatpak.enable`.
+
+Пароль першого входу після nixos-install: `edots` → одразу зміни: `passwd`.
