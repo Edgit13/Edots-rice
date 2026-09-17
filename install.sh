@@ -228,7 +228,8 @@ nixos_auto_install() {
   fi
 
   c_info "Встановлення системи з rice (довго, качає inputs)..."
-  if sudo EDOTS_HOST_ROOT=/mnt nixos-install --flake "$REPO_DIR/nix#edots" --impure; then
+  if sudo env "NIX_CONFIG=$NIX_CONFIG" EDOTS_HOST_ROOT=/mnt \
+        nixos-install --flake "$REPO_DIR/nix#edots" --impure; then
     c_ok "nixos-install: успіх"
   else
     c_err "nixos-install не вдався — лог вище."
@@ -250,12 +251,17 @@ install_nixos() {
   command -v nix >/dev/null 2>&1 || { c_err "nix не знайдено у PATH."; exit 1; }
   sudo -v
 
-  # 1. Flakes
-  if ! nix show-config 2>/dev/null | grep -qE 'experimental-features.*flakes'; then
-    c_info "Вмикаю flakes (experimental-features)..."
-    printf 'extra-experimental-features = nix-command flakes\n' | sudo tee -a /etc/nix/nix.conf >/dev/null
-    sudo systemctl restart nix-daemon 2>/dev/null || true
+  # 1. Flakes: на live CD /etc/nix/nix.conf — read-only (symlink у store).
+  # Тому головний шлях — NIX_CONFIG через env (працює всюди); nix.conf — best-effort.
+  export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG
+}extra-experimental-features = nix-command flakes"
+  if ! nix show-config 2>/dev/null | grep -qE 'experimental-features.*flakes' \
+     && [ -w /etc/nix ] && [ ! -L /etc/nix/nix.conf ]; then
+    c_info "Пробую записати flakes у /etc/nix/nix.conf..."
+    printf 'extra-experimental-features = nix-command flakes\n' | sudo tee -a /etc/nix/nix.conf >/dev/null 2>&1 \
+      && sudo systemctl restart nix-daemon 2>/dev/null || true
   fi
+  c_ok "flakes: NIX_CONFIG (env) активний"
 
   # 2. Система вже на flakes — не ліземо
   if [ -f /etc/nixos/flake.nix ]; then
@@ -337,7 +343,8 @@ EOF3
 
   # 5b. Rebuild (встановлена система або свідомий live-скіп)
   c_info "Збираю: nixos-rebuild switch --flake $REPO_DIR/nix#edots..."
-  if sudo nixos-rebuild switch --flake "$REPO_DIR/nix#edots" --impure; then
+  if sudo env "NIX_CONFIG=$NIX_CONFIG" \
+        nixos-rebuild switch --flake "$REPO_DIR/nix#edots" --impure; then
     c_ok "nixos-rebuild: успіх"
   else
     c_err "nixos-rebuild не вдався. Якщо це live CD — це нормально без дисків;"
