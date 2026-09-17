@@ -212,7 +212,7 @@ nixos_auto_install() {
   # --- вибір диска ---
   echo
   echo "Доступні диски:"
-  lsblk -d -e 7,11 -o NAME,SIZE,MODEL | sed 's/^/  /'
+  lsblk -d -e 7,11 -o NAME,SIZE,MODEL | awk 'NR==1{print "  "$0; next}{print "  /dev/"$1"  "$2"  "$3}'
   echo
   if [ -n "$DISK_ARG" ]; then
     DISK="$DISK_ARG"
@@ -231,7 +231,23 @@ nixos_auto_install() {
     read -r -p "Введи ім'я цільового диска (напр. nvme0n1 або sda), або Enter — відміна: " DISK
     [ -n "$DISK" ] || { c_info "Відмінено."; return 1; }
   fi
-  [ -b "$DISK" ] || { c_err "$DISK не існує."; return 1; }
+  # нормалізація + толерантність до опечаток (v↔u, sda, nvme...)
+  case "$DISK" in /dev/*) ;; *) DISK="/dev/$DISK" ;; esac
+  if [ ! -b "$DISK" ]; then
+    nm="${DISK#/dev/}"
+    for alt in "v$nm" "u$nm" "s$nm" "nvme${nm}n1" "${nm}n1"; do
+      if [ "$alt" != "$nm" ] && [ -b "/dev/$alt" ]; then
+        c_warn "'$nm' не існує — беру '/dev/$alt'."
+        DISK="/dev/$alt"
+        break
+      fi
+    done
+  fi
+  if [ ! -b "$DISK" ]; then
+    c_err "'$DISK' не існує. Реальні диски:"
+    lsblk -d -e 7,11 -o NAME,SIZE,MODEL | sed 's/^/    /'
+    return 1
+  fi
 
   # --- безпека: відмова, якщо хоч один розділ змонтований ---
   if lsblk -nr -o MOUNTPOINT "$DISK" | grep -qE '^/'; then
