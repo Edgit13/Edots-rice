@@ -100,7 +100,7 @@ Item {
                 height: 48
                 radius: 8
                 readonly property bool current: LauncherService.selectedIndex === index
-                color: current ? Colors.accentContainer
+                color: current ? Colors.accent
                     : (rowMouse.containsMouse ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.08) : "transparent")
                 border.width: current ? 1 : 0
                 border.color: Colors.accent
