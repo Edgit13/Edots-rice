@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import "root:/"
 import "root:/settings"
-import "root:/material"
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
@@ -38,7 +37,7 @@ ShellRoot {
     // Reusable trigger icon used in the hover bar.
     component TriggerIcon: Text {
         required property string glyph
-        property color hoverColor: M3.primary
+        property color hoverColor: Colors.accent
         signal activated()
 
         Layout.alignment: Qt.AlignVCenter
@@ -191,9 +190,8 @@ ShellRoot {
             required property var modelData
             screen: modelData
 
-            visible: !GameModeState.active
             exclusionMode: ExclusionMode.Normal
-            exclusiveZone: GameModeState.active ? 0 : root.idleHeight + root.exclusionZoneGap
+            exclusiveZone: root.idleHeight + root.exclusionZoneGap
 
             anchors {
                 top: !root.barOnBottom
@@ -238,7 +236,6 @@ ShellRoot {
             // complete wins. Only affects forceActiveFocus target.
             Component.onCompleted: root.activePillWindow = pillWindow
 
-            visible: !GameModeState.active
             exclusionMode: ExclusionMode.Ignore
             exclusiveZone: 0
 
@@ -290,17 +287,15 @@ ShellRoot {
                     : ((root.activeSurface === "idle" || root.activeSurface === "hover")
                         ? height / 2 : Config.get("pill", "expandedRadius"))
 
-                // M3 surface: hover підіймає поверхню (state layer через container)
-                color: {
-                    const base = pillHover.hovered ? M3.surfaceContainer : M3.surfaceContainerLow
-                    return Qt.rgba(base.r, base.g, base.b, Config.get("pill", "backgroundOpacity"))
-                }
+                color: Qt.rgba(Colors.bg0.r, Colors.bg0.g, Colors.bg0.b,
+                               Config.get("pill", "backgroundOpacity"))
                 clip: true
 
-                // M3: без рамок; glow збережено як тонке акцентне дихання (1px)
-                border.width: GameModeState.active ? 0 : 1
-                border.color: Qt.rgba(M3.primary.r, M3.primary.g, M3.primary.b,
-                    pillGlow.opacity * 0.55)
+                border.width: GameModeState.active ? 0
+                    : (pillHover.hovered ? Config.get("pill", "borderWidthHover")
+                                         : Config.get("pill", "borderWidthDefault"))
+                border.color: Qt.rgba(Colors.accent.r, Colors.accent.g, Colors.accent.b,
+                    pillHover.hovered ? 0.70 : pillGlow.opacity)
 
                 scale: (pillHover.hovered && !GameModeState.active)
                     ? Config.get("pill", "hoverScale") : 1.0
@@ -404,7 +399,7 @@ ShellRoot {
                                 Layout.fillHeight: true
                                 Layout.topMargin: 4
                                 Layout.bottomMargin: 4
-                                color: M3.outlineVariant
+                                color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.15)
                             }
 
                             Workspaces {

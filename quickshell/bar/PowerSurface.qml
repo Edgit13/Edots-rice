@@ -4,113 +4,66 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
-// ==========================================================================
-// PowerSurface.qml — power/session actions for the MangoWM + Quickshell setup.
-// Uses swaylock for locking, systemctl for suspend/reboot/poweroff, and mmsg
-// for compositor exit.
-// ==========================================================================
-
-Item {
+// PowerSurface — Material 3 (Phase G). Логіка (lock/logout/reboot/shutdown) збережена.
+ColumnLayout {
     id: root
+    spacing: 8
 
-    Process {
-        id: powerProc
-    }
+    Process { id: proc }
 
-    function run(cmd) {
-        powerProc.command = cmd
-        powerProc.running = true
-    }
-
-    component PowerItem: Rectangle {
-        id: itemRoot
-        property string text: ""
-        property string icon: ""
-        property color hoverColor: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.12)
-        signal clicked()
-
+    component PowerRow: Rectangle {
+        id: pr
+        property string glyph: ""
+        property string label: ""
+        property color iconColor: Colors.grey2
+        property string command: ""
         Layout.fillWidth: true
-        implicitHeight: 36
+        Layout.preferredHeight: 44
         radius: 8
-        color: itemHover.hovered ? hoverColor : "transparent"
-
-        Behavior on color {
-            ColorAnimation { duration: 120 }
-        }
+        color: prMa.containsMouse ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.08) : Colors.bg1
+        Behavior on color { ColorAnimation { duration: 120 } }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 10
-            anchors.rightMargin: 10
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
             spacing: 12
-
-            Text {
-                text: itemRoot.icon
-                color: Colors.fg
-                Layout.preferredWidth: 18
-                horizontalAlignment: Text.AlignHCenter
-                font { family: "Material Symbols Rounded"; pixelSize: 14 }
-            }
-            Text {
-                Layout.fillWidth: true
-                text: itemRoot.text
-                color: Colors.fg
-                font.pixelSize: 12
-            }
+            Text { text: pr.glyph; color: pr.iconColor; font { family: "Material Symbols Rounded"; pixelSize: 19 } }
+            Text { Layout.fillWidth: true; text: pr.label; color: Colors.fg; font { family: "SF Pro Display"; pixelSize: 12 } }
         }
-
-        HoverHandler { id: itemHover }
         MouseArea {
+            id: prMa
             anchors.fill: parent
+            hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: itemRoot.clicked()
+            onClicked: {
+                if (pr.command === "lock") {
+                    proc.command = ["sh", "-c",
+                        "pidof swaylock || swaylock --config ~/.config/swaylock/config --image ~/.config/swaylock/current-wallpaper"]
+                } else {
+                    proc.command = [pr.command]
+                }
+                proc.running = true
+            }
         }
     }
 
-    ColumnLayout {
-        anchors.fill: parent
-        spacing: 4
-
-        PowerItem {
-            text: "Заблокувати"
-            icon: "\ue899" // lock
-            onClicked: root.run(["swaylock", "-f", "-c", "000000", "--config", Quickshell.env("HOME") + "/.config/mango/swaylock/config"])
-        }
-
-        PowerItem {
-            text: "Заблокувати і призупинити"
-            icon: "\uf159" // bedtime
-            onClicked: root.run(["bash", "-lc", "pidof swaylock >/dev/null || swaylock -f -c 000000 --config ~/.config/mango/swaylock/config & sleep 0.8; systemctl suspend"])
-        }
-
-        Rectangle {
-            Layout.fillWidth: true
-            Layout.topMargin: 4
-            Layout.bottomMargin: 4
-            height: 1
-            color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.1)
-        }
-
-        PowerItem {
-            text: "Вийти з сеансу"
-            icon: "\ue9ba" // logout
-            onClicked: root.run(["mmsg", "quit"])
-        }
-
-        PowerItem {
-            text: "Перезавантаження"
-            icon: "\uf053" // restart_alt
-            hoverColor: Qt.rgba(1, 0.7, 0.2, 0.2)
-            onClicked: root.run(["systemctl", "reboot"])
-        }
-
-        PowerItem {
-            text: "Вимкнути ПК"
-            icon: "\uf8c7" // power_settings_new
-            hoverColor: Qt.rgba(1, 0.3, 0.3, 0.2)
-            onClicked: root.run(["systemctl", "poweroff"])
-        }
-
-        Item { Layout.fillHeight: true }
+    PowerRow {
+        glyph: "\ue899"; label: "Lock"
+        command: "lock"
+        iconColor: Colors.accent
+    }
+    PowerRow {
+        glyph: "\ue9ba"; label: "Log out"
+        command: "loginctl terminate-user $USER"
+    }
+    PowerRow {
+        glyph: "\uf053"; label: "Reboot"
+        command: "systemctl reboot"
+    }
+    PowerRow {
+        glyph: "\ue8ac"; label: "Shut down"
+        iconColor: Colors.red
+        command: "systemctl poweroff"
     }
 }

@@ -3,38 +3,26 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-// Workspaces module — Material 3.
-// ЧЕСНА межа: активний воркспейс — локальна властивість (compositor IPC
-// не підключений, як і в оригіналі); клік оновлює підсвітку.
 RowLayout {
     id: root
-    spacing: Config.get("workspaces", "spacing")
-
+    spacing: 6
     property int activeWorkspace: 1
 
     Repeater {
-        model: Config.get("workspaces", "count")
+        model: 9
         Rectangle {
             required property int index
-            Layout.preferredWidth: Config.get("workspaces", "buttonWidth")
-            Layout.preferredHeight: Config.get("workspaces", "buttonHeight")
-            radius: Config.get("workspaces", "radius")
-
-            readonly property bool active: index + 1 === root.activeWorkspace
-            color: active ? M3.primaryContainer
-                : (hover.hovered ? M3.hoverOf(M3.surfaceContainerHigh) : M3.surfaceContainer)
-            Behavior on color { ColorAnimation { duration: M3.durFast } }
-
+            Layout.preferredWidth: 24
+            Layout.preferredHeight: 22
+            radius: 6
+            color: index + 1 === root.activeWorkspace ? Colors.accent : Colors.bg3
+            Behavior on color { ColorAnimation { duration: 120 } }
             Text {
                 anchors.centerIn: parent
-                visible: Config.get("workspaces", "showNumbers")
                 text: index + 1
-                color: active ? M3.onPrimaryContainer : M3.onSurfaceVariant
-                font: M3.labelLarge
-                Behavior on color { ColorAnimation { duration: M3.durFast } }
+                color: index + 1 === root.activeWorkspace ? Colors.bg0 : Colors.fg
+                font { family: "SF Mono"; pixelSize: 11 }
             }
-
-            HoverHandler { id: hover }
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
