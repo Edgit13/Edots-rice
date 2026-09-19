@@ -16,7 +16,7 @@ ColumnLayout {
     Text {
         visible: tf.label.length > 0
         text: tf.label
-        color: M3.onSurfaceVariant
+        color: M3.m3OnSurfaceVariant
         font: M3.labelMedium
     }
 
@@ -35,7 +35,7 @@ ColumnLayout {
             anchors.leftMargin: M3.s12
             anchors.rightMargin: M3.s12
             verticalAlignment: TextInput.AlignVCenter
-            color: M3.onSurface
+            color: M3.m3OnSurface
             font: M3.bodyMedium
             clip: true
 
@@ -44,7 +44,7 @@ ColumnLayout {
                 verticalAlignment: Text.AlignVCenter
                 visible: input.text.length === 0
                 text: tf.placeholder
-                color: M3.onSurfaceVariant
+                color: M3.m3OnSurfaceVariant
                 font: input.font
             }
         }

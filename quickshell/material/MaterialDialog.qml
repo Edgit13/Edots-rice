@@ -45,7 +45,7 @@ Rectangle {
                 visible: dlg.title.length > 0
                 Layout.fillWidth: true
                 text: dlg.title
-                color: M3.onSurface
+                color: M3.m3OnSurface
                 font: M3.titleLarge
                 wrapMode: Text.Wrap
             }
@@ -53,7 +53,7 @@ Rectangle {
                 visible: dlg.supporting.length > 0
                 Layout.fillWidth: true
                 text: dlg.supporting
-                color: M3.onSurfaceVariant
+                color: M3.m3OnSurfaceVariant
                 font: M3.bodyMedium
                 wrapMode: Text.Wrap
             }

@@ -48,19 +48,19 @@ Singleton {
     }
 
     readonly property color primary:            accent
-    readonly property color onPrimary:          bg0
+    readonly property color m3OnPrimary:          bg0
     readonly property color primaryContainer:   mix(bg2, accent, 0.32)
-    readonly property color onPrimaryContainer: mix(accent, fg, 0.65)
+    readonly property color m3OnPrimaryContainer: mix(accent, fg, 0.65)
 
     readonly property color secondary:            blue
     readonly property color secondaryContainer:   mix(bg2, blue, 0.28)
-    readonly property color onSecondaryContainer: mix(blue, fg, 0.65)
+    readonly property color m3OnSecondaryContainer: mix(blue, fg, 0.65)
 
     readonly property color tertiary:            purple
     readonly property color tertiaryContainer:   mix(bg2, purple, 0.28)
 
     readonly property color error:            red
-    readonly property color onError:          bg0
+    readonly property color m3OnError:          bg0
     readonly property color errorContainer:   mix(bg2, red, 0.30)
 
     readonly property color surface:                 bg0
@@ -69,8 +69,8 @@ Singleton {
     readonly property color surfaceContainerHigh:    bg2
     readonly property color surfaceContainerHighest: bg3
 
-    readonly property color onSurface:        fg
-    readonly property color onSurfaceVariant: grey2
+    readonly property color m3OnSurface:        fg
+    readonly property color m3OnSurfaceVariant: grey2
 
     readonly property color outline:        grey1
     readonly property color outlineVariant: mix(grey1, fg, 0.25)
