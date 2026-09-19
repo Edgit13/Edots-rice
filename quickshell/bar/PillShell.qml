@@ -35,27 +35,64 @@ ShellRoot {
     }
 
     // Reusable trigger icon used in the hover bar.
-    component TriggerIcon: Text {
+    component TriggerIcon: Item {
+        id: triRoot
         required property string glyph
         property color hoverColor: Colors.accent
         signal activated()
 
         Layout.alignment: Qt.AlignVCenter
-        text: glyph
-        color: iconHover.hovered ? hoverColor : Colors.grey1
-        scale: iconHover.hovered ? 1.18 : 1.0
-        font { family: "Material Symbols Rounded"; pixelSize: 15 }
+        Layout.preferredWidth: 30
+        Layout.preferredHeight: 30
 
-        Behavior on color { ColorAnimation { duration: Anim.ms(120) } }
-        Behavior on scale { NumberAnimation { duration: Anim.ms(170); easing.type: Easing.OutBack; easing.overshoot: 1.6 } }
+        // M3 Expressive: коло МОРФИТЬ у cookie на press (spring), ripple, state layer
+        property real morph: 0
+        NumberAnimation {
+            id: triMorphAnim
+            target: triRoot
+            property: "morph"
+            easing.type: Easing.OutBack
+            easing.overshoot: 2.4
+            duration: 400
+        }
+        function setMorph(v) { triMorphAnim.to = v; triMorphAnim.restart() }
+
+        MorphShape {
+            anchors.centerIn: parent
+            size: 30
+            shape: 6
+            shapeTo: 5
+            progress: triRoot.morph
+            rotationDeg: triRoot.morph * 22
+            color: triMa.pressed ? Md.pressedOf(triRoot.hoverColor)
+                : (iconHover.hovered ? Md.hoverOf(triRoot.hoverColor) : "transparent")
+            Behavior on color { ColorAnimation { duration: Anim.ms(120) } }
+        }
+
+        Text {
+            anchors.centerIn: parent
+            text: triRoot.glyph
+            color: iconHover.hovered ? triRoot.hoverColor : Colors.grey1
+            scale: (iconHover.hovered ? 1.15 : 1.0) * (triMa.pressed ? 0.85 : 1.0)
+            font { family: "Material Symbols Rounded"; pixelSize: 15 }
+            Behavior on color { ColorAnimation { duration: Anim.ms(120) } }
+            Behavior on scale { NumberAnimation { duration: Anim.ms(200); easing.type: Easing.OutBack; easing.overshoot: 2.0 } }
+        }
+
+        Ripple { id: triRipple; anchors.fill: parent; color: triRoot.hoverColor }
 
         HoverHandler { id: iconHover }
 
         MouseArea {
+            id: triMa
             anchors.fill: parent
             anchors.margins: -4
+            hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: parent.activated()
+            onPressed: (mp) => { triRoot.setMorph(1); triRipple.burst(mp.x, mp.y) }
+            onReleased: triRoot.setMorph(0)
+            onCanceled: triRoot.setMorph(0)
+            onClicked: triRoot.activated()
         }
     }
 

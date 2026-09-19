@@ -18,7 +18,7 @@ Item {
     property color color: Md.primary
     property bool contained: false
     property color containerColor: Md.primaryContainer
-    property color containedColor: Md.m3OnPrimaryContainer
+    property color containedColor: Md.onPrimaryContainer
     property bool running: true
     property real stepMs: 650      // тривалість одного морфу
     property real spinMs: 4666     // повний оберт
