@@ -69,7 +69,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: xs.big ? 8 : 6
             radius: height / 2
-            color: Md.surfaceContainerHighest
+            color: Colors.bg2est
 
             Rectangle {
                 width: track.width * xs.fraction
@@ -85,7 +85,7 @@ Item {
                 radius: width / 2
                 x: track.width * xs.fraction - width / 2
                 anchors.verticalCenter: parent.verticalCenter
-                color: Md.onSurface
+                color: Colors.fg
                 border.width: 3
                 border.color: xs.accent
                 scale: trackMa.pressed ? 1.15 : 1.0
@@ -104,7 +104,7 @@ Item {
 
         Text {
             text: xs.valueLabel
-            color: Md.onSurfaceVariant
+            color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
             font { family: "SF Mono"; pixelSize: 11 }
             Layout.preferredWidth: 38
         }
@@ -127,7 +127,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: "Volume"
-                color: Md.onSurface
+                color: Colors.fg
                 font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
             }
             Text {
@@ -171,7 +171,7 @@ Item {
                 implicitWidth: batRow.implicitWidth + 20
                 implicitHeight: batRow.implicitHeight + 14
                 radius: Md.rM
-                color: Qt.rgba(Md.surfaceContainerHigh.r, Md.surfaceContainerHigh.g, Md.surfaceContainerHigh.b, 0.6)
+                color: Qt.rgba(Colors.bg2.r, Colors.bg2.g, Colors.bg2.b, 0.6)
 
                 RowLayout {
                     id: batRow

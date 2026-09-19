@@ -115,7 +115,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 8
                 radius: 4
-                color: Md.surfaceContainerHighest
+                color: Colors.bg2est
                 Rectangle {
                     width: track.width * xs.fraction
                     height: parent.height
@@ -126,7 +126,7 @@ PanelWindow {
                     width: 18; height: 18; radius: 9
                     x: track.width * xs.fraction - width / 2
                     anchors.verticalCenter: parent.verticalCenter
-                    color: Md.onSurface
+                    color: Colors.fg
                     border.width: 3
                     border.color: xs.accent
                     scale: trackMa.pressed ? 1.15 : 1.0
@@ -143,7 +143,7 @@ PanelWindow {
             }
             Text {
                 text: xs.valueLabel
-                color: Md.onSurfaceVariant
+                color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
                 font { family: "SF Mono"; pixelSize: 11 }
                 Layout.preferredWidth: 36
             }
@@ -160,12 +160,12 @@ PanelWindow {
             Layout.fillWidth: true
             spacing: 12
     
-            Text { text: sw.icon; color: Md.onSurfaceVariant; font { family: "Material Symbols Rounded"; pixelSize: 19 } }
+            Text { text: sw.icon; color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7); font { family: "Material Symbols Rounded"; pixelSize: 19 } }
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 1
-                Text { text: sw.title; color: Md.onSurface; font { family: "SF Pro Display"; pixelSize: 13; weight: 500 } }
-                Text { text: sw.subtitle; color: Md.onSurfaceVariant; font { family: "SF Pro Display"; pixelSize: 11 } }
+                Text { text: sw.title; color: Colors.fg; font { family: "SF Pro Display"; pixelSize: 13; weight: 500 } }
+                Text { text: sw.subtitle; color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7); font { family: "SF Pro Display"; pixelSize: 11 } }
             }
             Rectangle {
                 width: 52; height: 32; radius: 16
@@ -199,7 +199,7 @@ PanelWindow {
             Layout.fillWidth: true
             implicitHeight: 62
             radius: Md.rXL
-            color: crMa.containsMouse ? Md.hoverOf(Md.surfaceContainerHigh) : Md.surfaceContainerHigh
+            color: crMa.containsMouse ? Md.hoverOf(Colors.bg2) : Colors.bg2
             Behavior on color { ColorAnimation { duration: Md.durFast } }
     
             RowLayout {
@@ -211,16 +211,16 @@ PanelWindow {
                 ColumnLayout {
                     Layout.fillWidth: true
                     spacing: 1
-                    Text { text: cr.title; color: Md.onSurface; font { family: "SF Pro Display"; pixelSize: 13; weight: 600 } }
+                    Text { text: cr.title; color: Colors.fg; font { family: "SF Pro Display"; pixelSize: 13; weight: 600 } }
                     Text {
                         Layout.fillWidth: true
                         text: cr.subtitle
-                        color: Md.onSurfaceVariant
+                        color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
                         font { family: "SF Pro Display"; pixelSize: 11 }
                         elide: Text.ElideRight
                     }
                 }
-                Text { text: "\ue5e1"; color: Md.onSurfaceVariant; font { family: "Material Symbols Rounded"; pixelSize: 18 } }
+                Text { text: "\ue5e1"; color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7); font { family: "Material Symbols Rounded"; pixelSize: 18 } }
             }
             MouseArea {
                 id: crMa
@@ -263,12 +263,12 @@ PanelWindow {
                         Text {
                             Layout.fillWidth: true
                             text: "Quick Settings"
-                            color: Md.onSurface
+                            color: Colors.fg
                             font { family: "SF Pro Display"; pixelSize: 16; weight: 700 }
                         }
                         Text {
                             text: "\u00d7"
-                            color: closeMa.containsMouse ? Md.error : Md.onSurfaceVariant
+                            color: closeMa.containsMouse ? Md.error : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
                             font { family: "SF Pro Display"; pixelSize: 18 }
                             MouseArea {
                                 id: closeMa
@@ -310,8 +310,8 @@ PanelWindow {
                                 Layout.fillWidth: true
                                 implicitHeight: 40
                                 radius: Md.rFull
-                                color: qaMa.pressed ? Md.pressedOf(Md.onSurface)
-                                    : (qaMa.containsMouse ? Md.hoverOf(Md.onSurface) : "transparent")
+                                color: qaMa.pressed ? Md.pressedOf(Colors.fg)
+                                    : (qaMa.containsMouse ? Md.hoverOf(Colors.fg) : "transparent")
                                 border.width: 1
                                 border.color: Md.outline
                                 Text {
@@ -336,7 +336,7 @@ PanelWindow {
                         Layout.fillWidth: true
                         implicitHeight: swCol.implicitHeight + 20
                         radius: Md.rXL
-                        color: Qt.rgba(Md.surfaceContainerHigh.r, Md.surfaceContainerHigh.g, Md.surfaceContainerHigh.b, 0.55)
+                        color: Qt.rgba(Colors.bg2.r, Colors.bg2.g, Colors.bg2.b, 0.55)
     
                         ColumnLayout {
                             id: swCol
@@ -369,7 +369,7 @@ PanelWindow {
                         Layout.fillWidth: true
                         implicitHeight: slCol.implicitHeight + 20
                         radius: Md.rXL
-                        color: Qt.rgba(Md.surfaceContainerHigh.r, Md.surfaceContainerHigh.g, Md.surfaceContainerHigh.b, 0.55)
+                        color: Qt.rgba(Colors.bg2.r, Colors.bg2.g, Colors.bg2.b, 0.55)
     
                         ColumnLayout {
                             id: slCol
@@ -410,7 +410,7 @@ PanelWindow {
                         Layout.fillWidth: true
                         implicitHeight: calCol.implicitHeight + 20
                         radius: Md.rXL
-                        color: Qt.rgba(Md.surfaceContainerHigh.r, Md.surfaceContainerHigh.g, Md.surfaceContainerHigh.b, 0.55)
+                        color: Qt.rgba(Colors.bg2.r, Colors.bg2.g, Colors.bg2.b, 0.55)
     
                         ColumnLayout {
                             id: calCol
@@ -429,12 +429,12 @@ PanelWindow {
                                 Text {
                                     Layout.fillWidth: true
                                     text: calCol.viewDate.toLocaleDateString(Qt.locale(), "MMMM yyyy")
-                                    color: Md.onSurface
+                                    color: Colors.fg
                                     font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
                                 }
                                 Text {
                                     text: "\u2039"
-                                    color: pMv.hovered ? Md.primary : Md.onSurfaceVariant
+                                    color: pMv.hovered ? Md.primary : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
                                     font { family: "SF Pro Display"; pixelSize: 15 }
                                     HoverHandler { id: pMv }
                                     MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor
@@ -442,7 +442,7 @@ PanelWindow {
                                 }
                                 Text {
                                     text: "\u203a"
-                                    color: nMv.hovered ? Md.primary : Md.onSurfaceVariant
+                                    color: nMv.hovered ? Md.primary : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
                                     font { family: "SF Pro Display"; pixelSize: 15 }
                                     HoverHandler { id: nMv }
                                     MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor
@@ -482,7 +482,7 @@ PanelWindow {
                                         Layout.fillWidth: true
                                         horizontalAlignment: Text.AlignHCenter
                                         text: calCol.weekdayName(index)
-                                        color: Md.onSurfaceVariant
+                                        color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
                                         font { family: "SF Pro Display"; pixelSize: 10; weight: 600 }
                                     }
                                 }
@@ -506,7 +506,7 @@ PanelWindow {
                                             anchors.centerIn: parent
                                             text: modelData.day
                                             color: modelData.today ? Md.onPrimaryContainer
-                                                : (modelData.inMonth ? Md.onSurface : Md.onSurfaceVariant)
+                                                : (modelData.inMonth ? Colors.fg : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7))
                                             opacity: modelData.inMonth ? 1.0 : 0.45
                                             font { family: "SF Pro Display"; pixelSize: 11; weight: modelData.today ? 700 : 400 }
                                         }
@@ -563,12 +563,12 @@ PanelWindow {
                     Text {
                         Layout.fillWidth: true
                         text: "TASKS \u2014 " + tasksWin.selectedDate
-                        color: Md.onSurface
+                        color: Colors.fg
                         font { family: "SF Pro Display"; pixelSize: 13; weight: 700 }
                     }
                     Text {
                         text: "\u00d7"
-                        color: tcl.hovered ? Md.error : Md.onSurfaceVariant
+                        color: tcl.hovered ? Md.error : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
                         font { family: "SF Pro Display"; pixelSize: 16 }
                         HoverHandler { id: tcl }
                         MouseArea { anchors.fill: parent; anchors.margins: -5; cursorShape: Qt.PointingHandCursor
@@ -583,7 +583,7 @@ PanelWindow {
                         Layout.preferredWidth: 48
                         Layout.preferredHeight: 26
                         radius: Md.rS
-                        color: Md.surfaceContainerHighest
+                        color: Colors.bg2est
                         TextInput {
                             id: taskTime
                             anchors.fill: parent
@@ -591,24 +591,24 @@ PanelWindow {
                             verticalAlignment: TextInput.AlignVCenter
                             color: Md.primary
                             font { family: "SF Mono"; pixelSize: 11 }
-                            Text { anchors.centerIn: parent; text: "18:00"; color: Md.onSurfaceVariant; visible: taskTime.text.length === 0 }
+                            Text { anchors.centerIn: parent; text: "18:00"; color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7); visible: taskTime.text.length === 0 }
                         }
                     }
                     Rectangle {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 26
                         radius: Md.rS
-                        color: Md.surfaceContainerHighest
+                        color: Colors.bg2est
                         TextInput {
                             id: taskTitle
                             anchors.fill: parent
                             anchors.leftMargin: 8
                             verticalAlignment: TextInput.AlignVCenter
-                            color: Md.onSurface
+                            color: Colors.fg
                             font { family: "SF Pro Display"; pixelSize: 11 }
                             clip: true
                             Text { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
-                                   text: "New task..."; color: Md.onSurfaceVariant; visible: taskTitle.text.length === 0 }
+                                   text: "New task..."; color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7); visible: taskTitle.text.length === 0 }
                             Keys.onReturnPressed: addTaskBtn.addTask()
                         }
                     }
@@ -617,7 +617,7 @@ PanelWindow {
                         Layout.preferredWidth: 36
                         Layout.preferredHeight: 26
                         radius: Md.rS
-                        color: atM.containsMouse ? Md.mix(Md.primaryContainer, Md.onSurface, 0.15) : Md.primaryContainer
+                        color: atM.containsMouse ? Md.mix(Md.primaryContainer, Colors.fg, 0.15) : Md.primaryContainer
                         Text { anchors.centerIn: parent; text: "Add"; color: Md.onPrimaryContainer
                                font { family: "SF Pro Display"; pixelSize: 11; weight: 600 } }
                         MouseArea { id: atM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -652,7 +652,7 @@ PanelWindow {
                                 Layout.fillWidth: true
                                 implicitHeight: 28
                                 radius: Md.rS
-                                color: Md.surfaceContainerHigh
+                                color: Colors.bg2
     
                                 RowLayout {
                                     anchors.fill: parent
@@ -661,14 +661,14 @@ PanelWindow {
                                     spacing: 8
                                     Text { text: modelData.time; color: Md.primary; font { family: "SF Mono"; pixelSize: 10 } }
                                     Text { Layout.fillWidth: true; text: modelData.title
-                                           color: modelData.done ? Md.onSurfaceVariant : Md.onSurface; elide: Text.ElideRight
+                                           color: modelData.done ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7) : Colors.fg; elide: Text.ElideRight
                                            font { family: "SF Pro Display"; pixelSize: 11 } }
-                                    Text { text: "\u2713"; color: dM.containsMouse ? Md.primary : Md.onSurfaceVariant
+                                    Text { text: "\u2713"; color: dM.containsMouse ? Md.primary : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
                                            font { family: "SF Pro Display"; pixelSize: 12 }
                                            MouseArea { id: dM; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true
                                                cursorShape: Qt.PointingHandCursor
                                                onClicked: TasksStore.toggleDone(tasksWin.selectedDate, index) } }
-                                    Text { text: "\u00d7"; color: xM.containsMouse ? Md.error : Md.onSurfaceVariant
+                                    Text { text: "\u00d7"; color: xM.containsMouse ? Md.error : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
                                            font { family: "SF Pro Display"; pixelSize: 12 }
                                            MouseArea { id: xM; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true
                                                cursorShape: Qt.PointingHandCursor
