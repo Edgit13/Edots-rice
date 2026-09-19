@@ -30,7 +30,7 @@ Rectangle {
             visible: card.title.length > 0
             Layout.fillWidth: true
             text: card.title
-            color: Md.onSurface
+            color: Md.m3OnSurface
             font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
         }
     }

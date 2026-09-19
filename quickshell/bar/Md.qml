@@ -49,16 +49,23 @@ Singleton {
 
     // Повні M3-токени — якщо colors.json згенеровано новим шаблоном (md3:true);
     // інакше fallback на евристику + WCAG-контраст нижче.
-    readonly property bool hasMd3: md.data.md3 === true
+    // md3-токени беремо лише якщо це ТЕМНА схема (surface темніший за on_surface).
+    // Світла схема з matugen = темний текст на темній піллі (Colors.bg0) → нечитабельно.
+    readonly property bool isDarkScheme: {
+        if (md.data.surface === undefined || md.data.on_surface === undefined) return false
+        const s = hexToColor(md.data.surface), o = hexToColor(md.data.on_surface)
+        return _lum(s) < 0.2 && _lum(o) > _lum(s)
+    }
+    readonly property bool hasMd3: md.data.md3 === true && isDarkScheme
     readonly property color primary:          hasMd3 ? md.c("primary")          : Colors.accent
-    readonly property color onPrimary:        hasMd3 ? md.c("on_primary")        : Colors.bg0
+    readonly property color m3OnPrimary:        hasMd3 ? md.c("on_primary")        : Colors.bg0
     readonly property color primaryContainer: hasMd3 ? md.c("primary_container") : mix(Colors.bg2, Colors.accent, 0.30)
-    readonly property color onPrimaryContainer: hasMd3 ? md.c("on_primary_container") : mix(Colors.accent, Colors.fg, 0.65)
+    readonly property color m3OnPrimaryContainer: hasMd3 ? md.c("on_primary_container") : mix(Colors.accent, Colors.fg, 0.65)
     readonly property color secondaryContainer: hasMd3 ? md.c("secondary_container") : mix(Colors.bg2, Colors.accent, 0.16)
-    readonly property color onSecondaryContainer: hasMd3 ? md.c("on_secondary_container") : mix(Colors.accent, Colors.fg, 0.65)
+    readonly property color m3OnSecondaryContainer: hasMd3 ? md.c("on_secondary_container") : mix(Colors.accent, Colors.fg, 0.65)
     readonly property color tertiary:         hasMd3 ? md.c("tertiary")         : Colors.accent
     readonly property color error:            hasMd3 ? md.c("error")            : Colors.red
-    readonly property color onError:          hasMd3 ? md.c("on_error")          : Colors.bg0
+    readonly property color m3OnError:          hasMd3 ? md.c("on_error")          : Colors.bg0
     readonly property color errorContainer:   hasMd3 ? md.c("error_container")   : mix(Colors.bg2, Colors.red, 0.30)
     readonly property color surface:                 hasMd3 ? md.c("surface")                  : Colors.bg0
     readonly property color surfaceContainerLow:     hasMd3 ? md.c("surface_container_low")    : Colors.bg1
@@ -76,16 +83,15 @@ Singleton {
         const la = _lum(a), lb = _lum(b)
         return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
     }
-    readonly property color onSurface: {
-        if (hasMd3) return md.c("on_surface")
-        if (_contrast(Colors.fg, Colors.bg0) >= 4.5) return Colors.fg
-        return _lum(Colors.bg0) > 0.5 ? mix(Colors.bg0, "#000000", 0.90) : mix(Colors.bg0, "#ffffff", 0.90)
+    // Гарантує читабельність тексту на базі піллі (Colors.bg0) незалежно від джерела токена
+    function _readable(fg, bg, minRatio, f) {
+        if (_contrast(fg, bg) >= minRatio) return fg
+        return _lum(bg) > 0.5 ? mix(bg, "#000000", f) : mix(bg, "#ffffff", f)
     }
-    readonly property color onSurfaceVariant: {
-        if (hasMd3) return md.c("on_surface_variant")
-        if (_contrast(Colors.grey2, Colors.bg0) >= 3.0) return Colors.grey2
-        return _lum(Colors.bg0) > 0.5 ? mix(Colors.bg0, "#000000", 0.65) : mix(Colors.bg0, "#ffffff", 0.65)
-    }
+    readonly property color m3OnSurface:
+        _readable(hasMd3 ? md.c("on_surface") : Colors.fg, Colors.bg0, 4.5, 0.90)
+    readonly property color m3OnSurfaceVariant:
+        _readable(hasMd3 ? md.c("on_surface_variant") : Colors.grey2, Colors.bg0, 3.0, 0.65)
 
 
     readonly property real rS: 8

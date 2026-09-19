@@ -40,12 +40,12 @@ Rectangle {
                     Text {
                         visible: modelData.icon !== undefined && modelData.icon.length > 0
                         text: modelData.icon || ""
-                        color: seg.selectedIndex === index ? M3.onSecondaryContainer : M3.onSurface
+                        color: seg.selectedIndex === index ? M3.m3OnSecondaryContainer : M3.m3OnSurface
                         font { family: "Material Symbols Rounded"; pixelSize: 16 }
                     }
                     Text {
                         text: modelData.label || String(modelData)
-                        color: seg.selectedIndex === index ? M3.onSecondaryContainer : M3.onSurface
+                        color: seg.selectedIndex === index ? M3.m3OnSecondaryContainer : M3.m3OnSurface
                         font: M3.labelLarge
                     }
                 }

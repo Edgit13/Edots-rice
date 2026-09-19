@@ -32,7 +32,7 @@ Rectangle {
         Text {
             visible: li.icon.length > 0
             text: li.icon
-            color: M3.onSurfaceVariant
+            color: M3.m3OnSurfaceVariant
             font { family: "Material Symbols Rounded"; pixelSize: 20 }
         }
         ColumnLayout {
@@ -41,7 +41,7 @@ Rectangle {
             Text {
                 Layout.fillWidth: true
                 text: li.headline
-                color: M3.onSurface
+                color: M3.m3OnSurface
                 font: M3.bodyLarge
                 elide: Text.ElideRight
             }
@@ -49,7 +49,7 @@ Rectangle {
                 visible: li.supporting.length > 0
                 Layout.fillWidth: true
                 text: li.supporting
-                color: M3.onSurfaceVariant
+                color: M3.m3OnSurfaceVariant
                 font: M3.bodySmall
                 elide: Text.ElideRight
             }

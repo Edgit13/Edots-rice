@@ -48,25 +48,25 @@ Item {
 
             Text {
                 text: root.signalIcon(row.signalPct)
-                color: row.inUse ? Md.primary : Md.onSurfaceVariant
+                color: row.inUse ? Md.primary : Md.m3OnSurfaceVariant
                 font { family: "Material Symbols Rounded"; pixelSize: 16 }
             }
             Text {
                 Layout.fillWidth: true
                 text: row.ssid
-                color: row.inUse ? Md.onPrimaryContainer : Md.onSurface
+                color: row.inUse ? Md.m3OnPrimaryContainer : Md.m3OnSurface
                 font { family: "SF Pro Display"; pixelSize: 12; weight: row.inUse ? 600 : 400 }
                 elide: Text.ElideRight
             }
             Text {
                 visible: row.secured
                 text: "\ue899"
-                color: Md.onSurfaceVariant
+                color: Md.m3OnSurfaceVariant
                 font { family: "Material Symbols Rounded"; pixelSize: 13 }
             }
             Text {
                 text: row.signalPct + "%"
-                color: Md.onSurfaceVariant
+                color: Md.m3OnSurfaceVariant
                 font { family: "SF Mono"; pixelSize: 11 }
                 Layout.preferredWidth: 32
             }
@@ -99,7 +99,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: "Wi-Fi"
-                color: Md.onSurface
+                color: Md.m3OnSurface
                 font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
             }
 
@@ -111,7 +111,7 @@ Item {
             Text {
                 visible: !WifiService.scanning
                 text: "\ue5d5"
-                color: refreshHover.hovered ? Md.primary : Md.onSurfaceVariant
+                color: refreshHover.hovered ? Md.primary : Md.m3OnSurfaceVariant
                 font { family: "Material Symbols Rounded"; pixelSize: 17 }
                 HoverHandler { id: refreshHover }
                 MouseArea {
@@ -136,7 +136,7 @@ Item {
                     radius: width / 2
                     x: Networking.wifiEnabled ? parent.width - width - 4 : 6
                     anchors.verticalCenter: parent.verticalCenter
-                    color: Networking.wifiEnabled ? Md.onPrimary : Md.outline
+                    color: Networking.wifiEnabled ? Md.m3OnPrimary : Md.outline
                     Behavior on x { NumberAnimation { duration: Md.durMed; easing.type: Easing.OutCubic } }
                     Behavior on width { NumberAnimation { duration: Md.durFast } }
                 }
@@ -163,7 +163,7 @@ Item {
             }
             Text {
                 text: "\ue16f"
-                color: disconnectHover.hovered ? Md.error : Md.onSurfaceVariant
+                color: disconnectHover.hovered ? Md.error : Md.m3OnSurfaceVariant
                 font { family: "Material Symbols Rounded"; pixelSize: 15 }
                 HoverHandler { id: disconnectHover }
                 MouseArea {
@@ -223,7 +223,7 @@ Item {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 20
                     text: "Увімкни Wi-Fi, щоб побачити мережі"
-                    color: Md.onSurfaceVariant
+                    color: Md.m3OnSurfaceVariant
                     font { family: "SF Pro Display"; pixelSize: 11 }
                 }
 
@@ -233,7 +233,7 @@ Item {
                     Layout.alignment: Qt.AlignHCenter
                     Layout.topMargin: 20
                     text: "Мереж не знайдено"
-                    color: Md.onSurfaceVariant
+                    color: Md.m3OnSurfaceVariant
                     font { family: "SF Pro Display"; pixelSize: 11 }
                 }
 
@@ -263,7 +263,7 @@ Item {
             spacing: 6
             Text {
                 text: "\ue5c4"
-                color: backHover.hovered ? Md.primary : Md.onSurfaceVariant
+                color: backHover.hovered ? Md.primary : Md.m3OnSurfaceVariant
                 font { family: "Material Symbols Rounded"; pixelSize: 16 }
                 HoverHandler { id: backHover }
                 MouseArea {
@@ -277,7 +277,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: WifiService.pendingSsid
-                color: Md.onSurface
+                color: Md.m3OnSurface
                 font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
                 elide: Text.ElideRight
             }
@@ -290,7 +290,7 @@ Item {
             LoadingIndicator { size: 26 }
             Text {
                 text: "Підключення..."
-                color: Md.onSurfaceVariant
+                color: Md.m3OnSurfaceVariant
                 font { family: "SF Pro Display"; pixelSize: 12 }
             }
         }
@@ -310,7 +310,7 @@ Item {
                 anchors.leftMargin: 10
                 anchors.rightMargin: 10
                 verticalAlignment: TextInput.AlignVCenter
-                color: Md.onSurface
+                color: Md.m3OnSurface
                 font { family: "SF Pro Display"; pixelSize: 12 }
                 echoMode: TextInput.Password
                 focus: WifiService.connectionState === "passwordRequired"
@@ -325,7 +325,7 @@ Item {
         Text {
             visible: WifiService.connectionState === "passwordRequired"
             text: "Enter \u2014 підключитись"
-            color: Md.onSurfaceVariant
+            color: Md.m3OnSurfaceVariant
             font { family: "SF Pro Display"; pixelSize: 9; italic: true }
         }
     }

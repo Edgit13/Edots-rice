@@ -48,7 +48,7 @@ ColumnLayout {
         }
         Text {
             text: sliderRowRoot.value.toFixed(sliderRowRoot.decimals) + sliderRowRoot.suffix
-            color: Md.onSurfaceVariant
+            color: Md.m3OnSurfaceVariant
             font { family: "SF Mono"; pixelSize: 11 }
         }
         ResetDot {
@@ -79,7 +79,7 @@ ColumnLayout {
             radius: 7
             y: -4
             x: parent.width * sliderRowRoot.fraction - width / 2
-            color: Md.onSurface
+            color: Md.m3OnSurface
             border.width: 2
             border.color: Md.primary
         }
@@ -123,7 +123,7 @@ ColumnLayout {
     Text {
         visible: sliderRowRoot.description.length > 0
         text: sliderRowRoot.description
-        color: Md.onSurfaceVariant
+        color: Md.m3OnSurfaceVariant
         font { family: "SF Pro Display"; pixelSize: 10 }
     }
 }

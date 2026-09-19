@@ -19,10 +19,10 @@ Rectangle {
     opacity: enabled_ ? 1.0 : M3.disabledOpacity
 
     readonly property color _fg: {
-        if (style === "filled") return ib.selected ? M3.onPrimary : M3.primary
-        if (style === "tonal")  return M3.onSecondaryContainer
+        if (style === "filled") return ib.selected ? M3.m3OnPrimary : M3.primary
+        if (style === "tonal")  return M3.m3OnSecondaryContainer
         if (style === "outlined") return M3.primary
-        return ib.selected ? M3.primary : M3.onSurfaceVariant
+        return ib.selected ? M3.primary : M3.m3OnSurfaceVariant
     }
     readonly property color _bg: {
         if (style === "filled") return ib.selected ? M3.primary : M3.surfaceContainerHighest
@@ -69,7 +69,7 @@ Rectangle {
             id: tipTxt
             anchors.centerIn: parent
             text: ib.tooltip
-            color: M3.onSurface
+            color: M3.m3OnSurface
             font: M3.labelMedium
         }
     }

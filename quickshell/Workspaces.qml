@@ -29,7 +29,7 @@ RowLayout {
                 anchors.centerIn: parent
                 visible: Config.get("workspaces", "showNumbers")
                 text: index + 1
-                color: active ? M3.onPrimaryContainer : M3.onSurfaceVariant
+                color: active ? M3.m3OnPrimaryContainer : M3.m3OnSurfaceVariant
                 font: M3.labelLarge
                 Behavior on color { ColorAnimation { duration: M3.durFast } }
             }

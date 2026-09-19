@@ -14,7 +14,7 @@ Item {
         id: timeText
         anchors.centerIn: parent
         text: Qt.formatTime(new Date(), root.showSeconds ? "hh:mm:ss" : "hh:mm")
-        color: M3.onSurfaceVariant
+        color: M3.m3OnSurfaceVariant
         font: M3.monoLarge
 
         Timer {

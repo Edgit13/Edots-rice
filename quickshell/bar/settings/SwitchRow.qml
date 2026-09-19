@@ -26,14 +26,14 @@ RowLayout {
         Text {
             Layout.fillWidth: true
             text: switchRowRoot.label
-            color: Md.onSurface
+            color: Md.m3OnSurface
             font { family: "SF Pro Display"; pixelSize: 12; weight: 500 }
         }
         Text {
             Layout.fillWidth: true
             visible: switchRowRoot.description.length > 0
             text: switchRowRoot.description
-            color: Md.onSurfaceVariant
+            color: Md.m3OnSurfaceVariant
             elide: Text.ElideRight
             font { family: "SF Pro Display"; pixelSize: 10 }
         }
@@ -57,7 +57,7 @@ RowLayout {
             radius: width / 2
             y: (parent.height - height) / 2
             x: switchRowRoot.value ? parent.width - width - 4 : 6
-            color: switchRowRoot.value ? Md.onPrimary : Md.outline
+            color: switchRowRoot.value ? Md.m3OnPrimary : Md.outline
             Behavior on x { NumberAnimation { duration: Md.durMed; easing.type: Easing.OutCubic } }
             Behavior on width { NumberAnimation { duration: Md.durFast } }
             Behavior on color { ColorAnimation { duration: Md.durMed } }

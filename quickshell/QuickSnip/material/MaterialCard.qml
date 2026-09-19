@@ -32,7 +32,7 @@ Rectangle {
             visible: card.title.length > 0
             Layout.fillWidth: true
             text: card.title
-            color: M3.onSurface
+            color: M3.m3OnSurface
             font: M3.titleSmall
         }
     }

@@ -115,7 +115,7 @@ PanelWindow {
                 Layout.fillWidth: true
                 Layout.preferredHeight: 8
                 radius: 4
-                color: Colors.bg2est
+                color: Md.surfaceContainerHighest
                 Rectangle {
                     width: track.width * xs.fraction
                     height: parent.height
@@ -176,7 +176,7 @@ PanelWindow {
                     width: sw.checked ? 24 : 16; height: width; radius: width / 2
                     x: sw.checked ? parent.width - width - 4 : 6
                     anchors.verticalCenter: parent.verticalCenter
-                    color: sw.checked ? Md.onPrimary : Md.outline
+                    color: sw.checked ? Md.m3OnPrimary : Md.outline
                     Behavior on x { NumberAnimation { duration: Md.durMed; easing.type: Easing.OutCubic } }
                     Behavior on width { NumberAnimation { duration: Md.durFast } }
                 }
@@ -505,7 +505,7 @@ PanelWindow {
                                         Text {
                                             anchors.centerIn: parent
                                             text: modelData.day
-                                            color: modelData.today ? Md.onPrimaryContainer
+                                            color: modelData.today ? Md.m3OnPrimaryContainer
                                                 : (modelData.inMonth ? Colors.fg : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7))
                                             opacity: modelData.inMonth ? 1.0 : 0.45
                                             font { family: "SF Pro Display"; pixelSize: 11; weight: modelData.today ? 700 : 400 }
@@ -583,7 +583,7 @@ PanelWindow {
                         Layout.preferredWidth: 48
                         Layout.preferredHeight: 26
                         radius: Md.rS
-                        color: Colors.bg2est
+                        color: Md.surfaceContainerHighest
                         TextInput {
                             id: taskTime
                             anchors.fill: parent
@@ -598,7 +598,7 @@ PanelWindow {
                         Layout.fillWidth: true
                         Layout.preferredHeight: 26
                         radius: Md.rS
-                        color: Colors.bg2est
+                        color: Md.surfaceContainerHighest
                         TextInput {
                             id: taskTitle
                             anchors.fill: parent
@@ -618,7 +618,7 @@ PanelWindow {
                         Layout.preferredHeight: 26
                         radius: Md.rS
                         color: atM.containsMouse ? Md.mix(Md.primaryContainer, Colors.fg, 0.15) : Md.primaryContainer
-                        Text { anchors.centerIn: parent; text: "Add"; color: Md.onPrimaryContainer
+                        Text { anchors.centerIn: parent; text: "Add"; color: Md.m3OnPrimaryContainer
                                font { family: "SF Pro Display"; pixelSize: 11; weight: 600 } }
                         MouseArea { id: atM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                             onClicked: addTaskBtn.addTask() }

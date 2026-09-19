@@ -34,16 +34,16 @@ Item {
         radius: width / 2
         opacity: enabled_ ? 1.0 : 0.38
         color: {
-            if (filled) return mbMa.pressed ? Md.mix(Md.primaryContainer, Md.onSurface, 0.15) : Md.primaryContainer
-            if (mbMa.pressed) return Md.pressedOf(Md.onSurface)
-            if (mbMa.containsMouse) return Md.hoverOf(Md.onSurface)
+            if (filled) return mbMa.pressed ? Md.mix(Md.primaryContainer, Md.m3OnSurface, 0.15) : Md.primaryContainer
+            if (mbMa.pressed) return Md.pressedOf(Md.m3OnSurface)
+            if (mbMa.containsMouse) return Md.hoverOf(Md.m3OnSurface)
             return "transparent"
         }
         Behavior on color { ColorAnimation { duration: Md.durFast } }
         Text {
             anchors.centerIn: parent
             text: mb.glyph
-            color: mb.filled ? Md.onPrimaryContainer : Md.onSurfaceVariant
+            color: mb.filled ? Md.m3OnPrimaryContainer : Md.m3OnSurfaceVariant
             font { family: "SF Pro Display"; pixelSize: mb.filled ? 17 : 13 }
         }
         MouseArea {
@@ -93,13 +93,13 @@ Item {
                 spacing: 5
                 Text {
                     text: "\ue050"
-                    color: Md.onSurfaceVariant
+                    color: Md.m3OnSurfaceVariant
                     font { family: "Material Symbols Rounded"; pixelSize: 12 }
                 }
                 Text {
                     Layout.fillWidth: true
                     text: root.player ? (root.player.identity || "Player") : "No players"
-                    color: Md.onSurfaceVariant
+                    color: Md.m3OnSurfaceVariant
                     font { family: "SF Pro Display"; pixelSize: 10; weight: 600 }
                     elide: Text.ElideRight
                 }
@@ -107,14 +107,14 @@ Item {
             Text {
                 Layout.fillWidth: true
                 text: root.player ? (root.player.trackTitle || "Unknown track") : "Nothing playing"
-                color: Md.onSurface
+                color: Md.m3OnSurface
                 font { family: "SF Pro Display"; weight: 600; pixelSize: 15 }
                 elide: Text.ElideRight
             }
             Text {
                 Layout.fillWidth: true
                 text: root.player ? (root.player.trackArtist || "\u2014") : ""
-                color: Md.onSurfaceVariant
+                color: Md.m3OnSurfaceVariant
                 font { family: "SF Pro Display"; pixelSize: 12 }
                 elide: Text.ElideRight
             }

@@ -19,19 +19,19 @@ Singleton {
     }
 
     readonly property color primary:            EdotsTheme.accent
-    readonly property color onPrimary:          EdotsTheme.bg0
+    readonly property color m3OnPrimary:          EdotsTheme.bg0
     readonly property color primaryContainer:   mix(EdotsTheme.bg2, EdotsTheme.accent, 0.32)
-    readonly property color onPrimaryContainer: mix(EdotsTheme.accent, EdotsTheme.fg, 0.65)
+    readonly property color m3OnPrimaryContainer: mix(EdotsTheme.accent, EdotsTheme.fg, 0.65)
 
     readonly property color secondary:            EdotsTheme.blue
     readonly property color secondaryContainer:   mix(EdotsTheme.bg2, EdotsTheme.blue, 0.28)
-    readonly property color onSecondaryContainer: mix(EdotsTheme.blue, EdotsTheme.fg, 0.65)
+    readonly property color m3OnSecondaryContainer: mix(EdotsTheme.blue, EdotsTheme.fg, 0.65)
 
     readonly property color tertiary:            EdotsTheme.purple
     readonly property color tertiaryContainer:   mix(EdotsTheme.bg2, EdotsTheme.purple, 0.28)
 
     readonly property color error:            EdotsTheme.red
-    readonly property color onError:            EdotsTheme.bg0
+    readonly property color m3OnError:            EdotsTheme.bg0
     readonly property color errorContainer:     mix(EdotsTheme.bg2, EdotsTheme.red, 0.30)
 
     readonly property color surface:                  EdotsTheme.bg0
@@ -41,8 +41,8 @@ Singleton {
     readonly property color surfaceContainerHigh:     EdotsTheme.bg2
     readonly property color surfaceContainerHighest:  EdotsTheme.bg3
 
-    readonly property color onSurface:        EdotsTheme.fg
-    readonly property color onSurfaceVariant: EdotsTheme.grey2
+    readonly property color m3OnSurface:        EdotsTheme.fg
+    readonly property color m3OnSurfaceVariant: EdotsTheme.grey2
 
     readonly property color outline:        EdotsTheme.grey1
     readonly property color outlineVariant: mix(EdotsTheme.grey1, EdotsTheme.fg, 0.25)

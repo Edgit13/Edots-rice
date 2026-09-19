@@ -22,12 +22,12 @@ Rectangle {
     opacity: enabled_ ? 1.0 : M3.disabledOpacity
 
     readonly property color _fg: {
-        if (!btn.enabled_) return M3.onSurfaceVariant
+        if (!btn.enabled_) return M3.m3OnSurfaceVariant
         switch (style) {
-        case "tonal":    return M3.onSecondaryContainer
+        case "tonal":    return M3.m3OnSecondaryContainer
         case "outlined": return M3.primary
         case "text":     return M3.primary
-        default:         return M3.onPrimary       // filled
+        default:         return M3.m3OnPrimary       // filled
         }
     }
     color: {
@@ -91,7 +91,7 @@ Rectangle {
             id: tipTxt
             anchors.centerIn: parent
             text: btn.tooltip
-            color: M3.onSurface
+            color: M3.m3OnSurface
             font: M3.labelMedium
         }
     }

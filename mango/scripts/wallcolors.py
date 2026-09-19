@@ -56,8 +56,11 @@ def get_matugen_colors(image_path: str):
                 def role_hex(name):
                     node = colors.get(name)
                     if isinstance(node, dict):
-                        for variant in ("default", "dark", "light"):
+                        # UI темний → dark першим ("default" може бути light залежно від версії matugen)
+                        for variant in ("dark", "default", "light"):
                             v = node.get(variant)
+                            if isinstance(v, str) and v.startswith("#"):
+                                return v
                             if isinstance(v, dict):
                                 val = v.get("color") or v.get("hex")
                                 if val:
@@ -105,6 +108,9 @@ def md3_tokens(role_hex):
         if v:
             out[k] = v
     if "on_surface" in out and "surface" in out:
+        # світла схема на темній піллі дає темний текст — не віддаємо md3, QML візьме fallback
+        if hex_to_hls(out["surface"])[1] > 0.5:
+            return {}
         out["md3"] = True
     return out
 

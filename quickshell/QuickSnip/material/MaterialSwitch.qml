@@ -17,10 +17,10 @@ Rectangle {
     color: {
         if (!sw.enabled_) return M3.surfaceContainerHighest
         if (sw.checked) {
-            if (ma.pressed) return M3.mix(M3.primary, M3.onPrimary, 0.12)
+            if (ma.pressed) return M3.mix(M3.primary, M3.m3OnPrimary, 0.12)
             return M3.primary
         }
-        return ma.containsMouse ? M3.mix(M3.surfaceContainerHighest, M3.onSurface, 0.08)
+        return ma.containsMouse ? M3.mix(M3.surfaceContainerHighest, M3.m3OnSurface, 0.08)
                                 : M3.surfaceContainerHighest
     }
     border.width: sw.checked ? 0 : 2
@@ -34,7 +34,7 @@ Rectangle {
         radius: 8
         y: 8
         x: sw.checked ? parent.width - width - 8 : 8
-        color: sw.checked ? M3.onPrimary : M3.outline
+        color: sw.checked ? M3.m3OnPrimary : M3.outline
         scale: ma.pressed ? 1.4 : 1.0
 
         Behavior on x { NumberAnimation { duration: M3.durMed; easing.type: Easing.OutCubic } }
