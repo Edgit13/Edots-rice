@@ -63,13 +63,14 @@ ColumnLayout {
         Layout.topMargin: 2
         Layout.bottomMargin: 2
         radius: 3
-        color: Qt.rgba(Md.onSurface.r, Md.onSurface.g, Md.onSurface.b, 0.2)
+        // M3: неактивний трек = суцільний surfaceContainerHighest (не onSurface@20%)
+        color: Md.surfaceContainerHighest
 
         Rectangle {
             width: parent.width * sliderRowRoot.fraction
             height: parent.height
             radius: 3
-            color: Colors.accent
+            color: Md.primary
         }
 
         Rectangle {
@@ -78,9 +79,9 @@ ColumnLayout {
             radius: 7
             y: -4
             x: parent.width * sliderRowRoot.fraction - width / 2
-            color: Colors.fg
+            color: Md.onSurface
             border.width: 2
-            border.color: Colors.accent
+            border.color: Md.primary
         }
 
         MouseArea {

@@ -38,7 +38,8 @@ logging.basicConfig(
 )
 
 
-def get_source_color(image_path: str) -> str:
+def get_matugen_colors(image_path: str):
+    """Повертає (source_color, colors_dict, role_hex_fn) з matugen --json hex."""
     try:
         result = subprocess.run(
             ["matugen", "image", image_path, "-m", "dark", "--json", "hex", "--quiet", "--source-color-index", "0"],
@@ -51,23 +52,61 @@ def get_source_color(image_path: str) -> str:
             try:
                 data = json.loads(out)
                 colors = data.get("colors", {})
+
+                def role_hex(name):
+                    node = colors.get(name)
+                    if isinstance(node, dict):
+                        for variant in ("default", "dark", "light"):
+                            v = node.get(variant)
+                            if isinstance(v, dict):
+                                val = v.get("color") or v.get("hex")
+                                if val:
+                                    return val
+                    return None
+
                 for key in ("primary", "tertiary", "secondary", "source_color"):
                     node = colors.get(key)
                     if isinstance(node, dict):
                         for variant in ("default", "light", "dark"):
                             v = node.get(variant)
-                            if isinstance(v, dict) and v.get("color"):
-                                return v["color"]
+                            if isinstance(v, dict) and (v.get("color") or v.get("hex")):
+                                return (v.get("color") or v.get("hex")), colors, role_hex
             except Exception:
                 pass
 
             match = re.search(r"#[0-9a-fA-F]{6}", out)
             if match:
-                return match.group(0)
+                return match.group(0), {}, None
     except Exception as exc:
         logging.error("matugen failed: %s", exc)
 
     raise SystemExit("Could not extract source color from wallpaper")
+
+
+def get_source_color(image_path: str) -> str:
+    return get_matugen_colors(image_path)[0]
+
+
+def md3_tokens(role_hex):
+    """Повний M3-набір з matugen-схеми (правильний контраст з коробки)."""
+    if role_hex is None:
+        return {}
+    keys = ["primary", "on_primary", "primary_container", "on_primary_container",
+            "secondary", "secondary_container", "on_secondary_container",
+            "tertiary", "tertiary_container",
+            "error", "on_error", "error_container",
+            "surface", "on_surface", "on_surface_variant",
+            "surface_container_lowest", "surface_container_low", "surface_container",
+            "surface_container_high", "surface_container_highest",
+            "outline", "outline_variant", "scrim"]
+    out = {}
+    for k in keys:
+        v = role_hex(k)
+        if v:
+            out[k] = v
+    if "on_surface" in out and "surface" in out:
+        out["md3"] = True
+    return out
 
 
 def hex_to_hls(hex_color: str):
@@ -266,8 +305,10 @@ def main():
     if len(sys.argv) != 2:
         raise SystemExit("Usage: wallcolors.py /path/to/wallpaper")
     wallpaper = os.path.abspath(os.path.expanduser(sys.argv[1]))
-    color = get_source_color(wallpaper)
+    color, matugen_colors, role_hex = get_matugen_colors(wallpaper)
     palette = build_palette(color)
+    # Повні M3-токени (md3:true) — якщо matugen віддав повну схему
+    palette.update(md3_tokens(role_hex))
     write_quickshell_colors(palette, wallpaper)
     write_kitty_colors(palette)
     write_ghostty_colors(palette)

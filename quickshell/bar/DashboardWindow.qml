@@ -37,7 +37,7 @@ PanelWindow {
             : WlrKeyboardFocus.None
         anchors { top: true; bottom: true; right: true }
 
-        width: 680
+        implicitWidth: 680
     
         property var sink: Pipewire.defaultAudioSink
         readonly property int vol: (sink && sink.ready) ? Math.round(sink.audio.volume * 100) : 0

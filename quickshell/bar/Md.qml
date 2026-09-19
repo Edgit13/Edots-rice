@@ -22,11 +22,23 @@ Singleton {
     function parse() {
         try { md.data = JSON.parse(colorsFile.text()) } catch (e) { md.data = {} }
     }
-    function c(k) { return Qt.rgba(md.data[k]) }
+    function hexToColor(hex) {
+        if (typeof hex !== "string" || hex.charAt(0) !== "#")
+            return Qt.rgba(Colors.accent.r, Colors.accent.g, Colors.accent.b, 1)
+        let h = hex.slice(1)
+        if (h.length === 3) h = h.split("").map(function(ch) { return ch + ch }).join("")
+        const n = parseInt(h, 16)
+        if (isNaN(n)) return Qt.rgba(Colors.accent.r, Colors.accent.g, Colors.accent.b, 1)
+        return Qt.rgba(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255, 1)
+    }
+    function c(k) {
+        if (md.data[k] !== undefined && md.data[k] !== null) return hexToColor(md.data[k])
+        return Qt.rgba(Colors.accent.r, Colors.accent.g, Colors.accent.b, 1)
+    }
 
     function mix(a, b, f) {
-        if (typeof a === "string") a = Qt.rgba(a)
-        if (typeof b === "string") b = Qt.rgba(b)
+        if (typeof a === "string") a = hexToColor(a)
+        if (typeof b === "string") b = hexToColor(b)
         if (a === undefined || a === null) a = Colors.accent
         if (b === undefined || b === null) b = Colors.accent
         return Qt.tint(a, Qt.rgba(b.r, b.g, b.b, f))

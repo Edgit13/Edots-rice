@@ -69,7 +69,7 @@ Item {
             Layout.fillWidth: true
             Layout.preferredHeight: xs.big ? 8 : 6
             radius: height / 2
-            color: Colors.bg2est
+            color: Md.surfaceContainerHighest
 
             Rectangle {
                 width: track.width * xs.fraction
