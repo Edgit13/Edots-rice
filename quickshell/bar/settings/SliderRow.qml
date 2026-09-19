@@ -20,8 +20,6 @@ ColumnLayout {
     property real stepSize: 1
     property int decimals: 0
     property string suffix: ""
-    property bool isSettingsControl: true
-    visible: SettingsSearch.matches(label)
 
     Layout.fillWidth: true
     spacing: 6
@@ -50,7 +48,7 @@ ColumnLayout {
         }
         Text {
             text: sliderRowRoot.value.toFixed(sliderRowRoot.decimals) + sliderRowRoot.suffix
-            color: Colors.grey2
+            color: Md.onSurfaceVariant
             font { family: "SF Mono"; pixelSize: 11 }
         }
         ResetDot {
@@ -65,7 +63,7 @@ ColumnLayout {
         Layout.topMargin: 2
         Layout.bottomMargin: 2
         radius: 3
-        color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.2)
+        color: Qt.rgba(Md.onSurface.r, Md.onSurface.g, Md.onSurface.b, 0.2)
 
         Rectangle {
             width: parent.width * sliderRowRoot.fraction
@@ -83,8 +81,6 @@ ColumnLayout {
             color: Colors.fg
             border.width: 2
             border.color: Colors.accent
-
-            Behavior on x { NumberAnimation { duration: Anim.ms(90); easing.type: Easing.OutCubic } }
         }
 
         MouseArea {
@@ -126,7 +122,7 @@ ColumnLayout {
     Text {
         visible: sliderRowRoot.description.length > 0
         text: sliderRowRoot.description
-        color: Colors.grey1
+        color: Md.onSurfaceVariant
         font { family: "SF Pro Display"; pixelSize: 10 }
     }
 }

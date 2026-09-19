@@ -13,12 +13,12 @@
     "idleTopMargin": 4,
     "expandedWidth": 480,
     "expandedHeight": 290,
-    "expandedRadius": 28,
-    "borderWidthDefault": 1,
+    "expandedRadius": 27,
+    "borderWidthDefault": 0,
     "borderWidthHover": 2,
     "backgroundOpacity": 0.97,
     "hoverScale": 1.03,
-    "morphDuration": 320,
+    "morphDuration": 460,
     "morphOvershoot": 1.05,
     "radiusTransitionDuration": 220,
     "scaleDuration": 220,
@@ -30,6 +30,7 @@
     "glowMaxOpacity": 0.42
   },
   "bar": {
+    "style": "pill",
     "position": "top",
     "exclusionZoneGap": 5
   },
@@ -59,7 +60,7 @@
     "clipboard": true,
     "notifications": true,
     "launcher": true,
-    "settings": true
+    "settings": false
   },
   "launcher": {
     "fieldHeight": 34,

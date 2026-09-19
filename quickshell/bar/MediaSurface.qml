@@ -5,14 +5,14 @@ import Quickshell.Services.Mpris
 import QtQuick
 import QtQuick.Layouts
 
-// ==========================================================================
-// MediaSurface.qml — вміст (без вікна) для Pill-режиму. MPRIS-логіка й
-// властивості 1:1 взяті з медіа-блоку Dash/Panel.qml (той файл не
-// чіпався) — тільки перевірені властивості, нічого нового не вигадано.
-// ==========================================================================
-
+// MediaSurface — Material You (Android 13 media player layout).
 Item {
     id: root
+
+    function fmt(ms) {
+        const s = Math.max(0, Math.floor(ms / 1000))
+        return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0")
+    }
 
     readonly property var player: {
         const list = Mpris.players.values
@@ -23,94 +23,163 @@ Item {
         return list[0]
     }
 
-    ColumnLayout {
+    component MediaBtn: Rectangle {
+        id: mb
+        property string glyph: ""
+        property bool enabled_: true
+        property bool filled: false
+        signal clicked()
+        width: filled ? 46 : 38
+        height: width
+        radius: width / 2
+        opacity: enabled_ ? 1.0 : 0.38
+        color: {
+            if (filled) return mbMa.pressed ? Md.mix(Md.primaryContainer, Md.onSurface, 0.15) : Md.primaryContainer
+            if (mbMa.pressed) return Md.pressedOf(Md.onSurface)
+            if (mbMa.containsMouse) return Md.hoverOf(Md.onSurface)
+            return "transparent"
+        }
+        Behavior on color { ColorAnimation { duration: Md.durFast } }
+        Text {
+            anchors.centerIn: parent
+            text: mb.glyph
+            color: mb.filled ? Md.onPrimaryContainer : Md.onSurfaceVariant
+            font { family: "SF Pro Display"; pixelSize: mb.filled ? 17 : 13 }
+        }
+        MouseArea {
+            id: mbMa
+            anchors.fill: parent
+            hoverEnabled: true
+            enabled: mb.enabled_
+            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: mb.clicked()
+        }
+    }
+
+    RowLayout {
         anchors.fill: parent
-        spacing: 8
+        spacing: 14
 
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: 8
+        // ---- art ----
+        Rectangle {
+            Layout.preferredWidth: 88
+            Layout.preferredHeight: 88
+            Layout.alignment: Qt.AlignVCenter
+            radius: Md.rM
+            color: Md.surfaceContainerHighest
+            clip: true
 
-            Text {
-                text: String.fromCodePoint(0xe405) // music_note
-                color: Colors.accent
-                font { family: "Material Symbols Rounded"; pixelSize: 15 }
+            Image {
+                id: artCover
+                anchors.fill: parent
+                source: (root.player && root.player.trackArtUrl) ? root.player.trackArtUrl : ""
+                fillMode: Image.PreserveAspectCrop
+                visible: status === Image.Ready
             }
-
-            Text {
-                Layout.fillWidth: true
-                text: root.player ? (root.player.identity || "Медіаплеєр") : "Немає відтворення"
-                color: Colors.grey2
-                font { family: "SF Pro Display"; pixelSize: 11; weight: 600 }
-                elide: Text.ElideRight
+            // Android 12 loading: кільце, поки обкладинка не завантажилась
+            LoadingIndicator {
+                anchors.centerIn: parent
+                visible: !artCover.visible
             }
         }
 
+        // ---- info + controls + progress ----
         ColumnLayout {
             Layout.fillWidth: true
             spacing: 2
 
+            // чіп виводу (Android 13): іконка + пристрій
+            RowLayout {
+                spacing: 5
+                Text {
+                    text: "\ue050"
+                    color: Md.onSurfaceVariant
+                    font { family: "Material Symbols Rounded"; pixelSize: 12 }
+                }
+                Text {
+                    Layout.fillWidth: true
+                    text: root.player ? (root.player.identity || "Player") : "No players"
+                    color: Md.onSurfaceVariant
+                    font { family: "SF Pro Display"; pixelSize: 10; weight: 600 }
+                    elide: Text.ElideRight
+                }
+            }
             Text {
                 Layout.fillWidth: true
-                text: root.player ? (root.player.trackTitle || "Невідомий трек") : "Музика не грає"
-                color: Colors.fg
+                text: root.player ? (root.player.trackTitle || "Unknown track") : "Nothing playing"
+                color: Md.onSurface
                 font { family: "SF Pro Display"; weight: 600; pixelSize: 15 }
                 elide: Text.ElideRight
             }
-
             Text {
                 Layout.fillWidth: true
-                text: root.player ? (root.player.trackArtist || "—") : ""
-                color: Colors.grey2
+                text: root.player ? (root.player.trackArtist || "\u2014") : ""
+                color: Md.onSurfaceVariant
                 font { family: "SF Pro Display"; pixelSize: 12 }
                 elide: Text.ElideRight
             }
-        }
 
-        Item { Layout.fillHeight: true }
+            Item { Layout.preferredHeight: 6 }
 
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 28
-
-            Text {
-                text: String.fromCodePoint(0xe045) // skip_previous
-                color: (root.player && root.player.canGoPrevious) ? Colors.fg : Colors.grey1
-                font { family: "Material Symbols Rounded"; pixelSize: 20 }
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.margins: -8
-                    cursorShape: Qt.PointingHandCursor
-                    enabled: root.player && root.player.canGoPrevious
+            RowLayout {
+                spacing: 6
+                MediaBtn {
+                    glyph: "\u25C0\u25C0"
+                    enabled_: root.player && root.player.canGoPrevious
                     onClicked: root.player.previous()
                 }
-            }
-
-            Text {
-                text: (root.player && root.player.isPlaying)
-                      ? String.fromCodePoint(0xe034) : String.fromCodePoint(0xe037) // pause / play_arrow
-                color: Colors.accent
-                font { family: "Material Symbols Rounded"; pixelSize: 26 }
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.margins: -8
-                    cursorShape: Qt.PointingHandCursor
-                    enabled: root.player && root.player.canTogglePlaying
+                MediaBtn {
+                    glyph: (root.player && root.player.isPlaying) ? "\u25AE\u25AE" : "\u25B6"
+                    filled: true
+                    enabled_: root.player && root.player.canTogglePlaying
                     onClicked: root.player.isPlaying = !root.player.isPlaying
                 }
-            }
-
-            Text {
-                text: String.fromCodePoint(0xe044) // skip_next
-                color: (root.player && root.player.canGoNext) ? Colors.fg : Colors.grey1
-                font { family: "Material Symbols Rounded"; pixelSize: 20 }
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.margins: -8
-                    cursorShape: Qt.PointingHandCursor
-                    enabled: root.player && root.player.canGoNext
+                MediaBtn {
+                    glyph: "\u25B6\u25B6"
+                    enabled_: root.player && root.player.canGoNext
                     onClicked: root.player.next()
                 }
+            }
+
+            // ---- progress ----
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 0
+
+                Item {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 18
+                    readonly property real fraction: {
+                        if (!root.player || !root.player.length || root.player.length <= 0) return 0
+                        return Math.min(1, root.player.position / root.player.length)
+                    }
+                    Rectangle {
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: parent.width
+                        height: 4
+                        radius: 2
+                        color: Md.surfaceContainerHighest
+                        Rectangle {
+                            width: parent.width * parent.parent.fraction
+                            height: parent.height
+                            radius: 2
+                            color: Md.primary
+                        }
+                        MouseArea {
+                            anchors.fill: parent
+                            anchors.topMargin: -7
+                            anchors.bottomMargin: -7
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: (mouse) => {
+                                if (root.player && root.player.length > 0) {
+                                    const f = Math.max(0, Math.min(1, mouse.x / width))
+                                    root.player.position = f * root.player.length
+                                }
+                            }
+                        }
+                    }
+                }
+
             }
         }
     }

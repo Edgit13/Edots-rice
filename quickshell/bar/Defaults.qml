@@ -62,7 +62,8 @@ Singleton {
             glowMaxOpacity: 0.42
         },
         bar: {
-            position: "top",           // top | bottom (wiring: Phase 5)
+            style: "pill",             // pill | frame (Master v2)
+            position: "top",           // top | bottom | left | right
             exclusionZoneGap: 5
         },
         modules: {
@@ -232,6 +233,7 @@ Singleton {
         "pill.glowMaxOpacity":       { min: 0.0, max: 1.0 },
 
         "bar.position":              { options: ["top", "bottom"] },
+        "bar.style":                 { options: ["pill", "frame"] },
         "bar.exclusionZoneGap":      { min: 0, max: 40 },
 
         "launcher.fieldHeight":      { min: 24, max: 64 },

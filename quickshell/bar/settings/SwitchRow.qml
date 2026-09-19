@@ -5,7 +5,7 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-// SwitchRow — Settings control (M3 colors via bridge). Пошук: SettingsSearch.
+// SwitchRow — Material 3 switch (52x32). Колір: Md (Colors <- colors.json).
 RowLayout {
     id: switchRowRoot
     required property string category
@@ -23,44 +23,49 @@ RowLayout {
     ColumnLayout {
         Layout.fillWidth: true
         spacing: 2
-
         Text {
             Layout.fillWidth: true
             text: switchRowRoot.label
-            color: M3.onSurface
+            color: Md.onSurface
             font { family: "SF Pro Display"; pixelSize: 12; weight: 500 }
         }
         Text {
             Layout.fillWidth: true
             visible: switchRowRoot.description.length > 0
             text: switchRowRoot.description
-            color: M3.onSurfaceVariant
+            color: Md.onSurfaceVariant
             elide: Text.ElideRight
             font { family: "SF Pro Display"; pixelSize: 10 }
         }
     }
 
     Rectangle {
+        id: swTrack
         Layout.alignment: Qt.AlignVCenter
-        Layout.preferredWidth: 44
-        Layout.preferredHeight: 22
-        radius: 11
-        color: switchRowRoot.value ? M3.primary : M3.surfaceContainerHighest
-        Behavior on color { ColorAnimation { duration: 120 } }
+        Layout.preferredWidth: 52
+        Layout.preferredHeight: 32
+        radius: 16
+        color: switchRowRoot.value ? Md.primary : "transparent"
+        border.width: switchRowRoot.value ? 0 : 2
+        border.color: Md.outline
+        Behavior on color { ColorAnimation { duration: Md.durMed } }
 
         Rectangle {
-            width: 16
-            height: 16
-            radius: 8
-            y: 3
-            x: switchRowRoot.value ? parent.width - width - 3 : 3
-            color: switchRowRoot.value ? M3.onPrimary : M3.outline
-            Behavior on x { NumberAnimation { duration: 120; easing.type: Easing.OutCubic } }
-            Behavior on color { ColorAnimation { duration: 120 } }
+            id: knob
+            width: switchRowRoot.value ? 24 : 16
+            height: width
+            radius: width / 2
+            y: (parent.height - height) / 2
+            x: switchRowRoot.value ? parent.width - width - 4 : 6
+            color: switchRowRoot.value ? Md.onPrimary : Md.outline
+            Behavior on x { NumberAnimation { duration: Md.durMed; easing.type: Easing.OutCubic } }
+            Behavior on width { NumberAnimation { duration: Md.durFast } }
+            Behavior on color { ColorAnimation { duration: Md.durMed } }
         }
 
         MouseArea {
             anchors.fill: parent
+            anchors.margins: -6
             cursorShape: Qt.PointingHandCursor
             onClicked: Config.set(switchRowRoot.category, switchRowRoot.configKey, !switchRowRoot.value)
         }

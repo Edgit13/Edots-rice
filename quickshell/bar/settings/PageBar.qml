@@ -13,7 +13,6 @@ Item {
     id: pageBarRoot
     implicitHeight: barCol.implicitHeight
 
-
     Process {
         id: gmProc
         command: ["sh", "-c",
@@ -112,12 +111,11 @@ Item {
                 }
             }
 
-
             Text {
                 Layout.fillWidth: true
                 wrapMode: Text.Wrap
-                text: "ON: the bar hides completely, animations and blur turn off, notifications go DND, CPU performance governor (via gamemode.sh)."
-                color: Colors.grey1
+                text: "ON: bar hides, animations and blur turn off, DND notifications, CPU performance (gamemode.sh)."
+                color: Colors.grey2
                 font { family: "SF Pro Display"; pixelSize: 10 }
             }
         }

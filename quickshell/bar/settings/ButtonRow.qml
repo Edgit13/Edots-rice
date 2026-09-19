@@ -14,8 +14,6 @@ Rectangle {
     property string description: ""
     required property string buttonText
     signal clicked()
-    property bool isSettingsControl: true
-    visible: SettingsSearch.matches(label)
 
     Layout.fillWidth: true
     implicitHeight: btnInner.implicitHeight + 20
@@ -54,12 +52,9 @@ Rectangle {
             Layout.alignment: Qt.AlignVCenter
             implicitWidth: btnLbl.implicitWidth + 24
             implicitHeight: 26
-            radius: 8
-            color: btnHover.hovered
-                ? Qt.rgba(Colors.accent.r, Colors.accent.g, Colors.accent.b, 0.25)
-                : Qt.rgba(Colors.accent.r, Colors.accent.g, Colors.accent.b, 0.15)
-            border.width: 1
-            border.color: Colors.accent
+            radius: Md.rFull
+            color: btnHover.hovered ? Md.mix(Md.secondaryContainer, Md.primary, 0.15) : Md.secondaryContainer
+            border.width: 0
 
             Text {
                 id: btnLbl
@@ -71,7 +66,6 @@ Rectangle {
 
             HoverHandler { id: btnHover }
             MouseArea {
-                id: btnRowMouse
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
                 onClicked: btnRowRoot.clicked()

@@ -5,31 +5,15 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-// Control extracted from the former SettingsControls.qml monolith (Phase 4 fix).
-// Inline-компоненти у JS-контексті давали silent undefined у цьому білді.
-
+// Card — M3 tonal card (radius 16, surfaceContainer, без рамки).
 Rectangle {
+    id: card
     property string title: ""
     default property alias content: cardCol.children
 
-    // Під час пошуку картка видима, лише якщо хоча б один контрол у ній
-    // збігся із запитом.
-    visible: {
-        if (!SettingsSearch.active)
-            return true
-        for (let i = 0; i < cardCol.children.length; i++) {
-            const c = cardCol.children[i]
-            if (c.isSettingsControl !== undefined && c.isSettingsControl && c.visible)
-                return true
-        }
-        return false
-    }
-
     Layout.fillWidth: true
-    radius: 12
-    color: Qt.rgba(Colors.bg2.r, Colors.bg2.g, Colors.bg2.b, 0.72)
-    border.width: 1
-    border.color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.14)
+    radius: Md.rL
+    color: Qt.rgba(Md.surfaceContainerHigh.r, Md.surfaceContainerHigh.g, Md.surfaceContainerHigh.b, 0.55)
     implicitHeight: cardCol.implicitHeight + 24
 
     ColumnLayout {
@@ -43,9 +27,10 @@ Rectangle {
         spacing: 10
 
         Text {
-            visible: title.length > 0 && !SettingsSearch.active
-            text: title
-            color: Colors.fg
+            visible: card.title.length > 0
+            Layout.fillWidth: true
+            text: card.title
+            color: Md.onSurface
             font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
         }
     }

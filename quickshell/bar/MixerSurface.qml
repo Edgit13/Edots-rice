@@ -8,9 +8,9 @@ import QtQuick
 import QtQuick.Layouts
 
 // ==========================================================================
-// MixerSurface.qml — вміст (без вікна) для Pill-режиму: батарея (дисплей,
-// вбудований наявний Battery.qml) + гучність/яскравість (слайдери 1:1 з
-// Dash/Panel.qml "Sliders Box", той файл не чіпався).
+// MixerSurface.qml — Material 3 Expressive (Android 16): товсті round-треки,
+// великі ручки з drag, креативна розкладка: volume (hero) + row(brightness,
+// battery-card). Логіка Pipewire/brightnessctl 1:1.
 // ==========================================================================
 
 Item {
@@ -43,95 +43,143 @@ Item {
 
     Component.onCompleted: { if (!brightnessQuery.running) brightnessQuery.running = true }
 
-    PwObjectTracker {
-        objects: [root.sink]
-    }
+    PwObjectTracker { objects: [root.sink] }
 
-    component MixerSlider: RowLayout {
-        id: sliderRow
+    // ---- M3 Expressive slider: товстий round-трек + велика ручка + drag ----
+    component XSlider: RowLayout {
+        id: xs
         property string icon: ""
-        property color iconColor: Colors.accent
-        property real fraction: 0 // 0..1
+        property color accent: Md.primary
+        property real fraction: 0
         property string valueLabel: ""
+        property bool big: false
         signal setFraction(real pct)
 
         Layout.fillWidth: true
-        spacing: 8
+        spacing: 10
 
         Text {
-            text: sliderRow.icon
-            color: sliderRow.iconColor
-            font { family: "Material Symbols Rounded"; pixelSize: 14 }
+            text: xs.icon
+            color: xs.accent
+            font { family: "Material Symbols Rounded"; pixelSize: 15 }
         }
 
         Rectangle {
+            id: track
             Layout.fillWidth: true
-            Layout.preferredHeight: 6
-            radius: 3
-            color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.12)
+            Layout.preferredHeight: xs.big ? 8 : 6
+            radius: height / 2
+            color: Md.surfaceContainerHighest
 
             Rectangle {
-                width: parent.width * sliderRow.fraction
+                width: track.width * xs.fraction
                 height: parent.height
-                radius: 3
-                color: sliderRow.iconColor
+                radius: parent.radius
+                color: xs.accent
+            }
 
-                Behavior on width {
-                    NumberAnimation { duration: 100 }
-                }
+            Rectangle {
+                id: handle
+                width: xs.big ? 18 : 16
+                height: width
+                radius: width / 2
+                x: track.width * xs.fraction - width / 2
+                anchors.verticalCenter: parent.verticalCenter
+                color: Md.onSurface
+                border.width: 3
+                border.color: xs.accent
+                scale: trackMa.pressed ? 1.15 : 1.0
+                Behavior on scale { NumberAnimation { duration: Md.durFast } }
             }
 
             MouseArea {
+                id: trackMa
                 anchors.fill: parent
+                anchors.margins: -8
                 cursorShape: Qt.PointingHandCursor
-                onClicked: (mouse) => {
-                    let pct = Math.max(0, Math.min(1, mouse.x / width))
-                    sliderRow.setFraction(pct)
-                }
+                onPressed: (m) => xs.setFraction(Math.max(0, Math.min(1, m.x / width)))
+                onPositionChanged: (m) => { if (pressed) xs.setFraction(Math.max(0, Math.min(1, m.x / width))) }
             }
         }
 
         Text {
-            text: sliderRow.valueLabel
-            color: Colors.grey2
-            font { family: "SF Pro Display"; pixelSize: 10 }
-            Layout.preferredWidth: 30
+            text: xs.valueLabel
+            color: Md.onSurfaceVariant
+            font { family: "SF Mono"; pixelSize: 11 }
+            Layout.preferredWidth: 38
         }
     }
 
     ColumnLayout {
         anchors.fill: parent
-        spacing: 12
+        spacing: 14
 
+        // ---- HERO: volume ----
         RowLayout {
             Layout.fillWidth: true
-            Layout.alignment: Qt.AlignHCenter
+            spacing: 10
 
-            Battery {}
+            Text {
+                text: "\ue050"
+                color: Md.primary
+                font { family: "Material Symbols Rounded"; pixelSize: 18 }
+            }
+            Text {
+                Layout.fillWidth: true
+                text: "Volume"
+                color: Md.onSurface
+                font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
+            }
+            Text {
+                text: root.sinkReady ? root.vol + "%" : "-"
+                color: Md.primary
+                font { family: "SF Mono"; pixelSize: 14; weight: 600 }
+            }
+        }
+
+        XSlider {
+            big: true
+            icon: ""
+            fraction: root.vol / 100
+            valueLabel: ""
+            onSetFraction: (pct) => { if (root.sinkReady) root.sink.audio.volume = pct }
         }
 
         Rectangle {
             Layout.fillWidth: true
+            Layout.topMargin: 2
             height: 1
-            color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.1)
+            color: Md.outlineVariant
         }
 
-        MixerSlider {
-            icon: String.fromCodePoint(0xe050) // volume_up
-            iconColor: Colors.accent
-            fraction: root.vol / 100
-            valueLabel: root.sinkReady ? (root.vol + "%") : "-"
-            onSetFraction: (pct) => {
-                if (root.sinkReady) root.sink.audio.volume = pct
+        // ---- row: brightness + battery card ----
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 12
+
+            XSlider {
+                Layout.fillWidth: true
+                icon: "\ue3ab"
+                accent: Md.error
+                fraction: root.brightnessVal / 100
+                valueLabel: root.brightnessVal + "%"
+                onSetFraction: (pct) => root.setBrightness(Math.round(pct * 100))
             }
-        }
 
-        MixerSlider {
-            icon: String.fromCodePoint(0xe3ab) // brightness_6
-            iconColor: Colors.yellow
-            fraction: root.brightnessVal / 100
-            valueLabel: root.brightnessVal + "%"
-            onSetFraction: (pct) => root.setBrightness(Math.round(pct * 100))
+            Rectangle {
+                Layout.alignment: Qt.AlignVCenter
+                implicitWidth: batRow.implicitWidth + 20
+                implicitHeight: batRow.implicitHeight + 14
+                radius: Md.rM
+                color: Qt.rgba(Md.surfaceContainerHigh.r, Md.surfaceContainerHigh.g, Md.surfaceContainerHigh.b, 0.6)
+
+                RowLayout {
+                    id: batRow
+                    anchors.centerIn: parent
+                    spacing: 6
+                    Battery {}
+                }
+            }
         }
 
         Item { Layout.fillHeight: true }
