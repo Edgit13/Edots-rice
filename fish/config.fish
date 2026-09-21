@@ -23,8 +23,9 @@ if type -q starship
 end
 
 # --- 3. Package Management Aliases ---
-alias i='upkg install'
+alias pi='upkg install'
 alias ps='upkg search'
+alias pr='upkg remove'
 
 # --- 4. Navigation & Directory Aliases ---
 alias ..='cd ..'
@@ -64,7 +65,6 @@ end
 # Created by `pipx` on 2026-09-11 08:17:07
 set PATH $PATH /home/eduard/.local/bin
 set -gx BROWSER /usr/bin/firefox
-
 
 # Added by Antigravity CLI installer
 set -gx PATH "/home/eduard/.local/bin" $PATH
