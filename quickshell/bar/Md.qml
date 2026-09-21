@@ -82,7 +82,10 @@ Singleton {
     function _textDim() { return "#aab3ab" }
     readonly property color onSurface: _textMain()
     readonly property color onSurfaceVariant: _textDim()
-
+    readonly property color m3OnSurface: _textMain()
+    readonly property color m3OnSurfaceVariant: _textDim()
+    readonly property color m3OnPrimary: onPrimary
+    readonly property color tertiaryContainer: hasMd3 ? md.c("tertiary_container") : mix(Colors.bg2, Colors.accent, 0.22)
 
     readonly property real rS: 8
     readonly property real rM: 12

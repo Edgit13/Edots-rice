@@ -1,0 +1,10 @@
+{
+    "elevation": 3,
+    "mode": "expanded",
+    "perMonitor": {
+        "DP-1": {
+            "position": "bottom"
+        }
+    },
+    "position": "top"
+}

@@ -64,3 +64,7 @@ end
 # Created by `pipx` on 2026-09-11 08:17:07
 set PATH $PATH /home/eduard/.local/bin
 set -gx BROWSER /usr/bin/firefox
+
+
+# Added by Antigravity CLI installer
+set -gx PATH "/home/eduard/.local/bin" $PATH

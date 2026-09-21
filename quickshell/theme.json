@@ -1,0 +1,11 @@
+{
+    "accent": "#6750A4",
+    "animationSpeed": 1,
+    "animations": true,
+    "cornerStyle": "expressive",
+    "dynamicColor": true,
+    "expressiveMotion": true,
+    "mode": "dark",
+    "reduceMotion": false,
+    "uiScale": 1
+}
