@@ -1,23 +1,13 @@
-pragma ComponentBehavior: Bound
-
-import "root:/"
+import "root:/theme"
+import "root:/dashboard"
 import Quickshell
-import Quickshell.Io
-import Quickshell.Networking
-import Quickshell.Services.Pipewire
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 
-// ==========================================================================
-// DashboardWindow.qml — Material You (m3.material.io + hyprland-material-you).
-// Правий сайдбар: Internet/Bluetooth картки, M3 світчі, quick actions,
-// Volume/Brightness слайдери, сповіщення. Все реальне (NetworkManager/rfkill/
-// Pipewire/brightnessctl/swaync).
-// ==========================================================================
-
-// Один корінь: Item, що містить обидва вікна. PillShell викликає
-// dashboardWindow.open()/toggle() — делегують сюди.
+// DashboardWindow — M3 Expressive правий сайдбар: вкладки Dashboard/Media/Performance/
+// Workspaces, заокруглені картки. Архітектура (вкладки, заокруглення, розташування карток)
+// орієнтована на референс користувача; аватар/OS/WM/погода/CPU-RAM-диск/теги — наші реальні дані.
 Item {
     id: dashRoot
 
@@ -25,645 +15,133 @@ Item {
     function close() { win.close() }
     function toggle() { win.visible ? win.close() : win.open() }
 
-PanelWindow {
+    PanelWindow {
         id: win
-    
+
         visible: false
         exclusionMode: ExclusionMode.Ignore
         color: "transparent"
         WlrLayershell.layer: WlrLayer.Overlay
-        WlrLayershell.keyboardFocus: win.visible
-            ? WlrKeyboardFocus.Exclusive
-            : WlrKeyboardFocus.None
+        WlrLayershell.keyboardFocus: win.visible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
         anchors { top: true; bottom: true; right: true }
+        implicitWidth: 440
 
-        implicitWidth: 680
-    
-        property var sink: Pipewire.defaultAudioSink
-        readonly property int vol: (sink && sink.ready) ? Math.round(sink.audio.volume * 100) : 0
-        property int brightnessVal: 50
-        property bool btOn: false
-        property bool tasksOpen: false
-    
-        function open(): void { win.visible = true }
-        function close(): void { win.visible = false }
-        function toggle(): void { win.visible ? win.close() : win.open() }
-    
-        onVisibleChanged: {
-            if (visible) {
-                card.forceActiveFocus()
-                btQuery.running = true
-                brightnessQuery.running = true
-            }
-        }
-    
-        Process {
-            id: btQuery
-            command: ["sh", "-c", "rfkill list bluetooth 2>/dev/null | grep -q 'Soft blocked: yes' && echo blocked || echo unblocked"]
-            stdout: StdioCollector { onStreamFinished: win.btOn = (text.trim() === "unblocked") }
-        }
-        Process {
-            id: btSet
-            command: []
-            onExited: btQuery.running = true
-        }
-        Process {
-            id: brightnessQuery
-            command: ["sh", "-c", "brightnessctl -m | cut -d, -f4 | tr -d '%'"]
-            stdout: StdioCollector {
-                onStreamFinished: {
-                    const v = parseInt(text.trim())
-                    if (!isNaN(v)) win.brightnessVal = v
-                }
-            }
-        }
-        Process { id: brightnessSet; command: [] }
-        Process { id: actionProc; command: [] }
-    
-        function setBrightness(val) {
-            const c = Math.max(5, Math.min(100, val))
-            win.brightnessVal = c
-            brightnessSet.command = ["brightnessctl", "s", c + "%"]
-            brightnessSet.running = true
-        }
-        function toggleBt() {
-            btSet.command = ["sh", "-c", win.btOn ? "rfkill block bluetooth" : "rfkill unblock bluetooth"]
-            btSet.running = true
-        }
-    
-        PwObjectTracker { objects: [win.sink] }
-    
-        // ---- M3 Expressive slider ----
-        component XSlider: RowLayout {
-            id: xs
-            property string icon: ""
-            property color accent: Md.primary
-            property real fraction: 0
-            property string valueLabel: ""
-            signal setFraction(real pct)
-    
-            Layout.fillWidth: true
-            spacing: 10
-    
-            Text {
-                text: xs.icon
-                color: xs.accent
-                font { family: "Material Symbols Rounded"; pixelSize: 17 }
-            }
-            Rectangle {
-                id: track
-                Layout.fillWidth: true
-                Layout.preferredHeight: 8
-                radius: 4
-                color: Md.surfaceContainerHighest
-                Rectangle {
-                    width: track.width * xs.fraction
-                    height: parent.height
-                    radius: parent.radius
-                    color: xs.accent
-                }
-                Rectangle {
-                    width: 18; height: 18; radius: 9
-                    x: track.width * xs.fraction - width / 2
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: Md.onSurface
-                    border.width: 3
-                    border.color: xs.accent
-                    scale: trackMa.pressed ? 1.2 : 1.0
-                    Behavior on scale { NumberAnimation { duration: 320; easing.type: Easing.OutBack; easing.overshoot: 3.0 } }
-                }
-                MouseArea {
-                    id: trackMa
-                    anchors.fill: parent
-                    anchors.margins: -8
-                    cursorShape: Qt.PointingHandCursor
-                    onPressed: (m) => xs.setFraction(Math.max(0, Math.min(1, m.x / width)))
-                    onPositionChanged: (m) => { if (pressed) xs.setFraction(Math.max(0, Math.min(1, m.x / width))) }
-                }
-            }
-            Text {
-                text: xs.valueLabel
-                color: Md.onSurfaceVariant
-                font { family: "SF Mono"; pixelSize: 11 }
-                Layout.preferredWidth: 36
-            }
-        }
-    
-        // ---- M3 switch row ----
-        component M3Switch: RowLayout {
-            id: sw
-            required property string icon
-            required property string title
-            required property string subtitle
-            property bool checked: false
-            signal toggled()
-            Layout.fillWidth: true
-            spacing: 12
-    
-            Text { text: sw.icon; color: Md.onSurfaceVariant; font { family: "Material Symbols Rounded"; pixelSize: 19 } }
-            ColumnLayout {
-                Layout.fillWidth: true
-                spacing: 1
-                Text { text: sw.title; color: Md.onSurface; font { family: "SF Pro Display"; pixelSize: 13; weight: 500 } }
-                Text { text: sw.subtitle; color: Md.onSurfaceVariant; font { family: "SF Pro Display"; pixelSize: 11 } }
-            }
-            Rectangle {
-                width: 52; height: 32; radius: 16
-                color: sw.checked ? Md.primary : "transparent"
-                border.width: sw.checked ? 0 : 2
-                border.color: Md.outline
-                Rectangle {
-                    width: sw.checked ? 24 : 16; height: width; radius: width / 2
-                    x: sw.checked ? parent.width - width - 4 : 6
-                    anchors.verticalCenter: parent.verticalCenter
-                    color: sw.checked ? Md.onPrimary : Md.outline
-                    Behavior on x { NumberAnimation { duration: 420; easing.type: Easing.OutElastic; easing.amplitude: 1.0; easing.period: 0.32 } }
-                    Behavior on width { NumberAnimation { duration: Md.durFast } }
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.margins: -6
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: sw.toggled()
-                }
-            }
-        }
-    
-        // ---- chevron card row ----
-        component CardRow: Rectangle {
-            id: cr
-            required property string icon
-            required property string title
-            required property string subtitle
-            signal clicked()
-            Layout.fillWidth: true
-            implicitHeight: 62
-            radius: Md.rXL
-            color: crMa.containsMouse ? Md.hoverOf(Md.surfaceContainerHigh) : Md.surfaceContainerHigh
-            Behavior on color { ColorAnimation { duration: Md.durFast } }
-    
-            RowLayout {
-                anchors.fill: parent
-                anchors.leftMargin: 16
-                anchors.rightMargin: 16
-                spacing: 14
-                Text { text: cr.icon; color: Md.primary; font { family: "Material Symbols Rounded"; pixelSize: 21 } }
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    spacing: 1
-                    Text { text: cr.title; color: Md.onSurface; font { family: "SF Pro Display"; pixelSize: 13; weight: 600 } }
-                    Text {
-                        Layout.fillWidth: true
-                        text: cr.subtitle
-                        color: Md.onSurfaceVariant
-                        font { family: "SF Pro Display"; pixelSize: 11 }
-                        elide: Text.ElideRight
-                    }
-                }
-                Text { text: "\ue5e1"; color: Md.onSurfaceVariant; font { family: "Material Symbols Rounded"; pixelSize: 18 } }
-            }
-            MouseArea {
-                id: crMa
-                anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: cr.clicked()
-            }
-        }
-    
-        Rectangle {
+        function open() { win.visible = true }
+        function close() { win.visible = false }
+        function toggle() { win.visible ? win.close() : win.open() }
+
+        readonly property var tabs: [
+            { key: "dashboard", label: "Огляд", icon: "\ue871" },
+            { key: "media", label: "Медіа", icon: "\ue405" },
+            { key: "performance", label: "Продуктивність", icon: "\ue9e4" },
+            { key: "workspaces", label: "Робочі місця", icon: "\ue8f9" }
+        ]
+        property int activeTab: 0
+
+        // клік по прозорій частині (лівіше картки) — закриває
+        MouseArea { anchors.fill: parent; onClicked: win.close() }
+
+        Item {
             id: card
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            anchors.rightMargin: win.tasksOpen ? 300 : 0
-            width: 380
-            color: Md.surface
-            focus: true
+            anchors.fill: parent
+            anchors.margins: Theme.space.md
+            focus: win.visible
             Keys.onEscapePressed: win.close()
 
-            Behavior on anchors.rightMargin { NumberAnimation { duration: Md.durMed; easing.type: Easing.OutCubic } }
-    
-            Flickable {
-                anchors.fill: parent
-                anchors.margins: 16
-                contentWidth: width
-                contentHeight: col.implicitHeight
-                clip: true
-    
-                ColumnLayout {
-                    id: col
-                    width: parent.width
-                    spacing: 10
-    
-                    // header
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.bottomMargin: 4
-                        Text {
-                            Layout.fillWidth: true
-                            text: "Quick Settings"
-                            color: Md.onSurface
-                            font { family: "SF Pro Display"; pixelSize: 16; weight: 700 }
-                        }
-                        Text {
-                            text: "\u00d7"
-                            color: closeMa.containsMouse ? Md.error : Md.onSurfaceVariant
-                            font { family: "SF Pro Display"; pixelSize: 18 }
-                            MouseArea {
-                                id: closeMa
-                                anchors.fill: parent
-                                anchors.margins: -6
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: win.close()
-                            }
-                        }
-                    }
-    
-                    // Internet / Bluetooth cards
-                    CardRow {
-                        icon: "\ue63e"
-                        title: "Internet"
-                        subtitle: Networking.wifiEnabled ? "Wi-Fi enabled" : "Wi-Fi disabled"
-                        onClicked: { actionProc.command = ["nm-connection-editor"]; actionProc.running = true }
-                    }
-                    CardRow {
-                        icon: "\ue1a7"
-                        title: "Bluetooth"
-                        subtitle: win.btOn ? "On" : "Off"
-                        onClicked: { actionProc.command = ["blueman-manager"]; actionProc.running = true }
-                    }
-    
-                    // quick actions (M3 Expressive: морф + ripple)
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: 8
-                        Repeater {
-                            model: [
-                                { icon: "\ue899", tip: "Lock", cmd: "sh -c 'pidof swaylock || swaylock --config ~/.config/swaylock/config --image ~/.config/swaylock/current-wallpaper'" },
-                                { icon: "\uf053", tip: "Reboot", cmd: "systemctl reboot" },
-                                { icon: "\ue8ac", tip: "Power off", cmd: "systemctl poweroff" }
-                            ]
-                            M3EButton {
-                                required property var modelData
-                                Layout.fillWidth: true
-                                icon: modelData.icon
-                                style: "tonal"
-                                onClicked: { actionProc.command = ["sh", "-c", modelData.cmd]; actionProc.running = true }
-                            }
-                        }
-                    }
-    
-                    // switches
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: swCol.implicitHeight + 20
-                        radius: Md.rXL
-                        color: Qt.rgba(Md.surfaceContainerHigh.r, Md.surfaceContainerHigh.g, Md.surfaceContainerHigh.b, 0.55)
-    
-                        ColumnLayout {
-                            id: swCol
-                            anchors {
-                                left: parent.left
-                                right: parent.right
-                                top: parent.top
-                                margins: 10
-                            }
-                            spacing: 4
-    
-                            M3Switch {
-                                icon: "\ue1a7"
-                                title: "Bluetooth"
-                                subtitle: win.btOn ? "On" : "Off"
-                                checked: win.btOn
-                                onToggled: win.toggleBt()
-                            }
-                            M3Switch {
-                                icon: "\uf1c1"
-                                title: "Do not disturb"
-                                subtitle: "SwayNC notifications"
-                                onToggled: { actionProc.command = ["swaync-client", "-d"]; actionProc.running = true }
-                            }
-                        }
-                    }
-    
-                    // sliders
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: slCol.implicitHeight + 20
-                        radius: Md.rXL
-                        color: Qt.rgba(Md.surfaceContainerHigh.r, Md.surfaceContainerHigh.g, Md.surfaceContainerHigh.b, 0.55)
-    
-                        ColumnLayout {
-                            id: slCol
-                            anchors {
-                                left: parent.left
-                                right: parent.right
-                                top: parent.top
-                                margins: 14
-                            }
-                            spacing: 12
-    
-                            XSlider {
-                                icon: "\ue050"
-                                fraction: win.vol / 100
-                                valueLabel: win.vol + "%"
-                                onSetFraction: (pct) => { if (win.sink && win.sink.ready) win.sink.audio.volume = pct }
-                            }
-                            XSlider {
-                                icon: "\ue3ab"
-                                accent: Md.error
-                                fraction: win.brightnessVal / 100
-                                valueLabel: win.brightnessVal + "%"
-                                onSetFraction: (pct) => win.setBrightness(Math.round(pct * 100))
-                            }
-                        }
-                    }
-    
-                    // ---- tasks кнопка (відкриває панель праворуч) ----
-                    CardRow {
-                        icon: "\ue8b0"
-                        title: "Tasks"
-                        subtitle: "Daily tasks"
-                        onClicked: win.tasksOpen = !win.tasksOpen
-                    }
-    
-                    // ---- CALENDAR (без тасок; weekday-рядок окремо від сітки) ----
-                    Rectangle {
-                        Layout.fillWidth: true
-                        implicitHeight: calCol.implicitHeight + 20
-                        radius: Md.rXL
-                        color: Qt.rgba(Md.surfaceContainerHigh.r, Md.surfaceContainerHigh.g, Md.surfaceContainerHigh.b, 0.55)
-    
-                        ColumnLayout {
-                            id: calCol
-                            anchors {
-                                left: parent.left
-                                right: parent.right
-                                top: parent.top
-                                margins: 14
-                            }
-                            spacing: 8
-    
-                            property var viewDate: new Date()
-    
-                            RowLayout {
-                                Layout.fillWidth: true
-                                Text {
-                                    Layout.fillWidth: true
-                                    text: calCol.viewDate.toLocaleDateString(Qt.locale(), "MMMM yyyy")
-                                    color: Md.onSurface
-                                    font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
-                                }
-                                Text {
-                                    text: "\u2039"
-                                    color: pMv.hovered ? Md.primary : Md.onSurfaceVariant
-                                    font { family: "SF Pro Display"; pixelSize: 15 }
-                                    HoverHandler { id: pMv }
-                                    MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor
-                                        onClicked: calCol.shift(-1) }
-                                }
-                                Text {
-                                    text: "\u203a"
-                                    color: nMv.hovered ? Md.primary : Md.onSurfaceVariant
-                                    font { family: "SF Pro Display"; pixelSize: 15 }
-                                    HoverHandler { id: nMv }
-                                    MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor
-                                        onClicked: calCol.shift(1) }
-                                }
-                            }
-    
-                            function shift(delta) {
-                                const d = calCol.viewDate
-                                calCol.viewDate = new Date(d.getFullYear(), d.getMonth() + delta, 1)
-                            }
-                            function weekdayName(i) {
-                                return new Date(2024, 0, 1 + i).toLocaleDateString(Qt.locale(), "ddd")
-                            }
-                            readonly property var cells: {
-                                const d = calCol.viewDate
-                                const y = d.getFullYear(), m = d.getMonth()
-                                const off = (new Date(y, m, 1).getDay() + 6) % 7
-                                const today = new Date().toDateString()
-                                const out = []
-                                for (let i = 0; i < 42; i++) {
-                                    const day = new Date(y, m, 1 - off + i)
-                                    out.push({ day: day.getDate(), inMonth: day.getMonth() === m,
-                                               today: day.toDateString() === today })
-                                }
-                                return out
-                            }
-    
-                            // weekday labels — ОКРЕМИЙ рядок (без перекриття)
-                            RowLayout {
-                                Layout.fillWidth: true
-                                spacing: 0
-                                Repeater {
-                                    model: 7
-                                    Text {
-                                        required property int index
-                                        Layout.fillWidth: true
-                                        horizontalAlignment: Text.AlignHCenter
-                                        text: calCol.weekdayName(index)
-                                        color: Md.onSurfaceVariant
-                                        font { family: "SF Pro Display"; pixelSize: 10; weight: 600 }
-                                    }
-                                }
-                            }
-    
-                            GridLayout {
-                                Layout.fillWidth: true
-                                columns: 7
-                                columnSpacing: 0
-                                rowSpacing: 0
-    
-                                Repeater {
-                                    model: calCol.cells
-                                    Rectangle {
-                                        required property var modelData
-                                        Layout.fillWidth: true
-                                        Layout.preferredHeight: 28
-                                        radius: Md.rS
-                                        color: modelData.today ? Md.primaryContainer : "transparent"
-                                        Text {
-                                            anchors.centerIn: parent
-                                            text: modelData.day
-                                            color: modelData.today ? Md.onPrimaryContainer
-                                                : (modelData.inMonth ? Md.onSurface : Md.onSurfaceVariant)
-                                            opacity: modelData.inMonth ? 1.0 : 0.45
-                                            font { family: "SF Pro Display"; pixelSize: 11; weight: modelData.today ? 700 : 400 }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-    
-                    // notifications
-                    CardRow {
-                        icon: "\ue7f4"
-                        title: "Notifications"
-                        subtitle: "SwayNC panel"
-                        onClicked: { actionProc.command = ["swaync-client", "-t"]; actionProc.running = true }
-                    }
-                }
-            }
-        }
-    }
-    
-    // ==========================================================================
-    // TasksPanel — окрема панель праворуч від Dashboard; відкривається/закривається
-    // кнопкою Tasks. TasksStore (~/.config/quickshell/tasks.json).
-    // ==========================================================================
-    Item {
-        id: tasksWin
+            // сама картка перехоплює клік, щоб не закривалось при взаємодії з вмістом
+            MouseArea { anchors.fill: parent; onClicked: {} }
 
-        visible: win.tasksOpen
-        anchors.top: parent.top
-        anchors.bottom: parent.bottom
-        anchors.right: parent.right
-        width: 300
-    
-        property string selectedDate: {
-            const t = new Date()
-            return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0")
-                + "-" + String(t.getDate()).padStart(2, "0")
-        }
-    
-        Rectangle {
-            anchors.fill: parent
-            color: Md.surface
-            border.width: 1
-            border.color: Md.outlineVariant
-    
+            ElevationShadow {
+                anchors.fill: parent
+                level: Theme.elevation.overlay
+                radius: Theme.shape.islandDialog
+                color: Theme.color.surfaceContainerLow
+            }
+
             ColumnLayout {
                 anchors.fill: parent
-                anchors.margins: 14
-                spacing: 10
-    
+                anchors.margins: Theme.space.md
+                spacing: Theme.space.md
+
+                // ---- вкладки ----
                 RowLayout {
                     Layout.fillWidth: true
-                    Text {
-                        Layout.fillWidth: true
-                        text: "TASKS \u2014 " + tasksWin.selectedDate
-                        color: Md.onSurface
-                        font { family: "SF Pro Display"; pixelSize: 13; weight: 700 }
-                    }
-                    Text {
-                        text: "\u00d7"
-                        color: tcl.hovered ? Md.error : Md.onSurfaceVariant
-                        font { family: "SF Pro Display"; pixelSize: 16 }
-                        HoverHandler { id: tcl }
-                        MouseArea { anchors.fill: parent; anchors.margins: -5; cursorShape: Qt.PointingHandCursor
-                            onClicked: win.tasksOpen = false }
-                    }
-                }
-    
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: 6
-                    Rectangle {
-                        Layout.preferredWidth: 48
-                        Layout.preferredHeight: 26
-                        radius: Md.rS
-                        color: Md.surfaceContainerHighest
-                        TextInput {
-                            id: taskTime
-                            anchors.fill: parent
-                            horizontalAlignment: TextInput.AlignHCenter
-                            verticalAlignment: TextInput.AlignVCenter
-                            color: Md.primary
-                            font { family: "SF Mono"; pixelSize: 11 }
-                            Text { anchors.centerIn: parent; text: "18:00"; color: Md.onSurfaceVariant; visible: taskTime.text.length === 0 }
-                        }
-                    }
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.preferredHeight: 26
-                        radius: Md.rS
-                        color: Md.surfaceContainerHighest
-                        TextInput {
-                            id: taskTitle
-                            anchors.fill: parent
-                            anchors.leftMargin: 8
-                            verticalAlignment: TextInput.AlignVCenter
-                            color: Md.onSurface
-                            font { family: "SF Pro Display"; pixelSize: 11 }
-                            clip: true
-                            Text { anchors.verticalCenter: parent.verticalCenter; anchors.left: parent.left
-                                   text: "New task..."; color: Md.onSurfaceVariant; visible: taskTitle.text.length === 0 }
-                            Keys.onReturnPressed: addTaskBtn.addTask()
-                        }
-                    }
-                    Rectangle {
-                        id: addTaskBtn
-                        Layout.preferredWidth: 36
-                        Layout.preferredHeight: 26
-                        radius: Md.rS
-                        color: atM.containsMouse ? Md.mix(Md.primaryContainer, Md.onSurface, 0.15) : Md.primaryContainer
-                        Text { anchors.centerIn: parent; text: "Add"; color: Md.onPrimaryContainer
-                               font { family: "SF Pro Display"; pixelSize: 11; weight: 600 } }
-                        MouseArea { id: atM; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                            onClicked: addTaskBtn.addTask() }
-                        function addTask() {
-                            const t = taskTitle.text.trim()
-                            if (t.length === 0) return
-                            TasksStore.add(tasksWin.selectedDate,
-                                taskTime.text.trim().length > 0 ? taskTime.text.trim() : "18:00", t)
-                            taskTitle.text = ""
-                        }
-                    }
-                }
-    
-                Flickable {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    clip: true
-                    contentWidth: width
-                    contentHeight: taskListCol.implicitHeight
-    
-                    ColumnLayout {
-                        id: taskListCol
-                        width: parent.width
-                        spacing: 4
-    
-                        Repeater {
-                            model: TasksStore.tasksFor(tasksWin.selectedDate)
-                            Rectangle {
-                                required property var modelData
-                                required property int index
-                                Layout.fillWidth: true
-                                implicitHeight: 28
-                                radius: Md.rS
-                                color: Md.surfaceContainerHigh
-    
-                                RowLayout {
-                                    anchors.fill: parent
-                                    anchors.leftMargin: 8
-                                    anchors.rightMargin: 8
-                                    spacing: 8
-                                    Text { text: modelData.time; color: Md.primary; font { family: "SF Mono"; pixelSize: 10 } }
-                                    Text { Layout.fillWidth: true; text: modelData.title
-                                           color: modelData.done ? Md.onSurfaceVariant : Md.onSurface; elide: Text.ElideRight
-                                           font { family: "SF Pro Display"; pixelSize: 11 } }
-                                    Text { text: "\u2713"; color: dM.containsMouse ? Md.primary : Md.onSurfaceVariant
-                                           font { family: "SF Pro Display"; pixelSize: 12 }
-                                           MouseArea { id: dM; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true
-                                               cursorShape: Qt.PointingHandCursor
-                                               onClicked: TasksStore.toggleDone(tasksWin.selectedDate, index) } }
-                                    Text { text: "\u00d7"; color: xM.containsMouse ? Md.error : Md.onSurfaceVariant
-                                           font { family: "SF Pro Display"; pixelSize: 12 }
-                                           MouseArea { id: xM; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true
-                                               cursorShape: Qt.PointingHandCursor
-                                               onClicked: TasksStore.remove(tasksWin.selectedDate, index) } }
+                    spacing: Theme.space.xs
+
+                    Repeater {
+                        model: win.tabs
+                        Rectangle {
+                            id: tabBtn
+                            required property var modelData
+                            required property int index
+                            readonly property bool active: win.activeTab === index
+                            Layout.fillWidth: true
+                            implicitHeight: Theme.components.buttonS
+                            radius: Theme.shape.radius("lg", height)
+                            color: active ? Theme.color.secondaryContainer
+                                 : tma.containsMouse ? Theme.stateLayer(Theme.color.surfaceContainerLow, Theme.color.fgSurface, Theme.components.stateHover)
+                                 : "transparent"
+                            Behavior on color { MotionColorAnimation { role: "stateChange" } }
+
+                            ColumnLayout {
+                                anchors.centerIn: parent
+                                spacing: 2
+                                Text {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: tabBtn.modelData.icon
+                                    font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+                                    color: tabBtn.active ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
+                                }
+                                ThemedText {
+                                    Layout.alignment: Qt.AlignHCenter
+                                    text: tabBtn.modelData.label
+                                    style: Theme.type.labelSmall
+                                    color: tabBtn.active ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
                                 }
                             }
+                            MouseArea { id: tma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: win.activeTab = tabBtn.index }
+                        }
+                    }
+                }
+
+                Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.color.outlineVariant }
+
+                // ---- вміст вкладки (Loader — щоб не тримати опитування неактивних вкладок) ----
+                Loader {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    sourceComponent: {
+                        switch (win.tabs[win.activeTab].key) {
+                        case "media": return mediaComp
+                        case "performance": return perfComp
+                        case "workspaces": return wsComp
+                        default: return overviewComp
                         }
                     }
                 }
             }
         }
     }
-    
+
+    Component {
+        id: overviewComp
+        Flickable {
+            clip: true
+            contentWidth: width
+            contentHeight: col.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+            ColumnLayout {
+                id: col
+                width: parent.width
+                spacing: Theme.space.md
+                SystemCard { Layout.fillWidth: true }
+                WeatherCard { Layout.fillWidth: true }
+                CalendarCard { Layout.fillWidth: true }
+            }
+        }
+    }
+    Component { id: mediaComp; MediaTab {} }
+    Component { id: perfComp; PerformanceTab {} }
+    Component { id: wsComp; WorkspacesTab {} }
 }
