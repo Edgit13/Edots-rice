@@ -30,6 +30,24 @@ PanelWindow {
     readonly property int reserve: thickness + gap * 2          // відступ від краю + смуга + відступ до вікон
     readonly property int cross: thickness - Theme.space.xs * 2 // розмір контенту впоперек осі смуги
 
+    // Скільки розгорнута картка виходить за межі compact-смуги — у бік, куди вікно НЕ закріплене
+    // якорем (тобто вільний). exclusiveZone/reserve лишається тонким; росте лише саме вікно,
+    // інакше Qt/wlroots обріже вміст по межі layer-shell surface, навіть без жодного clip.
+    // Список модулів із MorphSurface перераховано вручну — TODO(Stage 9+): звести в реєстр,
+    // коли таких модулів побільшає (гучність, батарея, живлення тощо).
+    readonly property var morphModules: [clockModule]   // networkModule повернувся до старого WifiSurface
+    function _maxOverflow(dir) {
+        let m = 0
+        for (const mod of morphModules) m = Math.max(m, mod[dir] || 0)
+        return m
+    }
+    readonly property real freeOverflow: {
+        if (position === "top") return _maxOverflow("overflowBottom")
+        if (position === "bottom") return _maxOverflow("overflowTop")
+        if (position === "left") return _maxOverflow("overflowRight")
+        return _maxOverflow("overflowLeft")   // right
+    }
+
     readonly property bool debug: Quickshell.env("EDOTS_BAR_DEBUG") === "1"
 
     WlrLayershell.namespace: "edots-bar"
@@ -42,13 +60,17 @@ PanelWindow {
         left: position === "left" || !vertical
         right: position === "right" || !vertical
     }
-    implicitWidth: vertical ? reserve : 0
-    implicitHeight: vertical ? 0 : reserve
+    implicitWidth: vertical ? reserve + freeOverflow : 0
+    implicitHeight: vertical ? 0 : reserve + freeOverflow
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: reserve
 
-    // Клікабельна лише сама смуга; решта вікна прозора для вказівника
-    mask: Region { item: surface }
+    // Клікабельна сама смуга + активна зона поточного розгорнутого модуля (інакше кнопки
+    // всередині розгорнутої картки не клікались би — вони поза "surface").
+    mask: Region {
+        item: surface
+        Region { item: clockModule.hitArea }
+    }
 
     // Геометрія рахується явно (x/y/width/height), а не якорями
     Item {
@@ -91,9 +113,9 @@ PanelWindow {
 
             center: [
                 ClockModule {
+                    id: clockModule
                     vertical: win.vertical
                     cross: win.cross
-                    onClicked: ShellState.toggleDashboard()
                 }
             ]
 

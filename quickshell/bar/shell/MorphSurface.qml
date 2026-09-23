@@ -53,6 +53,21 @@ Item {
     readonly property bool focused: activeFocus
     readonly property real scrimOpacity: _scrim       // для хоста: Rectangle { color: scrim; opacity: surface.scrimOpacity }
     readonly property Item bodyItem: body            // для хоста: mask: Region { item: surface.bodyItem }
+    // Наскільки тіло виходить за межі root (= зарезервований compact-розмір у layout).
+    // Хост (BarWindow) додає це до implicitWidth/Height вікна — інакше Qt обріже вміст по межі
+    // самого layer-shell вікна, навіть без жодного clip: true всередині.
+    //
+    // Рахується від ЦІЛЬОВОЇ геометрії (_tw/_th, без Behavior), а не від живих body.x/width, які
+    // анімуються. Інакше вікно (реальний wlr-layer-shell surface) ресайзилось би щокадру під час
+    // морфу — це важка операція для композитора і саме вона давала «глючну» анімацію та
+    // артефакти-двійники по краях. Тепер вікно один раз стрибає до фінального розміру в момент
+    // зміни стану, а сам контент плавно анімується вже всередині вже готового по розміру вікна.
+    readonly property real _targetX: (width - _tw) * originX
+    readonly property real _targetY: (height - _th) * originY
+    readonly property real overflowTop:    Math.max(0, -_targetY)
+    readonly property real overflowLeft:   Math.max(0, -_targetX)
+    readonly property real overflowBottom: Math.max(0, _targetY + _th - height)
+    readonly property real overflowRight:  Math.max(0, _targetX + _tw - width)
     readonly property bool busy: Math.abs(body.width - _tw) > 0.5 || Math.abs(body.height - _th) > 0.5
 
     signal clicked()

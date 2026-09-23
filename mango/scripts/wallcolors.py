@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -16,6 +17,7 @@ CONFIG = HOME / ".config"
 MANGO_DIR = CONFIG / "mango"
 MANGO_COLORS_JSON = MANGO_DIR / "colors.json"
 MANGO_SWAYLOCK_COLORS = MANGO_DIR / "swaylock" / "colors.conf"
+SWAYLOCK_TARGET_WALLPAPER = CONFIG / "swaylock" / "current-wallpaper"
 KITTY_COLORS_CONF = CONFIG / "kitty" / "kitty-colors.conf"
 GHOSTTY_COLORS_CONF = CONFIG / "ghostty" / "ghostty-colors.conf"
 QUICKSHELL_COLORS_JSON = CONFIG / "quickshell" / "colors.json"
@@ -255,6 +257,11 @@ def write_swaylock_colors(p: dict, wallpaper_path: str):
     write(MANGO_SWAYLOCK_COLORS, "".join(lines))
 
 
+def copy_swaylock_wallpaper(wallpaper_path: str):
+    SWAYLOCK_TARGET_WALLPAPER.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(wallpaper_path, SWAYLOCK_TARGET_WALLPAPER)
+
+
 def write_kdeglobals(p: dict):
     cfg = configparser.ConfigParser(interpolation=None)
     cfg.optionxform = str
@@ -274,10 +281,6 @@ def write_kdeglobals(p: dict):
         ("Colors:Selection", "ForegroundNormal"): rgb(p["bg0"]),
         ("Colors:View", "BackgroundNormal"): rgb(p["bg1"]),
         ("Colors:View", "ForegroundNormal"): rgb(p["fg"]),
-        # Раніше НЕ оновлювались — саме тому лишались застиглими на
-        # початкових значеннях "Ricelin"-схеми і не міняли колір за шпалерою.
-        # [WM] — це саме тайтлбар/рамка активного/неактивного вікна
-        # (те, що видно як кольорову смужку зверху Dolphin).
         ("Colors:Header", "BackgroundNormal"): rgb(p["bg1"]),
         ("Colors:Header", "BackgroundAlternate"): rgb(p["bg3"]),
         ("Colors:Header", "ForegroundNormal"): rgb(p["fg"]),
@@ -313,7 +316,6 @@ def main():
     wallpaper = os.path.abspath(os.path.expanduser(sys.argv[1]))
     color, matugen_colors, role_hex = get_matugen_colors(wallpaper)
     palette = build_palette(color)
-    # Повні M3-токени (md3:true) — якщо matugen віддав повну схему
     palette.update(md3_tokens(role_hex))
     write_quickshell_colors(palette, wallpaper)
     write_kitty_colors(palette)
@@ -324,6 +326,7 @@ def main():
     write_fish_colors(palette)
     write_firefox_colors(palette)
     write_swaylock_colors(palette, wallpaper)
+    copy_swaylock_wallpaper(wallpaper)
     write_kdeglobals(palette)
     logging.info("Updated MangoWM color pipeline for wallpaper: %s", wallpaper)
 

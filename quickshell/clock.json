@@ -1,0 +1,8 @@
+{
+    "dateFormat": "d MMMM",
+    "fullDateFormat": "dddd, d MMMM",
+    "hour12": false,
+    "showSeconds": false,
+    "utcOffsetMinutes": null,
+    "zoneLabel": ""
+}

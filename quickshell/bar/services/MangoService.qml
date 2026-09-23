@@ -35,17 +35,13 @@ Singleton {
         for (let i = 0; i < m.tags.length; i++) if (m.tags[i].active) return m.tags[i].index
         return 0
     }
-    // Перемкнути тег на моніторі (legacy `-o <mon> -s -t N`, json `dispatch focusmon,<mon>` + `dispatch view,N`)
+    // Перемкнути тег на моніторі: legacy `-o <mon> -s -t N`,
+    // json — один перевірений виклик `dispatch viewcrossmon,<tag>,<monitor_spec>`
+    // (wiki/keys: "viewcrossmon | tag,monitor_spec | View specified tag on specified monitor.")
     function switchTag(mon, i) {
         if (backend === "mock") { _mockSwitch(mon, i); return }
-        if (backend === "legacy") {
-            Quickshell.execDetached(["mmsg", "-o", mon, "-s", "-t", String(i)])
-        } else if (backend === "json") {
-            if (mon && mon.length > 0) {
-                Quickshell.execDetached(["mmsg", "dispatch", "focusmon," + mon])
-            }
-            Quickshell.execDetached(["mmsg", "dispatch", "view," + i])
-        }
+        if (backend === "legacy") Quickshell.execDetached(["mmsg", "-o", mon, "-s", "-t", String(i)])
+        else if (backend === "json") Quickshell.execDetached(["mmsg", "dispatch", "viewcrossmon," + i + "," + mon])
     }
     // Крок вперед/назад по тегах (без невідомих команд: рахуємо з активного індексу)
     function stepTag(mon, delta) {

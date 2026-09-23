@@ -14,21 +14,23 @@ Item {
 
     readonly property var wifiDevice: {
         if (!Networking.devices || !Networking.devices.values) return null
-        return Networking.devices.values.find(d => d.type === DeviceType.wifi || d.type === 2)
+        return Networking.devices.values.find(d => d.type === DeviceType.Wifi) || null
+    }
+    readonly property var wiredDevice: {
+        if (!Networking.devices || !Networking.devices.values) return null
+        return Networking.devices.values.find(d => d.type === DeviceType.Wired) || null
     }
 
     readonly property var activeNetwork: {
-        if (!wifiDevice) return null
-        if (wifiDevice.connectedNetwork) return wifiDevice.connectedNetwork
-        if (wifiDevice.networks && wifiDevice.networks.values) {
-            return wifiDevice.networks.values.find(n => n.connected || n.state === 100)
-        }
-        return null
+        if (!wifiDevice || !wifiDevice.networks || !wifiDevice.networks.values) return null
+        return wifiDevice.networks.values.find(n => n.connected) || null
     }
 
-    readonly property bool isOnline: (Networking.connected === true) || (activeNetwork !== null)
-    readonly property bool isWifi: wifiDevice !== null && (Networking.wifiEnabled === true)
-    readonly property string ssid: activeNetwork && activeNetwork.name ? activeNetwork.name : (isOnline ? "Online" : "Offline")
+    readonly property bool wifiConnected: activeNetwork !== null
+    readonly property bool wiredConnected: wiredDevice !== null && wiredDevice.connected
+    readonly property bool isOnline: wifiConnected || wiredConnected
+    readonly property bool isWifi: wifiDevice !== null && Networking.wifiEnabled === true
+    readonly property string ssid: wifiConnected ? activeNetwork.name : (isOnline ? "Online" : "Offline")
 
     readonly property string iconGlyph: {
         if (!isOnline) return "\ue1da"       // signal_wifi_off
