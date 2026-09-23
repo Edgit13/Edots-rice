@@ -35,7 +35,7 @@ PanelWindow {
     // інакше Qt/wlroots обріже вміст по межі layer-shell surface, навіть без жодного clip.
     // Список модулів із MorphSurface перераховано вручну — TODO(Stage 9+): звести в реєстр,
     // коли таких модулів побільшає (гучність, батарея, живлення тощо).
-    readonly property var morphModules: []   // годинник більше не морфиться: клік відкриває Dashboard
+    readonly property var morphModules: [clockModule]   // networkModule повернувся до старого WifiSurface
     function _maxOverflow(dir) {
         let m = 0
         for (const mod of morphModules) m = Math.max(m, mod[dir] || 0)
@@ -67,7 +67,10 @@ PanelWindow {
 
     // Клікабельна сама смуга + активна зона поточного розгорнутого модуля (інакше кнопки
     // всередині розгорнутої картки не клікались би — вони поза "surface").
-    mask: Region { item: surface }
+    mask: Region {
+        item: surface
+        Region { item: clockModule.hitArea }
+    }
 
     // Геометрія рахується явно (x/y/width/height), а не якорями
     Item {

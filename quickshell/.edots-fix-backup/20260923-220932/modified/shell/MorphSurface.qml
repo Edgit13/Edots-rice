@@ -241,5 +241,15 @@ Item {
             onTapped: if (root._st === pressState) root.clicked()
         }
 
+        // focus ring (клавіатурна навігація)
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: -Theme.components.focusRingOffset
+            radius: body.bodyRadius + Theme.components.focusRingOffset
+            color: "transparent"
+            border.width: Theme.components.focusRingWidth
+            border.color: Theme.color.primary
+            visible: root.activeFocus
+        }
     }
 }
