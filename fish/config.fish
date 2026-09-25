@@ -26,6 +26,7 @@ end
 alias pi='upkg install'
 alias ps='upkg search'
 alias pr='upkg remove'
+alias pu='upkg update'
 
 # --- 4. Navigation & Directory Aliases ---
 alias ..='cd ..'
