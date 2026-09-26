@@ -2,6 +2,7 @@ import "root:/"
 import "root:/services"
 import "root:/services"
 import "root:/services"
+import "root:/services"
 import Quickshell
 import Quickshell.Networking
 import QtQuick
