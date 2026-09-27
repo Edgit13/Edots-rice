@@ -74,7 +74,7 @@ Item {
         readonly property real openX: win.width - openW - Theme.space.md
         readonly property real openY: barReserve + Theme.space.sm    // "випадає" з-під бару, а не звідкись з середини екрана
         // Висота — під контент (три картки + вкладки), НЕ на весь екран; клемп про всяк випадок
-        readonly property real openH: Math.min(520, win.height - openY - Theme.space.md)
+        readonly property real openH: Math.min(620, win.height - openY - Theme.space.md)
 
         Item {
             id: card
@@ -201,6 +201,7 @@ Item {
                 SystemCard { Layout.column: 1; Layout.row: 0; Layout.fillWidth: true }
                 MiniMediaCard { Layout.column: 2; Layout.row: 0; Layout.rowSpan: 2; Layout.fillWidth: true; Layout.fillHeight: true }
                 CalendarCard { Layout.column: 0; Layout.row: 1; Layout.columnSpan: 2; Layout.fillWidth: true }
+                TimerCard { Layout.column: 0; Layout.row: 2; Layout.columnSpan: 3; Layout.fillWidth: true }
             }
         }
     }
