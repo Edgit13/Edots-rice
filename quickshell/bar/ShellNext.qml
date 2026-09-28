@@ -10,19 +10,20 @@ import QtQuick
 
 // ShellNext — Material 3 Expressive Shell з повною підтримкою MangoWM.
 // Керується через IPC та модуль бару.
+//
+// Дашборд більше НЕ окреме вікно: він живе всередині BarWindow (DashboardSurface)
+// і відкривається сигналами ShellState.openDashboardRequested/toggle/close,
+// які слухає DashboardSurface на кожному моніторі.
 ShellRoot {
     id: root
 
     // Windows & Overlays
     SettingsWindow { id: settingsWindow }
-    DashboardWindow { id: dashboardWindow }
     TaskManagerWindow { id: taskManagerWindow }
 
     Connections {
         target: ShellState
-        function onOpenDashboardRequested() { dashboardWindow.open() }
-        function onToggleDashboardRequested() { dashboardWindow.toggle() }
-        function onCloseDashboardRequested() { dashboardWindow.close() }
+        // дашборд обробляє сам DashboardSurface усередині BarWindow (per-monitor)
 
         function onOpenSettingsRequested() { settingsWindow.open() }
         function onToggleSettingsRequested() { settingsWindow.toggle() }
@@ -71,9 +72,9 @@ ShellRoot {
 
     IpcHandler {
         target: "dashboard"
-        function open(): void { dashboardWindow.open() }
-        function toggle(): void { dashboardWindow.toggle() }
-        function close(): void { dashboardWindow.close() }
+        function open(): void { ShellState.openDashboard() }
+        function toggle(): void { ShellState.toggleDashboard() }
+        function close(): void { ShellState.closeDashboard() }
     }
 
     IpcHandler {

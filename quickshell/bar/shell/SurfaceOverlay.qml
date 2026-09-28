@@ -9,6 +9,10 @@ import QtQuick.Layouts
 
 // SurfaceOverlay — M3 Expressive плаваюче спливаюче вікно для поверхонь
 // (Launcher, Wifi, Mixer, Clipboard, Media, Power, Wallpaper).
+//
+// "dashboard" тут навмисно ігнорується: дашборд більше не окреме вікно, він
+// морфиться з самої смуги (DashboardSurface усередині BarWindow). Якби overlay
+// реагував на нього, показував би порожню картку "Controls".
 PanelWindow {
     id: win
 
@@ -23,7 +27,9 @@ PanelWindow {
     }
 
     readonly property string activeSurface: ShellState.activeSurface
-    readonly property bool isOpen: activeSurface !== "idle" && (isCurrentMonitor || Quickshell.screens.length === 1)
+    readonly property bool isOpen: activeSurface !== "idle"
+        && activeSurface !== "dashboard"
+        && (isCurrentMonitor || Quickshell.screens.length === 1)
 
     visible: isOpen
     color: "transparent"

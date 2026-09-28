@@ -30,12 +30,13 @@ PanelWindow {
     readonly property int reserve: thickness + gap * 2          // відступ від краю + смуга + відступ до вікон
     readonly property int cross: thickness - Theme.space.xs * 2 // розмір контенту впоперек осі смуги
 
-    // Скільки розгорнута картка виходить за межі compact-смуги — у бік, куди вікно НЕ закріплене
-    // якорем (тобто вільний). exclusiveZone/reserve лишається тонким; росте лише саме вікно,
-    // інакше Qt/wlroots обріже вміст по межі layer-shell surface, навіть без жодного clip.
-    // Список модулів із MorphSurface перераховано вручну — TODO(Stage 9+): звести в реєстр,
-    // коли таких модулів побільшає (гучність, батарея, живлення тощо).
-    readonly property var morphModules: []   // годинник більше не морфиться: клік відкриває Dashboard
+    // Dashboard тепер живе всередині цього вікна (не окреме вікно!). Поки він occupies —
+    // вікно розширюється (або йде на весь екран для scrim), тайлінг не рухається,
+    // бо exclusiveZone лишається тонким.
+    readonly property var morphModules: [dashboardSurface]
+    readonly property bool dashOpen: dashboardSurface.occupies
+    readonly property bool fillScreen: dashOpen && !vertical    // горизонтальний бар: scrim на весь екран
+
     function _maxOverflow(dir) {
         let m = 0
         for (const mod of morphModules) m = Math.max(m, mod[dir] || 0)
@@ -51,27 +52,72 @@ PanelWindow {
     readonly property bool debug: Quickshell.env("EDOTS_BAR_DEBUG") === "1"
 
     WlrLayershell.namespace: "edots-bar"
+    WlrLayershell.keyboardFocus: dashOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
     color: "transparent"
 
-    // Вікно прилягає до краю екрана: 3 якорі (вздовж осі + сам край)
+    // Вікно прилягає до краю екрана: 3 якорі (вздовж осі + сам край).
+    // Коли дашборд відкритий — горизонтальний бар розтягується на весь екран (прозорий,
+    // клікабельність обмежена mask), щоб scrim міг ловити кліки поза карткою.
     anchors {
-        top: position === "top" || vertical
-        bottom: position === "bottom" || vertical
-        left: position === "left" || !vertical
-        right: position === "right" || !vertical
+        top: position === "top" || vertical || fillScreen
+        bottom: position === "bottom" || vertical || fillScreen
+        left: position === "left" || !vertical || fillScreen
+        right: position === "right" || !vertical || fillScreen
     }
     implicitWidth: vertical ? reserve + freeOverflow : 0
-    implicitHeight: vertical ? 0 : reserve + freeOverflow
+    implicitHeight: vertical ? 0 : (fillScreen ? 0 : reserve + freeOverflow)
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: reserve
 
-    // Клікабельна сама смуга + активна зона поточного розгорнутого модуля (інакше кнопки
-    // всередині розгорнутої картки не клікались би — вони поза "surface").
-    mask: Region { item: surface }
+    // Клікабельні: смуга + (коли дашборд відкритий) scrim і сама картка дашборда
+    mask: Region {
+        Region { item: surface }
+        Region { item: win.dashOpen ? scrim : null }
+        Region { item: win.dashOpen ? dashboardSurface : null }
+    }
+
+    Keys.onEscapePressed: ShellState.closeSurfaces()
+
+    // ---- Scrim: клік поза дашбордом закриває його (лише поки dashOpen) ----
+    Rectangle {
+        id: scrim
+        z: 0
+        anchors.fill: parent
+        visible: win.dashOpen
+        color: Theme.color.scrim
+        opacity: visible ? 0.45 : 0
+        Behavior on opacity { MotionAnimation { role: "enter" } }
+
+        MouseArea {
+            anchors.fill: parent
+            onClicked: ShellState.closeSurfaces()
+        }
+    }
+
+    // ---- Dashboard: морфиться з смуги (закріплений під/над/збоку смуги) ----
+    DashboardSurface {
+        id: dashboardSurface
+        z: 1
+        hostMonitor: win.monitorName
+
+        readonly property real stripEnd: win.gap + win.thickness + Theme.space.sm
+        maxHeight: win.vertical ? win.height - win.gap * 2
+                                : win.height - stripEnd - win.gap
+
+        x: win.position === "right" ? win.gap - width - Theme.space.sm
+           : win.position === "left" ? stripEnd
+           : win.gap
+        y: win.position === "bottom" ? win.gap - height - Theme.space.sm
+           : win.position === "top" ? stripEnd
+           : win.gap
+        width: win.vertical ? Math.min(900, win.width - stripEnd - win.gap)
+                            : win.width - win.gap * 2
+    }
 
     // Геометрія рахується явно (x/y/width/height), а не якорями
     Item {
         id: surface
+        z: 2
         x: win.position === "right" ? win.width - win.gap - win.thickness : win.gap
         y: win.position === "bottom" ? win.height - win.gap - win.thickness : win.gap
         width: win.vertical ? win.thickness : Math.max(0, win.width - win.gap * 2)
