@@ -23,7 +23,12 @@ PanelWindow {
     readonly property bool isCurrentMonitor: {
         const focusedMon = MangoService.focusedClient.monitor
         if (focusedMon && focusedMon.length > 0) return focusedMon === monitorName
-        return Quickshell.screens.length > 0 && Quickshell.screens[0].name === monitorName
+        // Ніде немає focused-клієнта (напр. HDMI-A-1 порожній) — відкриваємо на головному
+        // моніторі з BarConfig, а не на screens[0] (який може бути eDP-1 без жодного зв'язку
+        // з тим, який монітор реально "головний").
+        const names = Quickshell.screens.map(function (s) { return s.name })
+        const main = names.indexOf(BarConfig.mainMonitor) >= 0 ? BarConfig.mainMonitor : names[0]
+        return names.length > 0 && main === monitorName
     }
 
     readonly property string activeSurface: ShellState.activeSurface

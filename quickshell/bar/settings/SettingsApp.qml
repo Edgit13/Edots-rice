@@ -24,6 +24,12 @@ Item {
         { name: "Pill" },
         { name: "Animations" },
         { name: "Bar" },
+        { name: "Launcher" },
+        { name: "Surfaces" },
+        { name: "Workspaces" },
+        { name: "Media" },
+        { name: "Network" },
+        { name: "Notifications" },
         { name: "Presets" },
         { name: "System" },
         { name: "About" }
@@ -236,7 +242,7 @@ Item {
                     Layout.rightMargin: 16
                     visible: app.currentIndex === 2 || SettingsSearch.active
                 }
-                PagePresets {
+                PageLauncher {
                     Layout.fillWidth: true
                     Layout.topMargin: 14
                     Layout.bottomMargin: 14
@@ -244,7 +250,7 @@ Item {
                     Layout.rightMargin: 16
                     visible: app.currentIndex === 3 || SettingsSearch.active
                 }
-                PageSystem {
+                PageSurfaces {
                     Layout.fillWidth: true
                     Layout.topMargin: 14
                     Layout.bottomMargin: 14
@@ -252,13 +258,61 @@ Item {
                     Layout.rightMargin: 16
                     visible: app.currentIndex === 4 || SettingsSearch.active
                 }
-                PageAbout {
+                PageWorkspaces {
                     Layout.fillWidth: true
                     Layout.topMargin: 14
                     Layout.bottomMargin: 14
                     Layout.leftMargin: 16
                     Layout.rightMargin: 16
                     visible: app.currentIndex === 5 || SettingsSearch.active
+                }
+                PageMedia {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 6 || SettingsSearch.active
+                }
+                PageNetwork {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 7 || SettingsSearch.active
+                }
+                PageNotifications {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 8 || SettingsSearch.active
+                }
+                PagePresets {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 9 || SettingsSearch.active
+                }
+                PageSystem {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 10 || SettingsSearch.active
+                }
+                PageAbout {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 14
+                    Layout.bottomMargin: 14
+                    Layout.leftMargin: 16
+                    Layout.rightMargin: 16
+                    visible: app.currentIndex === 11 || SettingsSearch.active
                 }
             }
         }

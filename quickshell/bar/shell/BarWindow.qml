@@ -1,3 +1,4 @@
+import "root:/"
 import "root:/theme"
 import "root:/shell"
 import "root:/modules/workspace"
@@ -50,6 +51,16 @@ PanelWindow {
     }
 
     readonly property bool debug: Quickshell.env("EDOTS_BAR_DEBUG") === "1"
+
+    // Sync Config bar.position → BarConfig so the settings dropdown moves the bar
+    Connections {
+        target: Config
+        function onCurrentChanged() {
+            const pos = Config.get("bar", "position")
+            if (pos && pos !== BarConfig.position)
+                BarConfig.set("position", pos)
+        }
+    }
 
     WlrLayershell.namespace: "edots-bar"
     WlrLayershell.keyboardFocus: dashOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
@@ -140,12 +151,14 @@ PanelWindow {
                 LauncherModule {
                     vertical: win.vertical
                     cross: win.cross
+                    visible: Config.get("modules", "launcher") !== false
                     onActivated: ShellState.toggleSurface("launcher")
                 },
                 WorkspaceStrip {
                     monitor: win.monitorName
                     vertical: win.vertical
                     itemSize: win.cross - Theme.space.sm
+                    visible: Config.get("modules", "workspaces") !== false
                 },
                 WindowModule {
                     monitor: win.monitorName
@@ -159,6 +172,7 @@ PanelWindow {
                     id: clockModule
                     vertical: win.vertical
                     cross: win.cross
+                    visible: Config.get("modules", "clock") !== false
                 }
             ]
 
@@ -166,16 +180,19 @@ PanelWindow {
                 MediaModule {
                     vertical: win.vertical
                     cross: win.cross
+                    visible: Config.get("modules", "media") !== false
                     onMediaRequested: ShellState.toggleSurface("media")
                 },
                 VolumeModule {
                     vertical: win.vertical
                     cross: win.cross
+                    visible: Config.get("modules", "mixer") !== false
                     onMixerRequested: ShellState.toggleSurface("mixer")
                 },
                 NetworkModule {
                     vertical: win.vertical
                     cross: win.cross
+                    visible: Config.get("modules", "wifi") !== false
                     onWifiRequested: ShellState.toggleSurface("wifi")
                 },
                 BatteryModule {
@@ -185,10 +202,12 @@ PanelWindow {
                 NotificationModule {
                     vertical: win.vertical
                     cross: win.cross
+                    visible: Config.get("modules", "notifications") !== false
                 },
                 PowerModule {
                     vertical: win.vertical
                     cross: win.cross
+                    visible: Config.get("modules", "power") !== false
                     onPowerRequested: ShellState.toggleSurface("power")
                     onSettingsRequested: ShellState.toggleSettings()
                 }

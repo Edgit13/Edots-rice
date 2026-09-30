@@ -16,6 +16,10 @@ Singleton {
     readonly property string mode: _valid(a.mode, modes, "compact")
     readonly property int elevation: Math.max(0, Math.min(5, Math.round(a.elevation)))
     readonly property var perMonitor: (a.perMonitor && typeof a.perMonitor === "object") ? a.perMonitor : ({})
+    // Куди відкривати поверхні (Launcher/Mixer/Wifi/...), коли ще немає жодного focused-клієнта
+    // ніде (MangoService.focusedClient порожній) — інакше фолбек падав на Quickshell.screens[0],
+    // що не обов'язково "головний" монітор.
+    readonly property string mainMonitor: a.mainMonitor
 
     function _valid(v, list, fb) { return list.indexOf(v) >= 0 ? v : fb }
     function _mon(name) { return perMonitor[name] || ({}) }
@@ -60,6 +64,7 @@ Singleton {
             property string mode: "compact"
             property real elevation: 1
             property var perMonitor: ({})
+            property string mainMonitor: "HDMI-A-1"
         }
     }
 }
