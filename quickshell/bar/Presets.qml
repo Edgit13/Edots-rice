@@ -62,6 +62,7 @@ Singleton {
         id: activeView
         path: root.activePath
         watchChanges: true
+        printErrors: false
         onTextChanged: {
             const v = text().trim()
             root.active = v.length > 0 ? v : "Custom"

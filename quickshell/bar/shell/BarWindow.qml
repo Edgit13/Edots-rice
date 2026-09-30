@@ -76,8 +76,6 @@ PanelWindow {
         Region { item: win.dashOpen ? dashboardSurface : null }
     }
 
-    Keys.onEscapePressed: ShellState.closeSurfaces()
-
     // ---- Scrim: клік поза дашбордом закриває його (лише поки dashOpen) ----
     Rectangle {
         id: scrim
@@ -87,6 +85,8 @@ PanelWindow {
         color: Theme.color.scrim
         opacity: visible ? 0.45 : 0
         Behavior on opacity { MotionAnimation { role: "enter" } }
+        focus: win.dashOpen
+        Keys.onEscapePressed: ShellState.closeSurfaces()
 
         MouseArea {
             anchors.fill: parent

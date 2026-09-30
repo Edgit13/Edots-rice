@@ -58,6 +58,14 @@ PanelWindow {
         color: Theme.color.scrim
         opacity: win.isOpen ? 0.45 : 0
         Behavior on opacity { MotionAnimation { role: win.isOpen ? "enter" : "exit" } }
+        focus: win.isOpen
+
+        Keys.onEscapePressed: function(e) {
+            if (win.activeSurface !== "idle") {
+                ShellState.closeSurfaces()
+                e.accepted = true
+            }
+        }
 
         MouseArea {
             anchors.fill: parent
@@ -247,13 +255,6 @@ PanelWindow {
                     }
                 }
             }
-        }
-    }
-
-    Keys.onEscapePressed: function(e) {
-        if (win.activeSurface !== "idle") {
-            ShellState.closeSurfaces()
-            e.accepted = true
         }
     }
 }
