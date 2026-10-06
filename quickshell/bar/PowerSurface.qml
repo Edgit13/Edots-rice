@@ -9,7 +9,10 @@ ColumnLayout {
     id: root
     spacing: 8
 
-    Process { id: proc }
+    Process {
+        id: proc
+        // Force clean process lifecycle handling
+    }
 
     component PowerRow: Rectangle {
         id: pr
@@ -31,19 +34,26 @@ ColumnLayout {
             Text { text: pr.glyph; color: pr.iconColor; font { family: "Material Symbols Rounded"; pixelSize: 19 } }
             Text { Layout.fillWidth: true; text: pr.label; color: Colors.fg; font { family: "SF Pro Display"; pixelSize: 12 } }
         }
+
         MouseArea {
             id: prMa
             anchors.fill: parent
             hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
             onClicked: {
-                if (pr.command === "lock") {
-                    proc.command = ["sh", "-c",
-                        "pidof swaylock || swaylock --config ~/.config/swaylock/config --image ~/.config/swaylock/current-wallpaper"]
-                } else {
-                    proc.command = [pr.command]
+                // Terminate any stuck shell operations before invoking a new one
+                if (proc.running) {
+                    proc.terminate();
                 }
-                proc.running = true
+
+                if (pr.command === "lock") {
+                    proc.command = ["sh", "-c", "pgrep -f 'qs -p .*lockscreen/shell.qml' || qs -p ~/.config/quickshell/lockscreen/shell.qml"]
+                } else {
+                    proc.command = ["sh", "-c", pr.command]
+                }
+
+                // FIX: Use start() instead of assigning running property directly
+                proc.start();
             }
         }
     }

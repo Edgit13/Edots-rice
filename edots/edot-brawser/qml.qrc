@@ -1,0 +1,27 @@
+<RCC>
+  <qresource prefix="/">
+    <file>qml/Chrome.qml</file>
+    <file>qml/Rail.qml</file>
+    <file>qml/Pages.qml</file>
+    <file>qml/pages/ToolPage.qml</file>
+    <file>qml/pages/SettingsPage.qml</file>
+    <file>qml/popups/MenuPopup.qml</file>
+    <file>qml/popups/PermissionPopup.qml</file>
+    <file>qml/components/Card.qml</file>
+    <file>qml/components/Icon.qml</file>
+    <file>qml/components/IconButton.qml</file>
+    <file>qml/components/M3Button.qml</file>
+    <file>qml/components/M3Dialog.qml</file>
+    <file>qml/components/M3Field.qml</file>
+    <file>qml/components/M3Select.qml</file>
+    <file>qml/components/M3Switch.qml</file>
+    <file>qml/components/MenuRow.qml</file>
+    <file>qml/components/RailItem.qml</file>
+    <file>qml/components/SectionTitle.qml</file>
+    <file>qml/components/Segmented.qml</file>
+    <file>qml/components/SettingRow.qml</file>
+    <file>qml/components/SiteList.qml</file>
+    <file>qml/components/Swatch.qml</file>
+    <file>filters/sources.json</file>
+  </qresource>
+</RCC>
