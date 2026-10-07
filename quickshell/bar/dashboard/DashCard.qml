@@ -1,5 +1,6 @@
 import "root:/theme"
 import QtQuick
+import QtQuick.Layouts
 
 // DashCard — M3 Expressive картка-контейнер для дашборду.
 // DashCard { title: "Погода"; content: [ ... ] }
@@ -9,7 +10,7 @@ Item {
     property string title: ""
     property int level: Theme.elevation.resting
 
-    implicitHeight: col.implicitHeight + Theme.space.lg * 2
+    implicitHeight: Math.max(72, col.implicitHeight + Theme.space.lg * 2)
 
     ElevationShadow {
         anchors.fill: parent
@@ -18,7 +19,7 @@ Item {
         color: Theme.color.surfaceContainer
     }
 
-    Column {
+    ColumnLayout {
         id: col
         anchors.fill: parent
         anchors.margins: Theme.space.lg
@@ -31,6 +32,12 @@ Item {
             color: Theme.color.fgSurfaceVariant
         }
 
-        Item { id: body; width: parent.width; height: childrenRect.height }
+        Item {
+            id: body
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            implicitWidth: childrenRect.width
+            implicitHeight: childrenRect.height
+        }
     }
 }

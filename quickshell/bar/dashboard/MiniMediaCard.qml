@@ -17,8 +17,10 @@ DashCard {
     readonly property bool has: activePlayer !== null
     readonly property bool playing: has && activePlayer.playbackState === MprisPlaybackState.Playing
 
+    implicitHeight: 260
+
     ColumnLayout {
-        width: parent.width
+        anchors.fill: parent
         spacing: Theme.space.sm
 
         Rectangle {

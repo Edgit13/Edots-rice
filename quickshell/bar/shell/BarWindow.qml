@@ -31,12 +31,11 @@ PanelWindow {
     readonly property int reserve: thickness + gap * 2          // відступ від краю + смуга + відступ до вікон
     readonly property int cross: thickness - Theme.space.xs * 2 // розмір контенту впоперек осі смуги
 
-    // Dashboard тепер живе всередині цього вікна (не окреме вікно!). Поки він occupies —
-    // вікно розширюється (або йде на весь екран для scrim), тайлінг не рухається,
-    // бо exclusiveZone лишається тонким.
+    // Dashboard живе всередині цього вікна. Поки він occupies —
+    // вікно розширюється вниз/вбік на freeOverflow, тайлінг не рухається,
+    // бо exclusiveZone лишається постійним (reserve).
     readonly property var morphModules: [dashboardSurface]
     readonly property bool dashOpen: dashboardSurface.occupies
-    readonly property bool fillScreen: dashOpen && !vertical    // горизонтальний бар: scrim на весь екран
 
     function _maxOverflow(dir) {
         let m = 0
@@ -63,46 +62,26 @@ PanelWindow {
     }
 
     WlrLayershell.namespace: "edots-bar"
-    WlrLayershell.keyboardFocus: dashOpen ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
+    WlrLayershell.keyboardFocus: dashOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     color: "transparent"
 
-    // Вікно прилягає до краю екрана: 3 якорі (вздовж осі + сам край).
-    // Коли дашборд відкритий — горизонтальний бар розтягується на весь екран (прозорий,
-    // клікабельність обмежена mask), щоб scrim міг ловити кліки поза карткою.
+    // Вікно прилягає до краю екрана (3 якорі: вздовж осі + сам край).
+    // Розмір розширюється на freeOverflow, коли відкривається дашборд.
     anchors {
-        top: position === "top" || vertical || fillScreen
-        bottom: position === "bottom" || vertical || fillScreen
-        left: position === "left" || !vertical || fillScreen
-        right: position === "right" || !vertical || fillScreen
+        top: position === "top" || vertical
+        bottom: position === "bottom" || vertical
+        left: position === "left" || !vertical
+        right: position === "right" || !vertical
     }
     implicitWidth: vertical ? reserve + freeOverflow : 0
-    implicitHeight: vertical ? 0 : (fillScreen ? 0 : reserve + freeOverflow)
+    implicitHeight: vertical ? 0 : reserve + freeOverflow
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: reserve
 
-    // Клікабельні: смуга + (коли дашборд відкритий) scrim і сама картка дашборда
+    // Клікабельні: смуга + (коли дашборд відкритий) сама картка дашборда
     mask: Region {
         Region { item: surface }
-        Region { item: win.dashOpen ? scrim : null }
         Region { item: win.dashOpen ? dashboardSurface : null }
-    }
-
-    // ---- Scrim: клік поза дашбордом закриває його (лише поки dashOpen) ----
-    Rectangle {
-        id: scrim
-        z: 0
-        anchors.fill: parent
-        visible: win.dashOpen
-        color: Theme.color.scrim
-        opacity: visible ? 0.45 : 0
-        Behavior on opacity { MotionAnimation { role: "enter" } }
-        focus: win.dashOpen
-        Keys.onEscapePressed: ShellState.closeSurfaces()
-
-        MouseArea {
-            anchors.fill: parent
-            onClicked: ShellState.closeSurfaces()
-        }
     }
 
     // ---- Dashboard: морфиться з смуги (закріплений під/над/збоку смуги) ----
@@ -112,17 +91,20 @@ PanelWindow {
         hostMonitor: win.monitorName
 
         readonly property real stripEnd: win.gap + win.thickness + Theme.space.sm
+        readonly property real targetWidth: win.vertical ? Math.min(800, win.width - stripEnd - win.gap * 2)
+                                                         : Math.min(920, win.width - win.gap * 4)
+
         maxHeight: win.vertical ? win.height - win.gap * 2
                                 : win.height - stripEnd - win.gap
 
+        width: targetWidth
+
         x: win.position === "right" ? win.gap - width - Theme.space.sm
            : win.position === "left" ? stripEnd
-           : win.gap
+           : Math.round((win.width - width) / 2)
         y: win.position === "bottom" ? win.gap - height - Theme.space.sm
            : win.position === "top" ? stripEnd
-           : win.gap
-        width: win.vertical ? Math.min(900, win.width - stripEnd - win.gap)
-                            : win.width - win.gap * 2
+           : Math.round((win.height - height) / 2)
     }
 
     // Геометрія рахується явно (x/y/width/height), а не якорями
@@ -173,6 +155,7 @@ PanelWindow {
                     vertical: win.vertical
                     cross: win.cross
                     visible: Config.get("modules", "clock") !== false
+                    onClicked: ShellState.toggleDashboard(win.monitorName)
                 }
             ]
 

@@ -76,11 +76,15 @@ Item {
         }
     }
 
+    signal clicked()
+
     MouseArea {
         id: ma
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: ShellState.toggleDashboard()
+        onClicked: {
+            root.clicked()
+        }
     }
 }

@@ -36,6 +36,7 @@ DashCard {
 
     RowLayout {
         width: parent.width
+        height: implicitHeight
         spacing: Theme.space.lg
 
         ColumnLayout {

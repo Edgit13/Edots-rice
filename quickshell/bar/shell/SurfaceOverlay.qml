@@ -31,9 +31,10 @@ PanelWindow {
         return names.length > 0 && main === monitorName
     }
 
+    readonly property var overlaySurfaces: ["launcher", "wallpaper", "clipboard", "mixer", "wifi", "media", "power"]
     readonly property string activeSurface: ShellState.activeSurface
-    readonly property bool isOpen: activeSurface !== "idle"
-        && activeSurface !== "dashboard"
+    readonly property bool isAllowedSurface: overlaySurfaces.indexOf(activeSurface) >= 0
+    readonly property bool isOpen: isAllowedSurface
         && (isCurrentMonitor || Quickshell.screens.length === 1)
 
     visible: isOpen

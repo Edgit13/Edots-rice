@@ -9,8 +9,8 @@ Singleton {
 
     property string activeSurface: "idle"
 
-    signal openDashboardRequested()
-    signal toggleDashboardRequested()
+    signal openDashboardRequested(string monitor)
+    signal toggleDashboardRequested(string monitor)
     signal closeDashboardRequested()
 
     signal openSettingsRequested()
@@ -34,8 +34,8 @@ Singleton {
         activeSurface = "idle"
     }
 
-    function openDashboard() { openDashboardRequested() }
-    function toggleDashboard() { toggleDashboardRequested() }
+    function openDashboard(monitor) { openDashboardRequested(monitor || "") }
+    function toggleDashboard(monitor) { toggleDashboardRequested(monitor || "") }
     function closeDashboard() { closeDashboardRequested() }
 
     function openSettings() { openSettingsRequested() }

@@ -1,0 +1,10 @@
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/edot_adblock.dir
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/edot-browser.dir
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/edit_cache.dir
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/rebuild_cache.dir
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/list_install_components.dir
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/install.dir
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/install/local.dir
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/install/strip.dir
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/edot-browser_autogen_timestamp_deps.dir
+/home/eduard/coderP/edot-beta-fork/build/CMakeFiles/edot-browser_autogen.dir

@@ -7,33 +7,26 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-// DashboardSurface — дашборд, що морфиться з самої смуги бару (НЕ окреме вікно).
-// Хост (BarWindow) кладе цей Item одразу під смугою (top), над нею (bottom)
-// або збоку (left/right) і додає його до morphModules.
-//
-// Стилістика вмісту — як LauncherSurface/MixerSurface/MediaSurface:
-//   Colors.* / Md.*, шрифти SF Pro Display + Material Symbols Rounded,
-//   radius Md.rM, hover Qt.rgba(fg, 0.08) / Md.hoverOf().
+// DashboardSurface — Material 3 Expressive дашборд, що морфиться з смуги бару.
+// Хост (BarWindow) розміщує цей Item під або над смугою і розширює вікно
+// на freeOverflow без зламу wlroots layer-shell та тайлінгу вікон.
 Item {
     id: root
 
     // ---- API для хоста ----
-    property string hostMonitor: ""   // BarWindow встановлює modelData.name
-    property real maxHeight: 520      // скільки місця є вздовж осі розгортання
+    property string hostMonitor: ""   // BarWindow встановлює win.monitorName
+    property real maxHeight: 520      // доступна висота для розгортання
 
-    // наскільки розгорнута картка виходить за межі compact-смуги (читає BarWindow)
     readonly property real expandedHeight: Math.min(520, Math.max(120, maxHeight))
     readonly property real drop: Theme.space.sm + expandedHeight
-    readonly property real overflowTop: drop
-    readonly property real overflowBottom: drop
-    readonly property real overflowLeft: drop
-    readonly property real overflowRight: drop
+    readonly property real overflowTop: occupies ? drop : 0
+    readonly property real overflowBottom: occupies ? drop : 0
+    readonly property real overflowLeft: occupies ? drop : 0
+    readonly property real overflowRight: occupies ? drop : 0
 
-    // true, поки вікно має займати місце під картку (включаючи анімацію згортання) —
-    // після closeTimer картка вже згорнута, і вікно повертається до товщини смуги
+    // true, поки вікно має виділяти місце під картку (включаючи анімацію закриття)
     readonly property bool occupies: dashState !== "closed"
 
-    // ---- стани (та сама машина станів, що й у колишнього DashboardWindow) ----
     // closed | opening | open | closing
     property string dashState: "closed"
     readonly property bool expanded: dashState === "open" || dashState === "opening"
@@ -48,13 +41,18 @@ Item {
         closeTimer.stop()
         ShellState.openSurface("dashboard")
         dashState = "opening"
-        Qt.callLater(function () { dashState = "open" })
+        Qt.callLater(function () {
+            dashState = "open"
+            card.forceActiveFocus()
+        })
     }
+
     function close() {
         if (dashState === "closed" || dashState === "closing") return
         dashState = "closing"
         closeTimer.restart()
     }
+
     function toggle() {
         if (dashState === "open" || dashState === "opening") close()
         else open()
@@ -63,28 +61,54 @@ Item {
     Timer {
         id: closeTimer
         interval: Theme.motion.duration("collapse") + 40
-        onTriggered: { root.dashState = "closed"; ShellState.closeSurfaces() }
+        onTriggered: {
+            root.dashState = "closed"
+            if (ShellState.activeSurface === "dashboard") {
+                ShellState.closeSurfaces()
+            }
+        }
     }
 
-    // ---- глобальні запити (клік по годиннику, Super+D, IPC) ----
-    // відкриваємо лише на поточному моніторі (та сама логіка, що в SurfaceOverlay)
+    // Відкриваємо лише на потрібному/поточному моніторі
     readonly property bool isCurrentMonitor: {
         const focusedMon = MangoService.focusedClient.monitor
         if (focusedMon && focusedMon.length > 0) return focusedMon === root.hostMonitor
         return Quickshell.screens.length > 0 && Quickshell.screens[0].name === root.hostMonitor
     }
 
+    function shouldHandleRequest(targetMon) {
+        if (targetMon && targetMon.length > 0) return targetMon === root.hostMonitor
+        return root.isCurrentMonitor
+    }
+
     Connections {
         target: ShellState
-        function onOpenDashboardRequested()   { if (root.isCurrentMonitor) root.open(); else root.close() }
-        function onToggleDashboardRequested() { if (root.isCurrentMonitor) root.toggle(); else root.close() }
-        function onCloseDashboardRequested()  { root.close() }
-        // відкрилась інша поверхня (launcher, mixer, wifi...) — згортаємось
+        function onOpenDashboardRequested(targetMon) {
+            if (root.shouldHandleRequest(targetMon)) root.open()
+            else root.close()
+        }
+        function onToggleDashboardRequested(targetMon) {
+            if (root.shouldHandleRequest(targetMon)) root.toggle()
+            else root.close()
+        }
+        function onCloseDashboardRequested() {
+            root.close()
+        }
         function onActiveSurfaceChanged() {
             if (ShellState.activeSurface !== "dashboard" &&
                 (root.dashState === "open" || root.dashState === "opening")) {
                 root.dashState = "closing"
                 closeTimer.restart()
+            }
+        }
+    }
+
+    // Закриття при кліку на інше вікно (зміна фокусу)
+    Connections {
+        target: MangoService
+        function onFocusedClientChanged() {
+            if (root.dashState === "open" && MangoService.focusedClient && MangoService.focusedClient.id !== null) {
+                root.close()
             }
         }
     }
@@ -103,8 +127,13 @@ Item {
         id: card
         width: parent.width
         height: root.expandedHeight
+        focus: root.expanded
 
-        // та сама тінь, що в SurfaceOverlay
+        Keys.onEscapePressed: function(e) {
+            root.close()
+            e.accepted = true
+        }
+
         ElevationShadow {
             anchors.fill: parent
             level: 4
@@ -112,7 +141,6 @@ Item {
             color: Theme.color.surfaceContainerHigh
         }
 
-        // та сама картка, що в SurfaceOverlay (launcher/mixer/wifi/...)
         Rectangle {
             anchors.fill: parent
             radius: Theme.shape.dialog
@@ -121,7 +149,6 @@ Item {
             border.color: Theme.color.outlineVariant
             clip: true
 
-            // кліки по тілу картки не проходять на scrim
             MouseArea {
                 anchors.fill: parent
             }
@@ -129,42 +156,42 @@ Item {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: Theme.space.lg
-                spacing: 14
+                spacing: Theme.space.md
 
                 opacity: root.dashState === "open" ? 1 : 0
                 Behavior on opacity { MotionAnimation { role: root.dashState === "open" ? "enter" : "exit" } }
 
-                // ---- заголовок: іконка + назва активної вкладки + ✕ (стиль поверхонь) ----
+                // ---- заголовок: іконка + назва вкладки + кнопка закриття ----
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 10
+                    spacing: Theme.space.sm
 
                     Text {
                         text: root.tabs[root.activeTab].icon
-                        color: Md.primary
-                        font { family: "Material Symbols Rounded"; pixelSize: 16 }
+                        color: Theme.color.primary
+                        font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
                     }
 
-                    Text {
+                    ThemedText {
                         Layout.fillWidth: true
                         text: root.tabs[root.activeTab].label
-                        color: Colors.fg
-                        font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
+                        style: Theme.type.titleMedium
+                        emphasized: true
+                        color: Theme.color.fgSurface
                     }
 
-                    Rectangle {   // кругла кнопка закриття
-                        width: 32; height: 32
+                    Rectangle {
+                        width: 32
+                        height: 32
                         radius: 16
-                        color: closeMa.pressed ? Md.pressedOf(Md.m3OnSurface)
-                             : closeMa.containsMouse ? Md.hoverOf(Md.m3OnSurface)
-                             : "transparent"
-                        Behavior on color { ColorAnimation { duration: Md.durFast } }
+                        color: closeMa.containsMouse ? Theme.color.surfaceContainerHighest : "transparent"
+                        Behavior on color { MotionColorAnimation { role: "hover" } }
 
                         Text {
                             anchors.centerIn: parent
                             text: "\ue5cd"
-                            color: Colors.grey2
-                            font { family: "Material Symbols Rounded"; pixelSize: 16 }
+                            font { family: Theme.type.icons; pixelSize: 18 }
+                            color: Theme.color.fgSurfaceVariant
                         }
 
                         MouseArea {
@@ -177,10 +204,10 @@ Item {
                     }
                 }
 
-                // ---- вкладки (як selected-row у LauncherSurface) ----
+                // ---- панель вкладок ----
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 6
+                    spacing: Theme.space.xs
 
                     Repeater {
                         model: root.tabs
@@ -190,26 +217,27 @@ Item {
                             required property int index
                             readonly property bool active: root.activeTab === index
                             Layout.fillWidth: true
-                            implicitHeight: 34
-                            radius: Md.rM
-                            color: active ? Colors.accent
-                                 : tma.containsMouse ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.08)
+                            implicitHeight: 36
+                            radius: Theme.shape.button
+                            color: active ? Theme.color.secondaryContainer
+                                 : tma.containsMouse ? Theme.color.surfaceContainerHighest
                                  : "transparent"
-                            Behavior on color { ColorAnimation { duration: 120 } }
+                            Behavior on color { MotionColorAnimation { role: "hover" } }
 
                             RowLayout {
                                 anchors.centerIn: parent
-                                spacing: 6
+                                spacing: Theme.space.xs
 
                                 Text {
                                     text: tabBtn.modelData.icon
-                                    color: tabBtn.active ? Colors.bg0 : Colors.grey2
-                                    font { family: "Material Symbols Rounded"; pixelSize: 14 }
+                                    color: tabBtn.active ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
+                                    font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
                                 }
-                                Text {
+                                ThemedText {
                                     text: tabBtn.modelData.label
-                                    color: tabBtn.active ? Colors.bg0 : Colors.grey2
-                                    font { family: "SF Pro Display"; pixelSize: 11; weight: tabBtn.active ? 600 : 500 }
+                                    color: tabBtn.active ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
+                                    style: Theme.type.labelMedium
+                                    emphasized: tabBtn.active
                                 }
                             }
 
@@ -224,9 +252,15 @@ Item {
                     }
                 }
 
-                Rectangle { Layout.fillWidth: true; height: 1; color: Md.outlineVariant }
+                Rectangle {
+                    Layout.fillWidth: true
+                    height: 1
+                    color: Theme.color.outlineVariant
+                }
 
+                // ---- контейнер контенту активної вкладки ----
                 Loader {
+                    id: tabLoader
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     active: root.dashState === "open"
@@ -238,6 +272,11 @@ Item {
                         default: return overviewComp
                         }
                     }
+                    onLoaded: {
+                        if (item) {
+                            item.anchors.fill = tabLoader
+                        }
+                    }
                 }
             }
         }
@@ -246,10 +285,12 @@ Item {
     Component {
         id: overviewComp
         Flickable {
+            anchors.fill: parent
             clip: true
             contentWidth: width
             contentHeight: grid.implicitHeight
             boundsBehavior: Flickable.StopAtBounds
+
             GridLayout {
                 id: grid
                 width: parent.width
@@ -257,14 +298,34 @@ Item {
                 columnSpacing: Theme.space.md
                 rowSpacing: Theme.space.md
 
-                WeatherCard { Layout.column: 0; Layout.row: 0; Layout.fillWidth: true }
-                SystemCard { Layout.column: 1; Layout.row: 0; Layout.fillWidth: true }
-                MiniMediaCard { Layout.column: 2; Layout.row: 0; Layout.rowSpan: 2; Layout.fillWidth: true; Layout.fillHeight: true }
-                CalendarCard { Layout.column: 0; Layout.row: 1; Layout.columnSpan: 2; Layout.fillWidth: true }
+                WeatherCard {
+                    Layout.column: 0
+                    Layout.row: 0
+                    Layout.fillWidth: true
+                }
+                SystemCard {
+                    Layout.column: 1
+                    Layout.row: 0
+                    Layout.fillWidth: true
+                }
+                MiniMediaCard {
+                    Layout.column: 2
+                    Layout.row: 0
+                    Layout.rowSpan: 2
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                }
+                CalendarCard {
+                    Layout.column: 0
+                    Layout.row: 1
+                    Layout.columnSpan: 2
+                    Layout.fillWidth: true
+                }
             }
         }
     }
-    Component { id: mediaComp; MediaTab {} }
-    Component { id: perfComp; PerformanceTab {} }
-    Component { id: wsComp; WorkspacesTab {} }
+
+    Component { id: mediaComp; MediaTab { anchors.fill: parent } }
+    Component { id: perfComp; PerformanceTab { anchors.fill: parent } }
+    Component { id: wsComp; WorkspacesTab { anchors.fill: parent } }
 }
