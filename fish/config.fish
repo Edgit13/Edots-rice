@@ -70,3 +70,6 @@ set -gx BROWSER /usr/bin/firefox
 # Added by Antigravity CLI installer
 set -gx PATH "/home/eduard/.local/bin" $PATH
 set -gx PATH ~/.npm-global/bin $PATH
+
+# opencode
+fish_add_path /home/eduard/.opencode/bin

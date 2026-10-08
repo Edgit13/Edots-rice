@@ -1,0 +1,61 @@
+/*
+Default configuration file for the Quickshell Dock (Material 3 edition).
+
+This file documents the built-in defaults (kept in sync with defaultSettings in
+DockSettings.qml). The dock itself reads a single file:
+
+  ~/.config/quickshell-dock/config.json
+
+It is created empty on first start and merged over the
+built-in defaults below, so it only needs to carry the values you want to
+change. The dock writes enabled / autohide / the pinned app list back into it.
+
+dock.launcherCommand is what a left click on the launcher button runs. It is
+run through bash, so a leading ~, arguments and pipes all work.
+
+dock.editorCommand opens config.json when "Edit configuration" is chosen in the
+dock menu (or `edit` is called over IPC). The file path is appended as the
+last argument. When it is empty or its program cannot be found, xdg-open is
+used instead.
+
+theme.colorsFile is the JSON file of Material color roles the dock takes its
+colors from (matugen's templates/colors.json format). It is watched, so the
+dock recolors whenever the file changes. The patched wallcolors.py writes it
+on every wallpaper change.
+*/
+{
+    "dock": {
+        "enabled": true,
+        "autohide": false,
+        "iconSize": 28,
+        "spacing": 8,
+        "marginBottom": 8,
+        "reserveSpace": true,
+        "hideDelay": 400,
+        "launcherButton": true,
+        "launcherCommand": "qs -p ~/.config/quickshell/bar/shell.qml ipc call pill toggleLauncher || qs -d -p ~/.config/quickshell/bar/shell.qml",
+        "editorCommand": ""
+    },
+    "pill": {
+        "radius": 26,
+        "padding": 8,
+        "animationDuration": 300
+    },
+    "border": {
+        "width": 0,
+        "colorTop": "",
+        "colorBottom": ""
+    },
+    "opacity": {
+        "normal": 0.92
+    },
+    "theme": {
+        "colorsFile": "~/.config/quickshell/dock-colors.json"
+    },
+    "apps": {
+        "pinned": [
+            "firefox",
+            "kitty"
+        ]
+    }
+}

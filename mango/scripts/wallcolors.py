@@ -22,6 +22,7 @@ KITTY_COLORS_CONF = CONFIG / "kitty" / "kitty-colors.conf"
 GHOSTTY_COLORS_CONF = CONFIG / "ghostty" / "ghostty-colors.conf"
 QUICKSHELL_COLORS_JSON = CONFIG / "quickshell" / "colors.json"
 QUICKSHELL_WALLPAPER_FILE = CONFIG / "quickshell" / "current-wallpaper.txt"
+DOCK_COLORS_JSON = CONFIG / "quickshell" / "dock-colors.json"
 ROFI_COLORS_RASI = CONFIG / "rofi" / "colors.rasi"
 SWAYNC_COLORS_CSS = CONFIG / "swaync" / "colors.css"
 GTK4_COLORS_CSS = CONFIG / "gtk-4.0" / "gtk-colors.css"
@@ -157,6 +158,29 @@ def build_palette(source_hex: str) -> dict:
         "grey1": hls_to_hex(bg_hue, 0.35, bg_sat),
         "grey2": hls_to_hex(bg_hue, 0.70, bg_sat),
     }
+
+
+def write_dock_colors(palette: dict):
+    """Material 3 roles for the Quickshell dock (~/.config/quickshell/dock-colors.json).
+
+    True M3 roles from matugen when the dark scheme is available, otherwise
+    derived from the generated palette so the dock always has valid colors.
+    """
+    roles = {
+        "background": palette.get("surface", palette["bg0"]),
+        "on_primary": palette.get("on_primary", palette["bg0"]),
+        "on_surface": palette.get("on_surface", palette["fg"]),
+        "on_surface_variant": palette.get("on_surface_variant", palette["grey2"]),
+        "outline_variant": palette.get("outline_variant", palette["bg4"]),
+        "primary": palette.get("primary", palette["accent"]),
+        "shadow": "#000000",
+        "surface_container_high": palette.get("surface_container_high", palette["bg2"]),
+        "primary_container": palette.get("primary_container", palette["accent"]),
+        "on_primary_container": palette.get("on_primary_container", palette["bg0"]),
+        "secondary_container": palette.get("secondary_container", palette["accent"]),
+        "on_secondary_container": palette.get("on_secondary_container", palette["bg0"]),
+    }
+    write_json(DOCK_COLORS_JSON, roles)
 
 
 def write(path: Path, content: str):
@@ -318,6 +342,7 @@ def main():
     palette = build_palette(color)
     palette.update(md3_tokens(role_hex))
     write_quickshell_colors(palette, wallpaper)
+    write_dock_colors(palette)
     write_kitty_colors(palette)
     write_ghostty_colors(palette)
     write_rofi_colors(palette)

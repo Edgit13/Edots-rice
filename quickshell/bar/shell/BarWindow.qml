@@ -118,7 +118,7 @@ PanelWindow {
 
         ElevationShadow {
             anchors.fill: parent
-            level: BarConfig.elevation
+            level: 0.5
             radius: Theme.shape.radius("full", win.thickness)
             color: Theme.color.surfaceContainer
         }
