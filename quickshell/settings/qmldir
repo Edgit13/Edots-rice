@@ -1,0 +1,5 @@
+module settings
+singleton SettingsState 1.0 SettingsState.qml
+singleton SettingsSearch 1.0 SettingsSearch.qml
+SettingsApp 1.0 SettingsApp.qml
+SettingsWindow 1.0 SettingsWindow.qml

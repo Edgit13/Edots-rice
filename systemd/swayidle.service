@@ -1,0 +1,13 @@
+[Unit]
+Description=Idle manager with Edots lock-screen hooks
+After=graphical-session.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/swayidle -w -C %h/.config/mango/swayidle.conf
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

@@ -1,3 +1,0 @@
-# Legacy compatibility file.
-# Active ad/tracker/cookie filters are loaded from filters/sources.json.
-# Do not add the upstream lists here; they are downloaded and cached automatically.

@@ -1,191 +1,231 @@
 #!/usr/bin/env bash
 #
-# sync.sh — синхронізатор Edots-rice
+# sync.sh — Edots-rice config symlinker.
 #
-# Лінкує конфіги з репозиторію напряму в ~/.config через symlink.
-# Завдяки цьому редагування файлу в репо (~/Dotfiles/...) і в
-# ~/.config/... — це редагування ОДНОГО й того самого файлу.
-# Ручне копіювання в дві теки більше не потрібне.
+# Links each config in the repository directly into ~/.config via symlink,
+# so editing the repo file and editing ~/.config/... touch the same file.
 #
-# Використання:
-#   ./sync.sh install   — створити symlink'и (з бекапом старих конфігів)
-#   ./sync.sh status     — показати стан кожного конфігу
-#   ./sync.sh unlink      — прибрати symlink'и, повернути з .bak (якщо є)
+# Usage:
+#   ./sync.sh install      link everything (backs up old real configs)
+#   ./sync.sh status       show link state for each config
+#   ./sync.sh unlink       remove symlinks we created
+#   ./sync.sh firefox      print manual steps for the Firefox chrome files
+#   ./sync.sh --dry-run install
 #
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE}")" && pwd)"
+REPO_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+SYSTEMD_HOME="$CONFIG_HOME/systemd/user"
 BACKUP_DIR="$HOME/.config-backup-$(date +%Y%m%d-%H%M%S)"
 
-# формат: "шлях_у_репо:ціль_symlink'у"
+DRY_RUN=0
+if [ "${1:-}" = "--dry-run" ]; then DRY_RUN=1; shift; fi
+
+# ---------- directory symlinks: "repo_path:target" ----------
 LINKS=(
-  "swaylock:$CONFIG_HOME/swaylock"
   "alacritty:$CONFIG_HOME/alacritty"
-  "fastfetch:$CONFIG_HOME/fastfetch"
+  "dolphinrc:$CONFIG_HOME/dolphinrc"
+  "edots:$HOME/edots"
   "fish:$CONFIG_HOME/fish"
   "ghostty:$CONFIG_HOME/ghostty"
-  "wallpapers:$HOME/Pictures/Wallpapers"
   "gtk-3.0:$CONFIG_HOME/gtk-3.0"
   "gtk-4.0:$CONFIG_HOME/gtk-4.0"
-  "mango:$CONFIG_HOME/mango"
+  "kdeglobals:$CONFIG_HOME/kdeglobals"
   "kitty:$CONFIG_HOME/kitty"
+  "mango:$CONFIG_HOME/mango"
   "nvim:$CONFIG_HOME/nvim"
   "quickshell:$CONFIG_HOME/quickshell"
   "rofi:$CONFIG_HOME/rofi"
+  "swaylock:$CONFIG_HOME/swaylock"
   "swaync:$CONFIG_HOME/swaync"
-  "dolphinrc:$CONFIG_HOME/dolphinrc"
-  "kdeglobals:$CONFIG_HOME/kdeglobals"
-  "edots:$HOME/edots"
 )
 
-# інструменти, що лінкуються в /usr/local/bin (потребують sudo)
-# формат: "шлях_у_репо:ціль_symlink'у"
+# ---------- file symlinks into systemd user dir ----------
+FILE_LINKS=(
+  "systemd/edots-lockscreen.service:$SYSTEMD_HOME/edots-lockscreen.service"
+  "systemd/swayidle.service:$SYSTEMD_HOME/swayidle.service"
+)
+
+# ---------- helpers that go into /usr/local/bin (need sudo) ----------
 BIN_LINKS=(
   "edots/tool-manager/upkg:/usr/local/bin/upkg"
   "edots/tool-manager/utimer:/usr/local/bin/utimer"
 )
 
-c_green="\033[0;32m"; c_yellow="\033[0;33m"; c_red="\033[0;31m"; c_reset="\033[0m"
-info()  { echo -e "${c_green}[ok]${c_reset}   $*"; }
-warn()  { echo -e "${c_yellow}[!!]${c_reset}   $*"; }
-err()   { echo -e "${c_red}[err]${c_reset}  $*"; }
+# ---------- output helpers ----------
+c_green="\033[0;32m"; c_yellow="\033[0;33m"; c_red="\033[0;31m"; c_dim="\033[2m"; c_reset="\033[0m"
+info() { printf "${c_green}[ok]${c_reset}  %s\n" "$*"; }
+warn() { printf "${c_yellow}[!!]${c_reset}  %s\n" "$*"; }
+err()  { printf "${c_red}[err]${c_reset} %s\n" "$*"; }
+dim()  { printf "${c_dim}     %s${c_reset}\n" "$*"; }
 
+run() {
+  if [ "$DRY_RUN" = "1" ]; then dim "DRY: $*"; else "$@"; fi
+}
+
+# ---------- core linker ----------
+_link() {
+  local src="$1" dst="$2"
+  if [ ! -e "$src" ]; then warn "missing in repo, skipping: $src"; return 1; fi
+
+  if [ -L "$dst" ]; then
+    if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
+      info "already linked: $dst"; return 0
+    fi
+    warn "replacing stale link: $dst -> $(readlink "$dst")"
+    run rm "$dst"
+  elif [ -e "$dst" ]; then
+    run mkdir -p "$BACKUP_DIR"
+    warn "backing up old: $dst -> $BACKUP_DIR/"
+    run mv "$dst" "$BACKUP_DIR/"
+  fi
+  run mkdir -p "$(dirname "$dst")"
+  run ln -s "$src" "$dst"
+  info "linked: $dst -> $src"
+}
+
+_unlink() {
+  local src="$1" dst="$2"
+  if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
+    run rm "$dst"; info "removed: $dst"
+  fi
+}
+
+_status() {
+  local src="$1" dst="$2"
+  if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
+    info "$dst -> $src"
+  elif [ -L "$dst" ]; then
+    warn "$dst symlink, but points elsewhere ($(readlink -f "$dst"))"
+  elif [ -e "$dst" ]; then
+    err  "$dst exists but is NOT a symlink (real copy)"
+  else
+    warn "$dst missing"
+  fi
+}
+
+# ---------- commands ----------
 cmd_install() {
-  mkdir -p "$CONFIG_HOME"
-  local backed_up=0
+  run mkdir -p "$CONFIG_HOME"
 
+  echo "── directory links ──"
   for pair in "${LINKS[@]}"; do
-    src="$REPO_DIR/${pair%%:*}"
-    dst="${pair##*:}"
+    _link "${pair%%:*}" "${pair#*:}"
+  done
 
-    if [ ! -e "$src" ]; then
-      warn "нема в репо, пропускаю: $src"
-      continue
-    fi
+  echo
+  echo "── systemd user units ──"
+  run mkdir -p "$SYSTEMD_HOME"
+  for pair in "${FILE_LINKS[@]}"; do
+    _link "$REPO_DIR/${pair%%:*}" "${pair#*:}"
+  done
 
-    if [ -L "$dst" ]; then
-      if [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-        info "вже залінковано: $dst"
-        continue
-      else
-        rm "$dst"
+  echo
+  echo "── scripts +x ──"
+  run chmod +x "$REPO_DIR"/quickshell/bar/reload.sh 2>/dev/null || true
+  run chmod +x "$REPO_DIR"/quickshell/lockscreen/*.sh 2>/dev/null || true
+  run chmod +x "$REPO_DIR"/quickshell/scripts/*.sh 2>/dev/null || true
+  run chmod +x "$REPO_DIR"/mango/scripts/*.sh 2>/dev/null || true
+  run chmod +x "$REPO_DIR"/edots/tool-manager/upkg "$REPO_DIR"/edots/tool-manager/utimer 2>/dev/null || true
+  info "chmod +x applied"
+
+  echo
+  echo "── bin links (sudo) ──"
+  if ! command -v sudo >/dev/null; then
+    warn "sudo missing, skipping bin links"
+  else
+    for pair in "${BIN_LINKS[@]}"; do
+      local src="$REPO_DIR/${pair%%:*}" dst="${pair#*:}"
+      if [ ! -e "$src" ]; then warn "missing in repo, skipping: $src"; continue; fi
+      if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
+        info "already linked: $dst"; continue
       fi
-    elif [ -e "$dst" ]; then
-      mkdir -p "$BACKUP_DIR"
-      mv "$dst" "$BACKUP_DIR/$(basename "$dst")"
-      backed_up=1
-      warn "старий конфіг перенесено в $BACKUP_DIR/$(basename "$dst")"
-    fi
-
-    ln -s "$src" "$dst"
-    info "залінковано: $dst -> $src"
-  done
-
-  [ "$backed_up" -eq 1 ] && echo -e "\nБекап старих конфігів: $BACKUP_DIR"
-
-  echo
-  chmod +x "$REPO_DIR"/quickshell/bar/reload.sh 2>/dev/null || true
-  chmod +x "$REPO_DIR"/quickshell/scripts/*.sh 2>/dev/null || true
-  chmod +x "$REPO_DIR"/mango/scripts/*.sh 2>/dev/null || true
-  chmod +x "$REPO_DIR"/edots/tool-manager/upkg "$REPO_DIR"/edots/tool-manager/utimer 2>/dev/null || true
-  info "виставлено +x на скрипти"
-
-  echo
-  for pair in "${BIN_LINKS[@]}"; do
-    src="$REPO_DIR/${pair%%:*}"
-    dst="${pair##*:}"
-
-    if [ ! -e "$src" ]; then
-      warn "нема в репо, пропускаю: $src"
-      continue
-    fi
-
-    if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-      info "вже залінковано: $dst"
-      continue
-    fi
-
-    sudo ln -sf "$src" "$dst"
-    info "залінковано (sudo): $dst -> $src"
-  done
-
-  if command -v python3 >/dev/null; then
-    first_wallpaper=$(find "$HOME/Pictures/Wallpapers" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) 2>/dev/null | head -n 1)
-    if [ -n "${first_wallpaper:-}" ]; then
-      python3 "$REPO_DIR/mango/scripts/wallcolors.py" "$first_wallpaper" || warn "wallcolors.py впав, запусти вручну"
-    else
-      warn "не знайдено шпалер для первинної генерації кольорів"
-    fi
+      run sudo ln -sf "$src" "$dst"
+      info "linked (sudo): $dst -> $src"
+    done
   fi
 
   echo
-  info "готово. qs -p $CONFIG_HOME/quickshell/bar/shell.qml"
+  echo "── reload user systemd ──"
+  run systemctl --user daemon-reload || warn "systemctl --user unavailable"
+
+  echo
+  echo "── initial colour generation ──"
+  if command -v python3 >/dev/null; then
+    local wp
+    wp="$(find "$HOME/Pictures/Wallpapers" -type f \
+          \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
+          2>/dev/null | head -n 1)"
+    if [ -n "${wp:-}" ]; then
+      run python3 "$REPO_DIR/mango/scripts/wallcolors.py" "$wp" \
+        || warn "wallcolors.py failed, run manually"
+    else
+      warn "no wallpapers found — clone Edot-Wallpapers or set one manually"
+    fi
+  fi
+
+  if [ -d "$BACKUP_DIR" ]; then
+    echo
+    echo "Old configs backed up in: $BACKUP_DIR"
+  fi
+
+  echo
+  info "done.  qs -p $CONFIG_HOME/quickshell/bar/shell.qml"
+  echo
+  echo "Firefox chrome files need a manual step — see:  ./sync.sh firefox"
 }
 
 cmd_status() {
-  for pair in "${LINKS[@]}"; do
-    src="$REPO_DIR/${pair%%:*}"
-    dst="${pair##*:}"
-
-    if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-      info "$dst -> $src"
-    elif [ -L "$dst" ]; then
-      warn "$dst symlink, але веде в інше місце ($(readlink -f "$dst"))"
-    elif [ -e "$dst" ]; then
-      err "$dst існує, але НЕ symlink (звичайна копія)"
-    else
-      warn "$dst не існує"
-    fi
-  done
-
+  for pair in "${LINKS[@]}"; do _status "${pair%%:*}" "${pair#*:}"; done
   echo
-  for pair in "${BIN_LINKS[@]}"; do
-    src="$REPO_DIR/${pair%%:*}"
-    dst="${pair##*:}"
-
-    if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-      info "$dst -> $src"
-    elif [ -L "$dst" ]; then
-      warn "$dst symlink, але веде в інше місце ($(readlink -f "$dst"))"
-    elif [ -e "$dst" ]; then
-      err "$dst існує, але НЕ symlink (звичайна копія)"
-    else
-      warn "$dst не існує"
-    fi
-  done
+  for pair in "${FILE_LINKS[@]}"; do _status "$REPO_DIR/${pair%%:*}" "${pair#*:}"; done
+  echo
+  for pair in "${BIN_LINKS[@]}"; do _status "$REPO_DIR/${pair%%:*}" "${pair#*:}"; done
 }
 
 cmd_unlink() {
-  for pair in "${LINKS[@]}"; do
-    src="$REPO_DIR/${pair%%:*}"
-    dst="${pair##*:}"
-
-    if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-      rm "$dst"
-      info "видалено symlink: $dst"
-    fi
-  done
-
+  for pair in "${LINKS[@]}"; do _unlink "${pair%%:*}" "${pair#*:}"; done
+  for pair in "${FILE_LINKS[@]}"; do _unlink "$REPO_DIR/${pair%%:*}" "${pair#*:}"; done
   for pair in "${BIN_LINKS[@]}"; do
-    src="$REPO_DIR/${pair%%:*}"
-    dst="${pair##*:}"
-
-    if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
-      sudo rm "$dst"
-      info "видалено symlink (sudo): $dst"
-    fi
+    local src="$REPO_DIR/${pair%%:*}" dst="${pair#*:}"
+    [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ] && sudo rm "$dst" && info "removed (sudo): $dst"
   done
+  echo "Backups in ~/.config-backup-* can be restored manually."
+}
 
-  echo "Бекапи (~/.config-backup-*) поверни вручну за потреби."
+cmd_firefox() {
+  cat <<'EOF'
+Firefox userChrome.css / userContent.css need to live in <profile>/chrome/.
+
+Steps:
+  1. Open Firefox → about:support
+  2. Find "Profile Folder" → click "Open Folder"
+  3. From the repo:
+        mkdir -p <profile>/chrome
+        ln -sf ~/Dotfiles/firefox/chrome/userChrome.css  <profile>/chrome/userChrome.css
+        ln -sf ~/Dotfiles/firefox/chrome/userContent.css <profile>/chrome/userContent.css
+  4. about:config → toolkit.legacyUserProfileCustomizations.stylesheet = true
+  5. Restart Firefox.
+
+The colour palette itself (~/.config/firefox-colors.css) is written by
+wallcolors.py — no symlink needed, both CSS files @import it.
+EOF
 }
 
 case "${1:-}" in
-  install) cmd_install ;;
-  status)  cmd_status ;;
-  unlink)  cmd_unlink ;;
+  install)  cmd_install ;;
+  status)   cmd_status ;;
+  unlink)   cmd_unlink ;;
+  firefox)  cmd_firefox ;;
   *)
-    echo "Використання: $0 {install|status|unlink}"
-    exit 1
-    ;;
+    cat <<EOF
+Usage: $0 [--dry-run] {install|status|unlink|firefox}
+
+  install   link every config from the repo into ~/.config (and systemd, bin)
+  status    show what's currently linked
+  unlink    remove symlinks this script created
+  firefox   print manual steps for Firefox chrome (needs profile path)
+EOF
+    exit 1 ;;
 esac

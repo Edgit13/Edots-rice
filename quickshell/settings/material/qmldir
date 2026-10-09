@@ -1,0 +1,13 @@
+module material
+singleton M3 1.0 M3.qml
+MaterialButton 1.0 MaterialButton.qml
+MaterialCard 1.0 MaterialCard.qml
+MaterialDialog 1.0 MaterialDialog.qml
+MaterialIconButton 1.0 MaterialIconButton.qml
+MaterialListItem 1.0 MaterialListItem.qml
+MaterialSegmented 1.0 MaterialSegmented.qml
+MaterialSwitch 1.0 MaterialSwitch.qml
+MaterialTextField 1.0 MaterialTextField.qml
+MaterialSlider 1.0 MaterialSlider.qml
+MaterialDropdown 1.0 MaterialDropdown.qml
+ExpressiveDot 1.0 ExpressiveDot.qml

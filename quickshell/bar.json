@@ -1,10 +1,16 @@
 {
-    "elevation": 3,
-    "mode": "expanded",
-    "perMonitor": {
-        "DP-1": {
-            "position": "bottom"
-        }
-    },
-    "position": "top"
+  "bar": {
+    "position": "top",
+    "mode": "compact",
+    "elevation": 1,
+    "mainMonitor": ""
+  },
+  "perMonitor": {
+    "DP-1": {
+      "position": "bottom"
+    }
+  },
+  "mode": "expanded",
+  "elevation": 1,
+  "position": "top"
 }

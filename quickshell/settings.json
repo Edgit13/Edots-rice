@@ -1,11 +1,74 @@
 {
   "appearance": {
+    "mode": "dark",
+    "dynamicColor": true,
+    "accent": "#74e7c8",
+    "cornerStyle": "expressive",
+    "uiScale": 1,
+    "fontFamily": "SF Pro Display",
     "uiFont": "SF Pro Display",
     "monoFont": "SF Mono",
     "iconFont": "Material Symbols Rounded",
     "baseTextSize": 12,
-    "uiScale": 1,
     "density": "normal"
+  },
+  "animations": {
+    "enabled": true,
+    "expressiveMotion": true,
+    "reduceMotion": false,
+    "globalSpeed": 1
+  },
+  "bar": {
+    "position": "top",
+    "mode": "compact",
+    "elevation": 1,
+    "mainMonitor": "",
+    "style": "pill",
+    "exclusionZoneGap": 5
+  },
+  "modules": {
+    "workspaces": true,
+    "clock": true,
+    "launcher": true,
+    "window": true,
+    "media": true,
+    "mixer": true,
+    "wifi": true,
+    "notifications": true,
+    "battery": true,
+    "power": true,
+    "order": [
+      "workspaces",
+      "clock",
+      "wallpaper",
+      "media",
+      "wifi",
+      "link",
+      "power",
+      "mixer",
+      "clipboard",
+      "notifications",
+      "launcher",
+      "settings"
+    ],
+    "wallpaper": true,
+    "link": true,
+    "clipboard": true,
+    "settings": true
+  },
+  "lockscreen": {
+    "enabled": true,
+    "blurStrength": 0.35,
+    "blurRadius": 32,
+    "scrimOpacity": 0.55,
+    "kenBurns": true,
+    "parallax": true,
+    "floatingShapes": true,
+    "clockSize": 112,
+    "greeting": true,
+    "passwordStyle": "shapes",
+    "powerButtons": true,
+    "successFlash": true
   },
   "pill": {
     "idleHeight": 36,
@@ -28,39 +91,6 @@
     "glowBreathDuration": 1600,
     "glowMinOpacity": 0.18,
     "glowMaxOpacity": 0.42
-  },
-  "bar": {
-    "style": "pill",
-    "position": "top",
-    "exclusionZoneGap": 5
-  },
-  "modules": {
-    "order": [
-      "workspaces",
-      "clock",
-      "wallpaper",
-      "media",
-      "wifi",
-      "link",
-      "power",
-      "mixer",
-      "clipboard",
-      "notifications",
-      "launcher",
-      "settings"
-    ],
-    "workspaces": true,
-    "clock": true,
-    "wallpaper": true,
-    "media": true,
-    "wifi": true,
-    "link": true,
-    "power": true,
-    "mixer": true,
-    "clipboard": true,
-    "notifications": true,
-    "launcher": true,
-    "settings": true
   },
   "launcher": {
     "fieldHeight": 34,
@@ -99,10 +129,6 @@
     "background": "",
     "foreground": "",
     "surface": ""
-  },
-  "animations": {
-    "enabled": true,
-    "globalSpeed": 1
   },
   "blur": {
     "enabled": true,
