@@ -40,16 +40,14 @@
     "order": [
       "workspaces",
       "clock",
-      "wallpaper",
-      "media",
-      "wifi",
-      "link",
-      "power",
-      "mixer",
-      "clipboard",
-      "notifications",
       "launcher",
-      "settings"
+      "window",
+      "media",
+      "mixer",
+      "wifi",
+      "notifications",
+      "battery",
+      "power"
     ],
     "wallpaper": true,
     "link": true,

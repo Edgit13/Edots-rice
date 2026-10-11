@@ -7,16 +7,13 @@
     "uiScale": 1,
     "fontFamily": "SF Pro Display"
   },
-  "animations": {
-    "enabled": true,
-    "expressiveMotion": true,
-    "reduceMotion": false,
-    "globalSpeed": 1
-  },
-  "animationSpeed": 0.7000000000000001,
-  "mode": "system",
+  "animations": true,
+  "animationSpeed": 1,
+  "mode": "dark",
   "dynamicColor": true,
-  "accent": "#31816c",
+  "accent": "#74e7c8",
   "uiScale": 1,
-  "cornerStyle": "material"
+  "cornerStyle": "expressive",
+  "expressiveMotion": true,
+  "reduceMotion": false
 }

@@ -3,7 +3,7 @@ import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-// CalendarCard — компактний блок "число/час" + сітка місяця, як у референсі.
+// CalendarCard — компактний блок "число/час" + сітка місяця.
 DashCard {
     id: root
 
@@ -11,7 +11,7 @@ DashCard {
 
     readonly property date today: clk.date
     property int viewYear: today.getFullYear()
-    property int viewMonth: today.getMonth()   // 0-based
+    property int viewMonth: today.getMonth()
 
     function shiftMonth(d) {
         let m = viewMonth + d, y = viewYear
@@ -23,7 +23,7 @@ DashCard {
     readonly property var dayNames: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"]
     readonly property var cells: {
         const first = new Date(viewYear, viewMonth, 1)
-        const startOffset = (first.getDay() + 6) % 7   // понеділок = 0
+        const startOffset = (first.getDay() + 6) % 7
         const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
         const arr = []
         for (let i = 0; i < startOffset; i++) arr.push(null)
@@ -33,6 +33,37 @@ DashCard {
     }
     readonly property var monthNames: ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень",
         "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"]
+
+    component NavButton: Rectangle {
+        id: btn
+        property string icon: ""
+        signal clicked()
+
+        implicitWidth: 28
+        implicitHeight: 28
+        radius: 14
+        color: nma.pressed
+             ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
+             : nma.containsMouse
+                 ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
+                 : "transparent"
+        Behavior on color { MotionColorAnimation { role: "hover" } }
+
+        Text {
+            anchors.centerIn: parent
+            text: btn.icon
+            font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+            color: Theme.color.fgSurfaceVariant
+        }
+
+        MouseArea {
+            id: nma
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: btn.clicked()
+        }
+    }
 
     RowLayout {
         width: parent.width
@@ -51,11 +82,14 @@ DashCard {
 
             RowLayout {
                 Layout.fillWidth: true
-                ThemedText { text: root.monthNames[root.viewMonth] + " " + root.viewYear; style: Theme.type.labelLarge; Layout.fillWidth: true }
-                Text { text: "\ue5cb"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant
-                       MouseArea { anchors.fill: parent; anchors.margins: -4; onClicked: root.shiftMonth(-1) } }
-                Text { text: "\ue5cc"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant
-                       MouseArea { anchors.fill: parent; anchors.margins: -4; onClicked: root.shiftMonth(1) } }
+                spacing: Theme.space.xs
+                ThemedText {
+                    text: root.monthNames[root.viewMonth] + " " + root.viewYear
+                    style: Theme.type.labelLarge
+                    Layout.fillWidth: true
+                }
+                NavButton { icon: "\ue5cb"; onClicked: root.shiftMonth(-1) }
+                NavButton { icon: "\ue5cc"; onClicked: root.shiftMonth(1) }
             }
 
             GridLayout {
@@ -64,9 +98,14 @@ DashCard {
                 rowSpacing: 2
                 Repeater {
                     model: root.dayNames
-                    ThemedText { required property string modelData; text: modelData; style: Theme.type.labelSmall
-                                 color: Theme.color.fgSurfaceVariant; horizontalAlignment: Text.AlignHCenter
-                                 Layout.preferredWidth: 24 }
+                    ThemedText {
+                        required property string modelData
+                        text: modelData
+                        style: Theme.type.labelSmall
+                        color: Theme.color.fgSurfaceVariant
+                        horizontalAlignment: Text.AlignHCenter
+                        Layout.preferredWidth: 24
+                    }
                 }
                 Repeater {
                     model: root.cells

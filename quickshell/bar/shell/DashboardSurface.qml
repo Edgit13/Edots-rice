@@ -1,280 +1,236 @@
-import "root:/"
 import "root:/theme"
-import "root:/shell"
-import "root:/services"
 import "root:/dashboard"
+import "root:/services"
+import "root:/shell"
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
-// DashboardSurface — Material 3 Expressive дашборд, що морфиться з смуги бару.
-// Хост (BarWindow) розміщує цей Item під або над смугою і розширює вікно
-// на freeOverflow без зламу wlroots layer-shell та тайлінгу вікон.
+// DashboardSurface — M3 Expressive dashboard overlay.
+//
+// Layout: identity + environment → control → time → media.
+// Animation: surface slides from bar direction + fades + scales;
+// cards cascade in with per-index delay; tabs crossfade with slide.
 Item {
     id: root
 
-    // ---- API для хоста ----
-    property string hostMonitor: ""   // BarWindow встановлює win.monitorName
-    property real maxHeight: 520      // доступна висота для розгортання
+    property string hostMonitor: ""
+    property real maxHeight: 100000
+    property bool occupies: false
+    property string revealDirection: "top"   // top|bottom|left|right
 
-    readonly property real expandedHeight: Math.min(520, Math.max(120, maxHeight))
-    readonly property real drop: Theme.space.sm + expandedHeight
-    readonly property real overflowTop: occupies ? drop : 0
-    readonly property real overflowBottom: occupies ? drop : 0
-    readonly property real overflowLeft: occupies ? drop : 0
-    readonly property real overflowRight: occupies ? drop : 0
+    readonly property real desiredHeight: 760
+    readonly property real effectiveHeight: Math.min(desiredHeight, maxHeight)
 
-    // true, поки вікно має виділяти місце під картку (включаючи анімацію закриття)
-    readonly property bool occupies: dashState !== "closed"
+    implicitWidth: 920
+    implicitHeight: occupies ? effectiveHeight : 0
 
-    // closed | opening | open | closing
-    property string dashState: "closed"
-    readonly property bool expanded: dashState === "open" || dashState === "opening"
-    readonly property string sizeRole: dashState === "closing" || dashState === "closed" ? "collapse" : "expand"
+    // ---- Interface consumed by BarWindow.morphModules ----
+    readonly property real overflowBottom: occupies ? effectiveHeight : 0
+    readonly property real overflowTop:    occupies ? effectiveHeight : 0
+    readonly property real overflowLeft:   occupies ? implicitWidth  : 0
+    readonly property real overflowRight:  occupies ? implicitWidth  : 0
 
-    height: expanded ? expandedHeight : 0
-    Behavior on height { MotionAnimation { role: root.sizeRole } }
-    clip: true
-
-    function open() {
-        if (dashState === "open" || dashState === "opening") return
-        closeTimer.stop()
-        ShellState.openSurface("dashboard")
-        dashState = "opening"
-        Qt.callLater(function () {
-            dashState = "open"
-            card.forceActiveFocus()
-        })
-    }
-
-    function close() {
-        if (dashState === "closed" || dashState === "closing") return
-        dashState = "closing"
-        closeTimer.restart()
-    }
-
-    function toggle() {
-        if (dashState === "open" || dashState === "opening") close()
-        else open()
-    }
-
-    Timer {
-        id: closeTimer
-        interval: Theme.motion.duration("collapse") + 40
-        onTriggered: {
-            root.dashState = "closed"
-            if (ShellState.activeSurface === "dashboard") {
-                ShellState.closeSurfaces()
-            }
-        }
-    }
-
-    // Відкриваємо лише на потрібному/поточному моніторі
-    readonly property bool isCurrentMonitor: {
-        const focusedMon = MangoService.focusedClient.monitor
-        if (focusedMon && focusedMon.length > 0) return focusedMon === root.hostMonitor
-        return Quickshell.screens.length > 0 && Quickshell.screens[0].name === root.hostMonitor
-    }
-
-    function shouldHandleRequest(targetMon) {
-        if (targetMon && targetMon.length > 0) return targetMon === root.hostMonitor
-        return root.isCurrentMonitor
-    }
+    visible: occupies || opacity > 0.01
 
     Connections {
         target: ShellState
-        function onOpenDashboardRequested(targetMon) {
-            if (root.shouldHandleRequest(targetMon)) root.open()
-            else root.close()
+        function onOpenDashboardRequested(monitor) {
+            if (monitor === "" || monitor === root.hostMonitor) root.occupies = true
         }
-        function onToggleDashboardRequested(targetMon) {
-            if (root.shouldHandleRequest(targetMon)) root.toggle()
-            else root.close()
+        function onToggleDashboardRequested(monitor) {
+            if (monitor === "" || monitor === root.hostMonitor) root.occupies = !root.occupies
         }
-        function onCloseDashboardRequested() {
-            root.close()
-        }
-        function onActiveSurfaceChanged() {
-            if (ShellState.activeSurface !== "dashboard" &&
-                (root.dashState === "open" || root.dashState === "opening")) {
-                root.dashState = "closing"
-                closeTimer.restart()
-            }
-        }
+        function onCloseDashboardRequested() { root.occupies = false }
     }
 
-    // Закриття при кліку на інше вікно (зміна фокусу)
-    Connections {
-        target: MangoService
-        function onFocusedClientChanged() {
-            if (root.dashState === "open" && MangoService.focusedClient && MangoService.focusedClient.id !== null) {
-                root.close()
-            }
-        }
-    }
+    property int currentTab: 0
 
-    // ===================== вміст =====================
+    readonly property int contentHeight: Math.max(300, Math.round(effectiveHeight) - 152)
 
     readonly property var tabs: [
-        { key: "dashboard", label: "Огляд", icon: "\ue871" },
-        { key: "media", label: "Медіа", icon: "\ue405" },
-        { key: "performance", label: "Продуктивність", icon: "\ue9e4" },
-        { key: "workspaces", label: "Робочі місця", icon: "\ue8f9" }
+        { glyph: "\ue871", label: "Огляд" },
+        { glyph: "\ue405", label: "Медіа" },
+        { glyph: "\ue85c", label: "Продуктивність" },
+        { glyph: "\uef4c", label: "Робочі місця" }
     ]
-    property int activeTab: 0
 
+    // Slide offset when hidden — depends on bar side.
+    readonly property real _offsetX: {
+        if (occupies) return 0
+        if (revealDirection === "left")  return -32
+        if (revealDirection === "right") return  32
+        return 0
+    }
+    readonly property real _offsetY: {
+        if (occupies) return 0
+        if (revealDirection === "top")    return -32
+        if (revealDirection === "bottom") return  32
+        return 0
+    }
+    readonly property int _origin: {
+        if (revealDirection === "left")   return Item.Left
+        if (revealDirection === "right")  return Item.Right
+        if (revealDirection === "bottom") return Item.Bottom
+        return Item.Top
+    }
+
+    // ── Animated stage: slides + fades + scales as one unit ──────
     Item {
-        id: card
-        width: parent.width
-        height: root.expandedHeight
-        focus: root.expanded
+        id: stage
+        anchors.fill: parent
+        x: root._offsetX
+        y: root._offsetY
+        opacity: root.occupies ? 1 : 0
+        scale:   root.occupies ? 1 : 0.96
+        transformOrigin: root._origin
 
-        Keys.onEscapePressed: function(e) {
-            root.close()
-            e.accepted = true
-        }
+        Behavior on x       { NumberAnimation { duration: 440; easing.type: Easing.OutCubic } }
+        Behavior on y       { NumberAnimation { duration: 440; easing.type: Easing.OutCubic } }
+        Behavior on opacity { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+        Behavior on scale   { NumberAnimation { duration: 440; easing.type: Easing.OutCubic } }
 
         ElevationShadow {
             anchors.fill: parent
-            level: 4
-            radius: Theme.shape.dialog
-            color: Theme.color.surfaceContainerHigh
+            level: Theme.elevation.resting
+            radius: Theme.shape.cardLarge
+            color: Theme.color.surfaceContainer
         }
 
-        Rectangle {
+        ColumnLayout {
             anchors.fill: parent
-            radius: Theme.shape.dialog
-            color: Theme.color.surfaceContainerHigh
-            border.width: 1
-            border.color: Theme.color.outlineVariant
-            clip: true
+            anchors.margins: Theme.space.lg
+            spacing: Theme.space.md
 
-            MouseArea {
-                anchors.fill: parent
-            }
+            // ── Header ───────────────────────────────────────
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.space.sm
 
-            ColumnLayout {
-                anchors.fill: parent
-                anchors.margins: Theme.space.lg
-                spacing: Theme.space.md
-
-                opacity: root.dashState === "open" ? 1 : 0
-                Behavior on opacity { MotionAnimation { role: root.dashState === "open" ? "enter" : "exit" } }
-
-                // ---- заголовок: іконка + назва вкладки + кнопка закриття ----
-                RowLayout {
+                Text {
+                    text: root.tabs[root.currentTab].glyph
+                    font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+                    color: Theme.color.primary
+                }
+                ThemedText {
+                    text: root.tabs[root.currentTab].label
+                    style: Theme.type.titleMedium
                     Layout.fillWidth: true
-                    spacing: Theme.space.sm
+                }
+                Rectangle {
+                    implicitWidth: 32
+                    implicitHeight: 32
+                    radius: 16
+                    color: closeMa.pressed
+                        ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
+                        : closeMa.containsMouse
+                            ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
+                            : "transparent"
+                    Behavior on color { MotionColorAnimation { role: "hover" } }
 
                     Text {
-                        text: root.tabs[root.activeTab].icon
-                        color: Theme.color.primary
-                        font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
-                    }
-
-                    ThemedText {
-                        Layout.fillWidth: true
-                        text: root.tabs[root.activeTab].label
-                        style: Theme.type.titleMedium
-                        emphasized: true
+                        anchors.centerIn: parent
+                        text: "\ue5cd"
+                        font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
                         color: Theme.color.fgSurface
                     }
+                    MouseArea {
+                        id: closeMa
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: ShellState.closeDashboard()
+                    }
+                }
+            }
 
+            // ── Tabs ─────────────────────────────────────────
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.space.xs
+
+                Repeater {
+                    model: root.tabs
                     Rectangle {
-                        width: 32
-                        height: 32
-                        radius: 16
-                        color: closeMa.containsMouse ? Theme.color.surfaceContainerHighest : "transparent"
+                        id: tabRect
+                        required property var modelData
+                        required property int index
+
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 40
+                        radius: 20
+                        color: tabRect.index === root.currentTab
+                            ? Theme.color.secondaryContainer
+                            : tabMa.pressed
+                                ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
+                                : tabMa.containsMouse
+                                    ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
+                                    : "transparent"
                         Behavior on color { MotionColorAnimation { role: "hover" } }
 
-                        Text {
+                        RowLayout {
                             anchors.centerIn: parent
-                            text: "\ue5cd"
-                            font { family: Theme.type.icons; pixelSize: 18 }
-                            color: Theme.color.fgSurfaceVariant
-                        }
+                            spacing: Theme.space.xs
 
+                            Text {
+                                text: tabRect.modelData.glyph
+                                font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                                color: tabRect.index === root.currentTab
+                                    ? Theme.color.fgSecondaryContainer
+                                    : Theme.color.fgSurfaceVariant
+                            }
+                            ThemedText {
+                                text: tabRect.modelData.label
+                                style: Theme.type.labelLarge
+                                color: tabRect.index === root.currentTab
+                                    ? Theme.color.fgSecondaryContainer
+                                    : Theme.color.fgSurfaceVariant
+                            }
+                        }
                         MouseArea {
-                            id: closeMa
+                            id: tabMa
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: root.close()
+                            onClicked: root.currentTab = tabRect.index
                         }
                     }
                 }
+            }
 
-                // ---- панель вкладок ----
-                RowLayout {
-                    Layout.fillWidth: true
-                    spacing: Theme.space.xs
+            // ── Page stack with crossfade + slide ────────────
+            Item {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                Layout.preferredHeight: root.contentHeight
+                clip: true
 
-                    Repeater {
-                        model: root.tabs
-                        Rectangle {
-                            id: tabBtn
-                            required property var modelData
-                            required property int index
-                            readonly property bool active: root.activeTab === index
-                            Layout.fillWidth: true
-                            implicitHeight: 36
-                            radius: Theme.shape.button
-                            color: active ? Theme.color.secondaryContainer
-                                 : tma.containsMouse ? Theme.color.surfaceContainerHighest
-                                 : "transparent"
-                            Behavior on color { MotionColorAnimation { role: "hover" } }
+                Repeater {
+                    model: 4
+                    Item {
+                        id: pageWrap
+                        required property int index
+                        anchors.fill: parent
+                        readonly property bool isCurrent: index === root.currentTab
+                        visible: opacity > 0.01
+                        opacity: isCurrent ? 1 : 0
+                        x: isCurrent ? 0 : (index < root.currentTab ? -28 : 28)
+                        scale: isCurrent ? 1 : 0.97
+                        transformOrigin: Item.Center
 
-                            RowLayout {
-                                anchors.centerIn: parent
-                                spacing: Theme.space.xs
+                        Behavior on opacity { NumberAnimation { duration: 240; easing.type: Easing.OutCubic } }
+                        Behavior on x       { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
+                        Behavior on scale   { NumberAnimation { duration: 320; easing.type: Easing.OutCubic } }
 
-                                Text {
-                                    text: tabBtn.modelData.icon
-                                    color: tabBtn.active ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
-                                    font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                                }
-                                ThemedText {
-                                    text: tabBtn.modelData.label
-                                    color: tabBtn.active ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
-                                    style: Theme.type.labelMedium
-                                    emphasized: tabBtn.active
-                                }
-                            }
-
-                            MouseArea {
-                                id: tma
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.activeTab = tabBtn.index
-                            }
-                        }
-                    }
-                }
-
-                Rectangle {
-                    Layout.fillWidth: true
-                    height: 1
-                    color: Theme.color.outlineVariant
-                }
-
-                // ---- контейнер контенту активної вкладки ----
-                Loader {
-                    id: tabLoader
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    active: root.dashState === "open"
-                    sourceComponent: {
-                        switch (root.tabs[root.activeTab].key) {
-                        case "media": return mediaComp
-                        case "performance": return perfComp
-                        case "workspaces": return wsComp
-                        default: return overviewComp
-                        }
-                    }
-                    onLoaded: {
-                        if (item) {
-                            item.anchors.fill = tabLoader
+                        Loader {
+                            anchors.fill: parent
+                            active: pageWrap.isCurrent || pageWrap.opacity > 0.01
+                            sourceComponent: [
+                                pageOverview,
+                                pageMedia,
+                                pagePerformance,
+                                pageWorkspaces
+                            ][pageWrap.index]
                         }
                     }
                 }
@@ -282,50 +238,125 @@ Item {
         }
     }
 
+    // ── Page components ─────────────────────────────────────
+
     Component {
-        id: overviewComp
+        id: pageOverview
         Flickable {
-            anchors.fill: parent
+            id: flick
             clip: true
+            boundsBehavior: Flickable.StopAtBounds
             contentWidth: width
             contentHeight: grid.implicitHeight
-            boundsBehavior: Flickable.StopAtBounds
 
             GridLayout {
                 id: grid
-                width: parent.width
-                columns: 3
+                width: flick.width
+                columns: 2
                 columnSpacing: Theme.space.md
                 rowSpacing: Theme.space.md
 
-                WeatherCard {
-                    Layout.column: 0
-                    Layout.row: 0
+                // Row 1 — identity + environment
+                Reveal {
+                    index: 0
+                    shown: root.occupies
                     Layout.fillWidth: true
+                    Layout.preferredHeight: 172
+                    SystemCard { anchors.fill: parent }
                 }
-                SystemCard {
-                    Layout.column: 1
-                    Layout.row: 0
+                Reveal {
+                    index: 1
+                    shown: root.occupies
                     Layout.fillWidth: true
+                    Layout.preferredHeight: 172
+                    WeatherCard { anchors.fill: parent }
                 }
-                MiniMediaCard {
-                    Layout.column: 2
-                    Layout.row: 0
-                    Layout.rowSpan: 2
+
+                // Row 2 — brightness control (full width)
+                Reveal {
+                    index: 2
+                    shown: root.occupies
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
-                }
-                CalendarCard {
-                    Layout.column: 0
-                    Layout.row: 1
                     Layout.columnSpan: 2
+                    Layout.preferredHeight: 136
+                    BrightnessCard { anchors.fill: parent }
+                }
+
+                // Row 3 — time tools
+                Reveal {
+                    index: 3
+                    shown: root.occupies
                     Layout.fillWidth: true
+                    Layout.preferredHeight: 180
+                    CalendarCard { anchors.fill: parent }
+                }
+                Reveal {
+                    index: 4
+                    shown: root.occupies
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 180
+                    TimerCard { anchors.fill: parent }
+                }
+
+                // Row 4 — media strip (full width)
+                Reveal {
+                    index: 5
+                    shown: root.occupies
+                    Layout.fillWidth: true
+                    Layout.columnSpan: 2
+                    Layout.preferredHeight: 240
+                    MiniMediaCard { anchors.fill: parent }
                 }
             }
         }
     }
 
-    Component { id: mediaComp; MediaTab { anchors.fill: parent } }
-    Component { id: perfComp; PerformanceTab { anchors.fill: parent } }
-    Component { id: wsComp; WorkspacesTab { anchors.fill: parent } }
+    Component { id: pageMedia;       MediaTab       { } }
+    Component { id: pagePerformance; PerformanceTab { } }
+    Component { id: pageWorkspaces;  WorkspacesTab  { } }
+
+    // ── Reveal helper: staggered fade + scale-in ────────────
+    component Reveal: Item {
+        id: reveal
+        property int index: 0
+        property bool shown: false
+        property int startDelay: 140
+        property int stagger: 55
+        property int enterDuration: 460
+        property int exitDuration: 200
+
+        default property alias content: holder.data
+
+        readonly property int _delay: reveal.shown
+            ? (reveal.startDelay + reveal.index * reveal.stagger)
+            : 0
+
+        opacity: shown ? 1 : 0
+        scale:   shown ? 1 : 0.95
+        transformOrigin: Item.Center
+
+        Behavior on opacity {
+            SequentialAnimation {
+                PauseAnimation { duration: reveal._delay }
+                NumberAnimation {
+                    duration: reveal.shown ? reveal.enterDuration : reveal.exitDuration
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
+        Behavior on scale {
+            SequentialAnimation {
+                PauseAnimation { duration: reveal._delay }
+                NumberAnimation {
+                    duration: reveal.shown ? reveal.enterDuration : reveal.exitDuration
+                    easing.type: Easing.OutCubic
+                }
+            }
+        }
+
+        Item {
+            id: holder
+            anchors.fill: parent
+        }
+    }
 }

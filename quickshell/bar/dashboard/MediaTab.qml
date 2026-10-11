@@ -17,6 +17,46 @@ Item {
     readonly property bool has: activePlayer !== null
     readonly property bool playing: has && activePlayer.playbackState === MprisPlaybackState.Playing
 
+    component MediaButton: Rectangle {
+        id: btn
+        property string icon: ""
+        property bool emphasized: false
+        property bool big: false
+        signal clicked()
+
+        implicitWidth: big ? 56 : 40
+        implicitHeight: big ? 56 : 40
+        radius: width / 2
+
+        color: emphasized
+             ? (ma.pressed
+                 ? Theme.stateLayer(Theme.color.primary, Theme.color.fgPrimary, Theme.components.statePressed)
+                 : ma.containsMouse
+                     ? Theme.stateLayer(Theme.color.primary, Theme.color.fgPrimary, Theme.components.stateHover)
+                     : Theme.color.primary)
+             : (ma.pressed
+                 ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
+                 : ma.containsMouse
+                     ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
+                     : "transparent")
+        Behavior on color { MotionColorAnimation { role: "hover" } }
+
+        Text {
+            anchors.centerIn: parent
+            text: btn.icon
+            font { family: Theme.type.icons; pixelSize: btn.big ? Theme.type.iconL : Theme.type.iconM }
+            color: btn.emphasized ? Theme.color.fgPrimary : Theme.color.fgSurface
+        }
+
+        MouseArea {
+            id: ma
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: btn.clicked()
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.space.lg
@@ -55,7 +95,7 @@ Item {
                 Text {
                     anchors.centerIn: parent
                     visible: !root.has || root.activePlayer.trackArtUrl.length === 0
-                    text: "\ue405"   // music_note
+                    text: "\ue405"
                     font { family: Theme.type.icons; pixelSize: Theme.type.iconXL * 1.5 }
                     color: Theme.color.fgSurfaceVariant
                 }
@@ -64,13 +104,21 @@ Item {
             ColumnLayout {
                 Layout.fillWidth: true
                 spacing: 0
-                ThemedText { text: root.has ? (root.activePlayer.trackTitle || "Без назви") : ""
-                             style: Theme.type.titleMedium; Layout.fillWidth: true; elide: Text.ElideRight
-                             horizontalAlignment: Text.AlignHCenter }
-                ThemedText { text: root.has ? (root.activePlayer.trackArtist || "") : ""
-                             style: Theme.type.bodyMedium; color: Theme.color.fgSurfaceVariant
-                             Layout.fillWidth: true; elide: Text.ElideRight
-                             horizontalAlignment: Text.AlignHCenter }
+                ThemedText {
+                    text: root.has ? (root.activePlayer.trackTitle || "Без назви") : ""
+                    style: Theme.type.titleMedium
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignHCenter
+                }
+                ThemedText {
+                    text: root.has ? (root.activePlayer.trackArtist || "") : ""
+                    style: Theme.type.bodyMedium
+                    color: Theme.color.fgSurfaceVariant
+                    Layout.fillWidth: true
+                    elide: Text.ElideRight
+                    horizontalAlignment: Text.AlignHCenter
+                }
             }
 
             RowLayout {
@@ -78,31 +126,19 @@ Item {
                 spacing: Theme.space.md
                 Layout.alignment: Qt.AlignHCenter
 
-                Text {
-                    text: "\ue045"   // skip_previous
-                    font { family: Theme.type.icons; pixelSize: Theme.type.iconL }
-                    color: Theme.color.fgSurface
-                    MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor
-                                onClicked: if (root.has) root.activePlayer.previous() }
+                MediaButton {
+                    icon: "\ue045"
+                    onClicked: if (root.has) root.activePlayer.previous()
                 }
-                Rectangle {
-                    width: 56; height: 56; radius: 28
-                    color: Theme.color.primary
-                    Text {
-                        anchors.centerIn: parent
-                        text: root.playing ? "\ue034" : "\ue037"
-                        font { family: Theme.type.icons; pixelSize: Theme.type.iconL }
-                        color: Theme.color.fgPrimary
-                    }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                onClicked: if (root.has) { root.playing ? root.activePlayer.pause() : root.activePlayer.play() } }
+                MediaButton {
+                    icon: root.playing ? "\ue034" : "\ue037"
+                    emphasized: true
+                    big: true
+                    onClicked: if (root.has) { root.playing ? root.activePlayer.pause() : root.activePlayer.play() }
                 }
-                Text {
-                    text: "\ue044"   // skip_next
-                    font { family: Theme.type.icons; pixelSize: Theme.type.iconL }
-                    color: Theme.color.fgSurface
-                    MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor
-                                onClicked: if (root.has) root.activePlayer.next() }
+                MediaButton {
+                    icon: "\ue044"
+                    onClicked: if (root.has) root.activePlayer.next()
                 }
             }
         }

@@ -22,6 +22,7 @@ Item {
     readonly property bool scanning: backlightScanProc.running || ddcScanProc.running
                                    || ddcReadProc.running || applyAllProc.running
     readonly property bool hasDevices: backlightDevices.length > 0 || ddcMonitors.length > 0
+    readonly property int deviceCount: backlightDevices.length + ddcMonitors.length
 
     function _clampPercent(v) { return Math.max(0, Math.min(100, Math.round(v))) }
 
@@ -29,9 +30,6 @@ Item {
         const cols = line.trim().split(",")
         if (cols.length < 5 || cols[1] !== "backlight") return null
 
-        // Актуальний brightnessctl -m повертає:
-        // id,class,current,percent%,max. Старі/форкові версії можуть
-        // додавати path після class, тому підтримуємо обидва формати.
         const device = cols[0]
         const hasPath = cols.length >= 6
         const path = hasPath ? cols[2] : ("/sys/class/backlight/" + device)
@@ -140,8 +138,13 @@ Item {
         if (!ddcScanProc.running) ddcScanProc.running = true
     }
 
+    // Single-quote a value for `sh -c`. Both `(39)` and `(92)` keep the
+    // source free of literal backslash escapes that tooling can mangle.
     function _shellQuote(value) {
-        return "'" + String(value).replace(/'/g, "'\\''") + "'"
+        const sq = String.fromCharCode(39)
+        const bs = String.fromCharCode(92)
+        const esc = sq + bs + sq + sq
+        return sq + String(value).split(sq).join(esc) + sq
     }
 
     function _applyCommand(percent, delta) {
@@ -149,18 +152,18 @@ Item {
         const target = _clampPercent(percent)
 
         for (let i = 0; i < backlightDevices.length; i++) {
-            // brightnessctl: set +10% / set 10%-
-            const operation = delta > 0 ? ("+" + delta + "%")
-                            : delta < 0 ? (Math.abs(delta) + "%-")
-                            : (target + "%")
-            commands.push("brightnessctl -d " + _shellQuote(backlightDevices[i].device)
-                          + " set " + operation)
+            let operation
+            if (delta > 0) operation = "+" + delta + "%"
+            else if (delta < 0) operation = Math.abs(delta) + "%-"
+            else operation = target + "%"
+
+            const dev = backlightDevices[i].device
+            commands.push("brightnessctl -d " + _shellQuote(dev) + " set " + operation)
         }
 
-        // DDC/CI не має відносного інкременту, тому передаємо цільовий відсоток.
         for (let i = 0; i < ddcMonitors.length; i++) {
-            commands.push("ddcutil --bus " + ddcMonitors[i].bus
-                          + " setvcp 10 " + target)
+            const bus = ddcMonitors[i].bus
+            commands.push("ddcutil --bus " + bus + " setvcp 10 " + target)
         }
         return commands.join(" && ")
     }
@@ -273,29 +276,87 @@ Item {
         }
     }
 
+    component IconButton: Rectangle {
+        id: btn
+        property string icon: ""
+        property int iconSize: Theme.type.iconS
+        property int buttonSize: 36
+        property bool active: true
+        property bool emphasized: false
+        signal clicked()
+
+        implicitWidth: buttonSize
+        implicitHeight: buttonSize
+        radius: buttonSize / 2
+        opacity: active ? 1 : 0.38
+
+        readonly property bool hovered: bma.containsMouse && active
+        readonly property bool pressed: bma.pressed && active
+
+        color: emphasized
+             ? (btn.pressed
+                 ? Theme.stateLayer(Theme.color.primary, Theme.color.fgPrimary, Theme.components.statePressed)
+                 : btn.hovered
+                     ? Theme.stateLayer(Theme.color.primary, Theme.color.fgPrimary, Theme.components.stateHover)
+                     : Theme.color.primary)
+             : (btn.pressed
+                 ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
+                 : btn.hovered
+                     ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
+                     : "transparent")
+        Behavior on color { MotionColorAnimation { role: "hover" } }
+
+        Text {
+            anchors.centerIn: parent
+            text: btn.icon
+            font { family: Theme.type.icons; pixelSize: btn.iconSize }
+            color: btn.emphasized ? Theme.color.fgPrimary : Theme.color.fgSurface
+        }
+
+        MouseArea {
+            id: bma
+            anchors.fill: parent
+            enabled: btn.active
+            hoverEnabled: true
+            cursorShape: btn.active ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onClicked: btn.clicked()
+        }
+    }
+
     component BrightnessSlider: Item {
         id: slider
         property real value: 0
         property bool enabled: true
         signal commit(real value)
 
-        implicitHeight: 28
+        property real _dragValue: 0
+        property bool _dragging: false
+        readonly property real shown: _dragging ? _dragValue : value
 
-        function setFromMouse(mouseX) {
-            value = Math.max(0, Math.min(100, mouseX / width * 100))
+        implicitHeight: 40
+        opacity: enabled ? 1 : 0.38
+
+        readonly property real _handleSize: 20
+        readonly property real _trackInset: _handleSize / 2
+        readonly property real _usable: Math.max(1, width - _handleSize)
+
+        function _percentFromX(mx) {
+            return Math.max(0, Math.min(100, (mx - _trackInset) / _usable * 100))
         }
 
         Rectangle {
             id: track
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.leftMargin: slider._trackInset
+            anchors.rightMargin: slider._trackInset
             anchors.verticalCenter: parent.verticalCenter
             height: 8
             radius: 4
             color: Theme.color.surfaceContainerHighest
 
             Rectangle {
-                width: parent.width * Math.max(0, Math.min(1, slider.value / 100))
+                width: parent.width * Math.max(0, Math.min(1, slider.shown / 100))
                 height: parent.height
                 radius: 4
                 color: Theme.color.primary
@@ -305,52 +366,36 @@ Item {
 
         Rectangle {
             id: handle
-            width: 20
-            height: 20
-            radius: 10
-            color: slider.enabled ? Theme.color.primary : Theme.color.surfaceContainerHighest
-            x: Math.max(0, Math.min(track.width - width, track.width * slider.value / 100 - width / 2))
+            width: slider._handleSize
+            height: slider._handleSize
+            radius: width / 2
+            color: Theme.color.primary
+            x: slider._usable * Math.max(0, Math.min(1, slider.shown / 100))
             anchors.verticalCenter: parent.verticalCenter
-            Behavior on x { MotionAnimation { role: "morph" } }
+            Behavior on x {
+                enabled: !slider._dragging
+                MotionAnimation { role: "morph" }
+            }
         }
 
         MouseArea {
             anchors.fill: parent
-            anchors.margins: -8
             enabled: slider.enabled
-            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onPressed: function(mouse) { slider.setFromMouse(mouse.x) }
-            onPositionChanged: function(mouse) { if (pressed) slider.setFromMouse(mouse.x) }
-            onReleased: function(mouse) { slider.setFromMouse(mouse.x); slider.commit(slider.value) }
-        }
-    }
-
-    component StepButton: Rectangle {
-        id: btn
-        property string icon: ""
-        property bool active: true
-        signal clicked()
-
-        implicitWidth: 28
-        implicitHeight: 28
-        radius: 14
-        opacity: active ? 1 : 0.45
-        color: bma.pressed && active ? Theme.color.primary : Theme.color.surfaceContainerHighest
-
-        Text {
-            anchors.centerIn: parent
-            text: btn.icon
-            font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
-            color: btn.active ? Theme.color.fgSurface : Theme.color.fgSurfaceVariant
-        }
-
-        MouseArea {
-            id: bma
-            anchors.fill: parent
-            anchors.margins: -5
-            enabled: btn.active
-            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: btn.clicked()
+            cursorShape: slider.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+            onPressed: function(mouse) {
+                slider._dragging = true
+                slider._dragValue = slider._percentFromX(mouse.x)
+            }
+            onPositionChanged: function(mouse) {
+                if (pressed) slider._dragValue = slider._percentFromX(mouse.x)
+            }
+            onReleased: function(mouse) {
+                slider._dragValue = slider._percentFromX(mouse.x)
+                const v = slider._dragValue
+                slider._dragging = false
+                slider.commit(v)
+            }
+            onCanceled: slider._dragging = false
         }
     }
 
@@ -361,34 +406,32 @@ Item {
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: Theme.space.sm
+            spacing: Theme.space.xs
 
             Text {
-                text: "\ue3ae"   // brightness_5
+                text: "\ue3ae"
                 font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
                 color: Theme.color.primary
             }
             ThemedText {
-                text: "Яскравість дисплеїв"
-                style: Theme.type.titleSmall
                 Layout.fillWidth: true
+                text: !root.hasDevices
+                      ? (root.scanning ? "Пошук дисплеїв…" : "Дисплеї не знайдено")
+                      : (root.deviceCount + " " + (root.deviceCount === 1 ? "дисплей" : "дисплеїв"))
+                style: Theme.type.labelMedium
+                color: Theme.color.fgSurfaceVariant
+                elide: Text.ElideRight
             }
             ThemedText {
                 text: root.masterPercent + "%"
                 style: Theme.type.titleSmall
                 color: Theme.color.primary
             }
-            Text {
-                text: "\ue5d5"   // refresh
-                font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
-                color: Theme.color.fgSurfaceVariant
-                opacity: root.scanning ? 0.45 : 1
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.margins: -6
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: root.refresh()
-                }
+            IconButton {
+                icon: "\ue5d5"
+                iconSize: Theme.type.iconXS
+                buttonSize: 28
+                onClicked: root.refresh()
             }
         }
 
@@ -396,8 +439,8 @@ Item {
             Layout.fillWidth: true
             spacing: Theme.space.sm
 
-            StepButton {
-                icon: "\ue15b"   // remove
+            IconButton {
+                icon: "\ue15b"
                 active: root.hasDevices && root.masterPercent > 0
                 onClicked: root.step(-10)
             }
@@ -410,8 +453,8 @@ Item {
                 onCommit: function(value) { root.setAll(value) }
             }
 
-            StepButton {
-                icon: "\ue145"   // add
+            IconButton {
+                icon: "\ue145"
                 active: root.hasDevices && root.masterPercent < 100
                 onClicked: root.step(10)
             }
@@ -424,15 +467,6 @@ Item {
                   + " · DDC/CI: " + root.ddcMonitors.length
             style: Theme.type.labelSmall
             color: Theme.color.fgSurfaceVariant
-        }
-
-        ThemedText {
-            visible: !root.hasDevices && !root.scanning
-            Layout.fillWidth: true
-            text: "Яскравість недоступна. Перевір brightnessctl і ddcutil."
-            style: Theme.type.labelMedium
-            color: Theme.color.fgSurfaceVariant
-            wrapMode: Text.WordWrap
         }
 
         ThemedText {

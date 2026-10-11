@@ -1,0 +1,86 @@
+import "root:/legacy"
+import Quickshell
+import Quickshell.Io
+import QtQuick
+import QtQuick.Layouts
+
+// PowerSurface — Material 3 (Phase G). Логіка (lock/logout/reboot/shutdown) збережена.
+ColumnLayout {
+    id: root
+    spacing: 8
+
+    component PowerRow: Rectangle {
+        id: pr
+        property string glyph: ""
+        property string label: ""
+        property color iconColor: Colors.grey2
+        property string command: ""
+        Layout.fillWidth: true
+        Layout.preferredHeight: 44
+        radius: 8
+        color: prMa.containsMouse ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.08) : Colors.bg1
+        Behavior on color { ColorAnimation { duration: 120 } }
+
+        // Clean Process component (inherits display environment naturally)
+        Process { id: proc }
+
+        MouseArea {
+            id: prMa
+            anchors.fill: parent
+            hoverEnabled: true
+            acceptedButtons: Qt.LeftButton
+            cursorShape: Qt.PointingHandCursor
+            z: 10
+
+            onClicked: {
+                if (pr.command === "lock") {
+                    // Fully quoted string for sh -c execution using absolute path
+                    proc.command = ["sh", "-c", "qs -p $HOME/.config/quickshell/bar/shell.qml ipc call ilock relock"]
+                } else {
+                    proc.command = ["sh", "-c", pr.command]
+                }
+                proc.running = true
+            }
+        }
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            spacing: 12
+
+            Text {
+                text: pr.glyph
+                color: pr.iconColor
+                font { family: "Material Symbols Rounded"; pixelSize: 19 }
+                MouseArea { anchors.fill: parent; propagateComposedEvents: true; enabled: false }
+            }
+            Text {
+                Layout.fillWidth: true
+                text: pr.label
+                color: Colors.fg
+                font { family: "SF Pro Display"; pixelSize: 12 }
+                MouseArea { anchors.fill: parent; propagateComposedEvents: true; enabled: false }
+            }
+        }
+    }
+
+    PowerRow {
+        glyph: "\ue899"; label: "Lock"
+        command: "lock"
+        iconColor: Colors.accent
+    }
+    PowerRow {
+        glyph: "\ue9ba"; label: "Log out"
+        command: "loginctl terminate-user $USER"
+    }
+    PowerRow {
+        glyph: "\uf053"; label: "Reboot"
+        command: "systemctl reboot"
+    }
+    PowerRow {
+        glyph: "\ue8ac"; label: "Shut down"
+        iconColor: Colors.red
+        command: "systemctl poweroff"
+    }
+}

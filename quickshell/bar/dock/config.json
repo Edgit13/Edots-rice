@@ -1,0 +1,33 @@
+{
+    "dock": {
+        "enabled": true,
+        "autohide": false,
+        "iconSize": 28,
+        "spacing": 8,
+        "marginBottom": 8,
+        "reserveSpace": true,
+        "hideDelay": 400,
+        "launcherButton": true,
+        "launcherCommand": "qs -p ~/.config/quickshell/bar/shell.qml ipc call pill toggleLauncher || qs -d -p ~/.config/quickshell/bar/shell.qml",
+        "editorCommand": ""
+    },
+    "pill": {
+        "radius": 26,
+        "padding": 8,
+        "animationDuration": 300
+    },
+    "border": {
+        "width": 0,
+        "colorTop": "",
+        "colorBottom": ""
+    },
+    "opacity": {
+        "normal": 0.92
+    },
+    "apps": {
+        "pinned": [
+            "firefox",
+            "kitty"
+        ]
+    }
+}

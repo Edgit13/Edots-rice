@@ -4,8 +4,6 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
-// TimerCard — простий таймер (хв:сек), старт/пауза/скидання. По завершенню: візуальний
-// спалах + системне сповіщення через notify-send (той самий шлях, що вже стоїть для swaync).
 DashCard {
     id: root
     title: "Таймер"
@@ -74,7 +72,13 @@ DashCard {
             font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
             color: btn.emphasized ? Theme.color.fgPrimary : Theme.color.fgSurface
         }
-        MouseArea { id: bma; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: btn.clicked() }
+        MouseArea {
+            id: bma
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: btn.clicked()
+        }
     }
 
     RowLayout {
@@ -85,11 +89,15 @@ DashCard {
         RowLayout {
             spacing: Theme.space.xs
             visible: !root._started
-            RoundBtn { icon: "\ue15b"; onClicked: root.addMinutes(-1) }   // remove
-            ThemedText { text: Math.round(root.totalSeconds / 60) + " хв"; style: Theme.type.labelMedium
-                         color: Theme.color.fgSurfaceVariant; Layout.preferredWidth: 44
-                         horizontalAlignment: Text.AlignHCenter }
-            RoundBtn { icon: "\ue145"; onClicked: root.addMinutes(1) }    // add
+            RoundBtn { icon: "\ue15b"; onClicked: root.addMinutes(-1) }
+            ThemedText {
+                text: Math.round(root.totalSeconds / 60) + " хв"
+                style: Theme.type.labelMedium
+                color: Theme.color.fgSurfaceVariant
+                Layout.preferredWidth: 56
+                horizontalAlignment: Text.AlignHCenter
+            }
+            RoundBtn { icon: "\ue145"; onClicked: root.addMinutes(1) }
         }
 
         ThemedText {
@@ -104,11 +112,11 @@ DashCard {
         RowLayout {
             spacing: Theme.space.xs
             RoundBtn {
-                icon: root.running ? "\ue034" : "\ue037"   // pause/play
+                icon: root.running ? "\ue034" : "\ue037"
                 emphasized: true
                 onClicked: root.running ? root.pause() : root.start()
             }
-            RoundBtn { icon: "\ue5d5"; onClicked: root.reset() }   // refresh/reset
+            RoundBtn { icon: "\ue5d5"; onClicked: root.reset() }
         }
     }
 }

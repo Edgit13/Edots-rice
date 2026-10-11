@@ -3,48 +3,43 @@ pragma ComponentBehavior: Bound
 
 import "root:/shell"
 import "root:/theme"
+import "root:/dock"
+import "root:/settings"
+import "root:/windows"
+import "root:/lockscreen"
 import Quickshell
 import Quickshell.Io
 import QtQuick
 
 // ShellNext — Material 3 Expressive shell for MangoWM.
-// Dashboard lives inside BarWindow (DashboardSurface); settings runs as a
-// separate shell process (../settings/shell.qml), launched on demand.
+// Everything runs in ONE qs process:
+//   • Bar                — per-monitor top bar
+//   • DashboardSurface   — morphs out of BarWindow
+//   • DockLoader         — bar/dock/ (IPC target "dock")
+//   • TaskManagerWindow  — bar/windows/ (IPC target "tasks")
+//   • SettingsWindow     — bar/settings/ (IPC target "settingsapp")
+//   • LockScreen         — bar/lockscreen/ (IPC target "ilock")
 ShellRoot {
     id: root
 
-    readonly property string settingsShell:
-        Quickshell.env("HOME") + "/.config/quickshell/settings/shell.qml"
-
     TaskManagerWindow { id: taskManagerWindow }
-
-    // Spawn the settings shell if needed, then forward the IPC call to it.
-    function _settingsCall(fn) {
-        Quickshell.execDetached(["sh", "-c",
-            "pgrep -f 'qs -p .*settings/shell.qml' >/dev/null || " +
-            "(qs -p " + root.settingsShell + " >/dev/null 2>&1 &); " +
-            "sleep 0.5; " +
-            "qs -p " + root.settingsShell + " ipc call settingsapp " + fn
-        ])
-    }
+    SettingsWindow    { id: settingsWindow }
+    LockScreen        { id: lockScreen }
 
     Connections {
         target: ShellState
-        // dashboard is handled per-monitor inside DashboardSurface
 
-        function onOpenSettingsRequested()   { root._settingsCall("open") }
-        function onToggleSettingsRequested() { root._settingsCall("toggle") }
-        function onCloseSettingsRequested()  { root._settingsCall("close") }
+        function onOpenSettingsRequested()   { settingsWindow.open() }
+        function onToggleSettingsRequested() { settingsWindow.toggle() }
+        function onCloseSettingsRequested()  { settingsWindow.close() }
 
         function onOpenTasksRequested()   { taskManagerWindow.open() }
         function onToggleTasksRequested() { taskManagerWindow.toggle() }
         function onCloseTasksRequested()  { taskManagerWindow.close() }
     }
 
-    // ---- pill (matches mango/binds.conf) ----
     IpcHandler {
         target: "pill"
-
         function showLauncher(): void   { ShellState.openSurface("launcher") }
         function toggleLauncher(): void { ShellState.toggleSurface("launcher") }
         function showWallpaper(): void   { ShellState.openSurface("wallpaper") }
@@ -59,10 +54,8 @@ ShellRoot {
         function toggleMedia(): void { ShellState.toggleSurface("media") }
         function showPower(): void   { ShellState.openSurface("power") }
         function togglePower(): void { ShellState.toggleSurface("power") }
-
         function showSettings(): void   { ShellState.toggleSettings() }
         function toggleSettings(): void { ShellState.toggleSettings() }
-
         function close(): void { ShellState.closeSurfaces() }
     }
 
@@ -85,14 +78,11 @@ ShellRoot {
         function close(): void  { taskManagerWindow.close() }
     }
 
-    // Launcher IPC. Distinct target name ("settings-launch") so it never
-    // collides with the settings shell's own `settingsapp` handler, which
-    // would otherwise receive the same `qs ipc call` and double-toggle.
     IpcHandler {
-        target: "settings-launch"
-        function open(): void   { root._settingsCall("open") }
-        function toggle(): void { root._settingsCall("toggle") }
-        function close(): void  { root._settingsCall("close") }
+        target: "settingsapp"
+        function open(): void   { settingsWindow.open() }
+        function toggle(): void { settingsWindow.toggle() }
+        function close(): void  { settingsWindow.close() }
     }
 
     Variants {
@@ -101,4 +91,5 @@ ShellRoot {
     }
 
     Bar {}
+    DockLoader {}
 }

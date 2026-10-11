@@ -1,4 +1,4 @@
-import "root:/"
+import "root:/config"
 import "root:/theme"
 import "root:/shell"
 import "root:/modules/workspace"
@@ -15,8 +15,6 @@ import Quickshell
 import Quickshell.Wayland
 import QtQuick
 
-// BarWindow — один PanelWindow на монітор. Позиція (top/bottom/left/right) береться з BarConfig
-// (глобально або override для цього монітора); layout перебудовується автоматично.
 PanelWindow {
     id: win
 
@@ -28,12 +26,9 @@ PanelWindow {
     readonly property bool vertical: position === "left" || position === "right"
     readonly property int thickness: BarConfig.thicknessFor(monitorName)
     readonly property int gap: Theme.space.screenMargin
-    readonly property int reserve: thickness + gap * 2          // відступ від краю + смуга + відступ до вікон
-    readonly property int cross: thickness - Theme.space.xs * 2 // розмір контенту впоперек осі смуги
+    readonly property int reserve: thickness + gap * 2
+    readonly property int cross: thickness - Theme.space.xs * 2
 
-    // Dashboard живе всередині цього вікна. Поки він occupies —
-    // вікно розширюється вниз/вбік на freeOverflow, тайлінг не рухається,
-    // бо exclusiveZone лишається постійним (reserve).
     readonly property var morphModules: [dashboardSurface]
     readonly property bool dashOpen: dashboardSurface.occupies
 
@@ -46,12 +41,11 @@ PanelWindow {
         if (position === "top") return _maxOverflow("overflowBottom")
         if (position === "bottom") return _maxOverflow("overflowTop")
         if (position === "left") return _maxOverflow("overflowRight")
-        return _maxOverflow("overflowLeft")   // right
+        return _maxOverflow("overflowLeft")
     }
 
     readonly property bool debug: Quickshell.env("EDOTS_BAR_DEBUG") === "1"
 
-    // Sync Config bar.position → BarConfig so the settings dropdown moves the bar
     Connections {
         target: Config
         function onCurrentChanged() {
@@ -65,8 +59,6 @@ PanelWindow {
     WlrLayershell.keyboardFocus: dashOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
     color: "transparent"
 
-    // Вікно прилягає до краю екрана (3 якорі: вздовж осі + сам край).
-    // Розмір розширюється на freeOverflow, коли відкривається дашборд.
     anchors {
         top: position === "top" || vertical
         bottom: position === "bottom" || vertical
@@ -78,24 +70,30 @@ PanelWindow {
     exclusionMode: ExclusionMode.Normal
     exclusiveZone: reserve
 
-    // Клікабельні: смуга + (коли дашборд відкритий) сама картка дашборда
     mask: Region {
         Region { item: surface }
         Region { item: win.dashOpen ? dashboardSurface : null }
     }
 
-    // ---- Dashboard: морфиться з смуги (закріплений під/над/збоку смуги) ----
+    // ---- Dashboard: морфиться з смуги ----
     DashboardSurface {
         id: dashboardSurface
         z: 1
         hostMonitor: win.monitorName
+        revealDirection: win.position       // ← FIX: анімація з боку бару
 
         readonly property real stripEnd: win.gap + win.thickness + Theme.space.sm
         readonly property real targetWidth: win.vertical ? Math.min(800, win.width - stripEnd - win.gap * 2)
                                                          : Math.min(920, win.width - win.gap * 4)
 
-        maxHeight: win.vertical ? win.height - win.gap * 2
-                                : win.height - stripEnd - win.gap
+        // FIX: SCREEN height, а не win.height — інакше цикл:
+        // win.height ← freeOverflow ← overflow ← effectiveHeight ← maxHeight ← win.height
+        maxHeight: {
+            const sh = win.screen ? win.screen.height : 1080
+            const se = win.gap + win.thickness + Theme.space.sm
+            return win.vertical ? sh - win.gap * 2
+                                : sh - se - win.gap
+        }
 
         width: targetWidth
 
@@ -107,7 +105,6 @@ PanelWindow {
            : Math.round((win.height - height) / 2)
     }
 
-    // Геометрія рахується явно (x/y/width/height), а не якорями
     Item {
         id: surface
         z: 2
@@ -197,7 +194,7 @@ PanelWindow {
             ]
         }
 
-        Rectangle {   // діагностика: контур смуги при EDOTS_BAR_DEBUG=1
+        Rectangle {
             anchors.fill: parent
             z: 100
             visible: win.debug

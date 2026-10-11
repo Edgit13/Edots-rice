@@ -3,7 +3,7 @@ import "root:/services"
 import QtQuick
 import QtQuick.Layouts
 
-// PerformanceTab — CPU/RAM/диск наживо (/proc, df). Опитування йде лише поки вкладка видима.
+// PerformanceTab — CPU/RAM/диск наживо (/proc, df).
 Item {
     id: root
 
@@ -24,18 +24,23 @@ Item {
         }
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 10
-            radius: 5
+            implicitHeight: 8
+            radius: 4
             color: Theme.color.surfaceContainerHighest
             Rectangle {
                 width: parent.width * Math.max(0, Math.min(1, percent / 100))
                 height: parent.height
-                radius: 5
+                radius: 4
                 color: percent > 85 ? Theme.color.error : Theme.color.primary
                 Behavior on width { MotionAnimation { role: "stateChange" } }
             }
         }
-        ThemedText { visible: sub.length > 0; text: sub; style: Theme.type.labelSmall; color: Theme.color.fgSurfaceVariant }
+        ThemedText {
+            visible: sub.length > 0
+            text: sub
+            style: Theme.type.labelSmall
+            color: Theme.color.fgSurfaceVariant
+        }
     }
 
     ColumnLayout {

@@ -1,6 +1,14 @@
 {
-  "blurStrength": 0.2,
-  "blurRadius": 56,
+  "blurStrength": 0.35,
+  "blurRadius": 32,
   "passwordStyle": "shapes",
-  "clockSize": 120
+  "clockSize": 112,
+  "enabled": true,
+  "scrimOpacity": 0.55,
+  "kenBurns": true,
+  "parallax": true,
+  "floatingShapes": true,
+  "greeting": true,
+  "powerButtons": true,
+  "successFlash": true
 }

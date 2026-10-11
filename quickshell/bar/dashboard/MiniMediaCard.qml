@@ -4,7 +4,7 @@ import Quickshell.Services.Mpris
 import QtQuick
 import QtQuick.Layouts
 
-// MiniMediaCard — компактний плеєр для сітки на вкладці "Огляд" (той самий MPRIS, що й MediaTab).
+// MiniMediaCard — компактний плеєр для сітки на вкладці "Огляд".
 DashCard {
     id: root
 
@@ -18,6 +18,45 @@ DashCard {
     readonly property bool playing: has && activePlayer.playbackState === MprisPlaybackState.Playing
 
     implicitHeight: 260
+
+    component MediaButton: Rectangle {
+        id: btn
+        property string icon: ""
+        property bool emphasized: false
+        signal clicked()
+
+        implicitWidth: emphasized ? 40 : 32
+        implicitHeight: emphasized ? 40 : 32
+        radius: width / 2
+
+        color: emphasized
+             ? (ma.pressed
+                 ? Theme.stateLayer(Theme.color.primary, Theme.color.fgPrimary, Theme.components.statePressed)
+                 : ma.containsMouse
+                     ? Theme.stateLayer(Theme.color.primary, Theme.color.fgPrimary, Theme.components.stateHover)
+                     : Theme.color.primary)
+             : (ma.pressed
+                 ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
+                 : ma.containsMouse
+                     ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
+                     : "transparent")
+        Behavior on color { MotionColorAnimation { role: "hover" } }
+
+        Text {
+            anchors.centerIn: parent
+            text: btn.icon
+            font { family: Theme.type.icons; pixelSize: btn.emphasized ? Theme.type.iconM : Theme.type.iconS }
+            color: btn.emphasized ? Theme.color.fgPrimary : Theme.color.fgSurface
+        }
+
+        MouseArea {
+            id: ma
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: btn.clicked()
+        }
+    }
 
     ColumnLayout {
         anchors.fill: parent
@@ -70,30 +109,16 @@ DashCard {
 
         RowLayout {
             Layout.alignment: Qt.AlignHCenter
-            spacing: Theme.space.lg
+            spacing: Theme.space.sm
             visible: root.has
 
-            Text {
-                text: "\ue045"
-                font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                color: Theme.color.fgSurface
-                MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
-                            onClicked: if (root.has) root.activePlayer.previous() }
+            MediaButton { icon: "\ue045"; onClicked: if (root.has) root.activePlayer.previous() }
+            MediaButton {
+                icon: root.playing ? "\ue034" : "\ue037"
+                emphasized: true
+                onClicked: if (root.has) { root.playing ? root.activePlayer.pause() : root.activePlayer.play() }
             }
-            Text {
-                text: root.playing ? "\ue034" : "\ue037"
-                font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
-                color: Theme.color.primary
-                MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
-                            onClicked: if (root.has) { root.playing ? root.activePlayer.pause() : root.activePlayer.play() } }
-            }
-            Text {
-                text: "\ue044"
-                font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                color: Theme.color.fgSurface
-                MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
-                            onClicked: if (root.has) root.activePlayer.next() }
-            }
+            MediaButton { icon: "\ue044"; onClicked: if (root.has) root.activePlayer.next() }
         }
     }
 }

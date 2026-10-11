@@ -62,25 +62,6 @@ qs -p ~/Dotfiles/quickshell/dock ipc call dock <function>
 | `edit` | Open `config.json` in the configured editor |
 
 ## Colors (Material 3)
-
-The dock reads Material color roles (flat JSON, matugen `colors.json` format)
-from `~/.config/quickshell/dock-colors.json` — `theme.colorsFile` in the dock
-config points there by default. The patched `wallcolors.py` writes that file on
-every wallpaper run:
-
-- With matugen's dark scheme available, the true M3 roles are used
-  (`primary`, `primary_container`, `secondary_container`, `surface_container_high`, …).
-- Otherwise the roles are derived from the generated palette
-  (`accent` → `primary`, `bg0…bg3` → surfaces, `fg` → `on_surface`).
-
-The file is watched — no reload hook needed; the dock recolors the moment
-`wallcolors.py` finishes.
-
-Used roles: `background`, `surface_container_high`, `primary`,
-`primary_container`, `secondary_container`, `on_primary`,
-`on_primary_container`, `on_surface`, `on_surface_variant`,
-`outline_variant`, `shadow`.
-
 ## Config
 
 `~/.config/quickshell-dock/config.json` is created on first start and merged

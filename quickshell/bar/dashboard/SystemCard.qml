@@ -4,6 +4,8 @@ import Quickshell.Io
 import QtQuick
 import QtQuick.Layouts
 
+// SystemCard — OS / WM / uptime. Brightness живе в окремій BrightnessCard,
+// яка містить єдиний BrightnessManager (керує і brightnessctl, і DDC/CI).
 DashCard {
     id: root
 
@@ -29,40 +31,31 @@ DashCard {
     }
     Timer { interval: 60000; running: true; repeat: true; triggeredOnStart: true; onTriggered: { osProc.running = true; upProc.running = true } }
 
-    ColumnLayout {
+    RowLayout {
         width: parent.width
         height: implicitHeight
         spacing: Theme.space.md
 
-        RowLayout {
-            width: parent.width
-            spacing: Theme.space.md
+        DashAvatar { size: 56 }
 
-            DashAvatar { size: 56 }
-
-            ColumnLayout {
-                spacing: 2
-                Layout.fillWidth: true
-                RowLayout {
-                    spacing: Theme.space.xs
-                    Text { text: "\uf1a0"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant }
-                    ThemedText { text: root.osName; style: Theme.type.bodyMedium }
-                }
-                RowLayout {
-                    spacing: Theme.space.xs
-                    Text { text: "\ue30d"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant }
-                    ThemedText { text: root.wmName; style: Theme.type.bodyMedium }
-                }
-                RowLayout {
-                    spacing: Theme.space.xs
-                    Text { text: "\ue425"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant }
-                    ThemedText { text: root.uptimeText; style: Theme.type.bodyMedium }
-                }
-            }
-        }
-
-        BrightnessManager {
+        ColumnLayout {
+            spacing: 2
             Layout.fillWidth: true
+            RowLayout {
+                spacing: Theme.space.xs
+                Text { text: "\uf1a0"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant }
+                ThemedText { text: root.osName; style: Theme.type.bodyMedium }
+            }
+            RowLayout {
+                spacing: Theme.space.xs
+                Text { text: "\ue30d"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant }
+                ThemedText { text: root.wmName; style: Theme.type.bodyMedium }
+            }
+            RowLayout {
+                spacing: Theme.space.xs
+                Text { text: "\ue425"; font { family: Theme.type.icons; pixelSize: Theme.type.iconXS } color: Theme.color.fgSurfaceVariant }
+                ThemedText { text: root.uptimeText; style: Theme.type.bodyMedium }
+            }
         }
     }
 }

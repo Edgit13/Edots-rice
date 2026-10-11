@@ -12,5 +12,6 @@
   },
   "mode": "expanded",
   "elevation": 1,
-  "position": "top"
+  "position": "top",
+  "mainMonitor": ""
 }

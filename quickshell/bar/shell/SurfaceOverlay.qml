@@ -1,4 +1,4 @@
-import "root:/"
+import "root:/surfaces"
 import "root:/theme"
 import "root:/shell"
 import "root:/services"

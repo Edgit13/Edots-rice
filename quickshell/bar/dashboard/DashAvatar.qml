@@ -4,8 +4,6 @@ import QtQuick
 import QtQuick.Effects
 
 // DashAvatar — читає ~/.face; якщо файлу нема/битий — generic-іконка людини.
-// Кругла маска через MultiEffect (Qt Quick 6 Effects), бо clip:true на Rectangle
-// не обрізає дітей по заокругленню, лише по прямокутних межах.
 Item {
     id: root
     property int size: 56
@@ -24,7 +22,7 @@ Item {
 
         Text {
             anchors.centerIn: parent
-            text: "\ue7fd"   // person
+            text: "\ue7fd"
             font { family: Theme.type.icons; pixelSize: root.size * 0.55 }
             color: Theme.color.fgSecondaryContainer
         }
