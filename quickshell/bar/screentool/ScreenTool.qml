@@ -4,7 +4,9 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// Run:  qs -c screenshot      (needs: grim, wl-clipboard, libnotify)
+// bar/screentool/ScreenTool.qml — M3 область виділення + скріншот.
+// Активується через IPC: ipc call screentool toggle|open|close.
+// При кожному відкритті: скидає стан, робить свіжий grim -o <screen>.
 Item {
     id: root
 
@@ -27,18 +29,25 @@ Item {
         onExited: { root.busy = false; root.active = false }
     }
 
+    function _q()   { return String.fromCharCode(34) }   // "  (без \ в QML-джерелі)
+    function _nl()  { return String.fromCharCode(10) }   // \n
+
     function capture(geometry) {
         busy = true
-        const script =
-            (delaySec > 0 ? 'notify-send -a Screenshot -t 1500 "Capturing in ' + delaySec + 's"\n' : '') +
-            'sleep ' + (0.35 + delaySec) + '\n' +
-            'd="$1"; g="$2"; clip="$3"; save="$4"\n' +
-            'if [ "$save" = 1 ]; then mkdir -p "$d"; f="$d/Screenshot_$(date +%Y-%m-%d_%H-%M-%S).png"; else f="$(mktemp --suffix=.png)"; fi\n' +
-            'grim -g "$g" "$f" || { notify-send -u critical -a Screenshot "Screenshot failed"; exit 1; }\n' +
-            '[ "$clip" = 1 ] && wl-copy --type image/png < "$f"\n' +
-            'if [ "$save" = 1 ]; then msg="$f"; else msg="Copied to clipboard"; fi\n' +
-            'notify-send -a Screenshot -i "$f" "Screenshot captured" "$msg"\n'
-        proc.command = ["sh", "-c", script, "sh", saveDir, geometry, toClipboard ? "1" : "0", toFile ? "1" : "0"]
+        const q  = _q()
+        const nl = _nl()
+        let s = ""
+        if (delaySec > 0)
+            s += "notify-send -a Screenshot -t 1500 " + q + "Capturing in " + delaySec + "s" + q + nl
+        s += "sleep " + (0.35 + delaySec) + nl
+        s += "d=" + q + "$1" + q + "; g=" + q + "$2" + q + "; clip=" + q + "$3" + q + "; save=" + q + "$4" + q + nl
+        s += "if [ " + q + "$save" + q + " = 1 ]; then mkdir -p " + q + "$d" + q + "; f=" + q + "$d/Screenshot_$(date +%Y-%m-%d_%H-%M-%S).png" + q + "; else f=" + q + "$(mktemp --suffix=.png)" + q + "; fi" + nl
+        s += "grim -g " + q + "$g" + q + " " + q + "$f" + q + " || { notify-send -u critical -a Screenshot " + q + "Screenshot failed" + q + "; exit 1; }" + nl
+        s += "[ " + q + "$clip" + q + " = 1 ] && wl-copy --type image/png < " + q + "$f" + q + nl
+        s += "if [ " + q + "$save" + q + " = 1 ]; then msg=" + q + "$f" + q + "; else msg=" + q + "Copied to clipboard" + q + "; fi" + nl
+        s += "notify-send -a Screenshot -i " + q + "$f" + q + " " + q + "Screenshot captured" + q + " " + q + "$msg" + q + nl
+        proc.command = ["sh", "-c", s, "sh", saveDir, geometry,
+                        toClipboard ? "1" : "0", toFile ? "1" : "0"]
         proc.running = true
     }
 
@@ -54,11 +63,12 @@ Item {
             exclusionMode: ExclusionMode.Ignore
             color: "transparent"
             visible: root.active && !root.busy && win.ready
-            WlrLayershell.namespace: "m3-screenshot"
+            WlrLayershell.namespace: "edots-screenshot"
             WlrLayershell.layer: WlrLayer.Overlay
-            WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
+            WlrLayershell.keyboardFocus: root.active
+                ? WlrKeyboardFocus.Exclusive
+                : WlrKeyboardFocus.None
 
-            // selection state
             property real x1: 0
             property real y1: 0
             property real x2: 0
@@ -66,7 +76,7 @@ Item {
             property bool hasSel: false
             property bool dragging: false
             property bool ready: false
-            readonly property string shotPath: "/tmp/m3-screenshot-" + (screen ? screen.name : "x") + ".png"
+            readonly property string shotPath: "/tmp/edots-screenshot-" + (screen ? screen.name : "x") + ".png"
             readonly property real sx: Math.min(x1, x2)
             readonly property real sy: Math.min(y1, y2)
             readonly property real sw: Math.abs(x2 - x1)
@@ -83,6 +93,28 @@ Item {
                 }
             }
 
+            function resetAndGrab() {
+                win.ready = false
+                win.hasSel = false
+                win.x1 = win.x2 = win.y1 = win.y2 = 0
+                win.dragging = false
+                grabProc.running = true
+            }
+
+            Process {
+                id: grabProc
+                command: ["grim", "-o", win.screen.name, win.shotPath]
+                onExited: win.ready = true
+            }
+
+            Connections {
+                target: root
+                function onActiveChanged() {
+                    if (root.active) win.resetAndGrab()
+                    else win.ready = false
+                }
+            }
+
             FocusScope {
                 id: canvas
                 anchors.fill: parent
@@ -91,12 +123,8 @@ Item {
                 Keys.onReturnPressed: win.doCapture()
                 Keys.onEnterPressed: win.doCapture()
 
-                // frozen screen (grabbed with grim before the overlay is shown)
-                Process {
-                    command: ["grim", "-o", win.screen.name, win.shotPath]
-                    running: true
-                    onExited: win.ready = true
-                }
+                onVisibleChanged: if (visible) canvas.forceActiveFocus()
+
                 Image {
                     anchors.fill: parent
                     source: win.ready ? "file://" + win.shotPath : ""
@@ -105,18 +133,18 @@ Item {
                     fillMode: Image.Stretch
                 }
 
-                // scrim with cutout
                 readonly property color scrimColor: root.mode === "screen" ? M3.scrimLight : M3.scrim
                 Rectangle { color: canvas.scrimColor; x: 0; y: 0; width: canvas.width
                             height: win.showSel ? win.sy : canvas.height }
                 Rectangle { color: canvas.scrimColor; visible: win.showSel
                             x: 0; y: win.sy; width: win.sx; height: win.sh }
                 Rectangle { color: canvas.scrimColor; visible: win.showSel
-                            x: win.sx + win.sw; y: win.sy; width: canvas.width - (win.sx + win.sw); height: win.sh }
+                            x: win.sx + win.sw; y: win.sy
+                            width: canvas.width - (win.sx + win.sw); height: win.sh }
                 Rectangle { color: canvas.scrimColor; visible: win.showSel
-                            x: 0; y: win.sy + win.sh; width: canvas.width; height: canvas.height - (win.sy + win.sh) }
+                            x: 0; y: win.sy + win.sh
+                            width: canvas.width; height: canvas.height - (win.sy + win.sh) }
 
-                // screen-mode outline
                 Rectangle {
                     visible: root.mode === "screen"
                     anchors.fill: parent
@@ -127,7 +155,6 @@ Item {
                     border.width: 3
                 }
 
-                // region interaction
                 MouseArea {
                     id: area
                     anchors.fill: parent
@@ -138,7 +165,8 @@ Item {
                     property real ly: 0
 
                     function inside(mx, my) {
-                        return win.hasSel && mx >= win.sx && mx <= win.sx + win.sw && my >= win.sy && my <= win.sy + win.sh
+                        return win.hasSel && mx >= win.sx && mx <= win.sx + win.sw
+                            && my >= win.sy && my <= win.sy + win.sh
                     }
 
                     onPressed: mouse => {
@@ -178,7 +206,6 @@ Item {
                     onDoubleClicked: mouse => { if (inside(mouse.x, mouse.y)) win.doCapture() }
                 }
 
-                // selection outline
                 Rectangle {
                     visible: win.showSel
                     x: win.sx; y: win.sy; width: win.sw; height: win.sh
@@ -188,7 +215,6 @@ Item {
                     radius: 4
                 }
 
-                // size chip
                 Rectangle {
                     visible: win.showSel && win.sw > 24
                     height: 28
@@ -207,7 +233,6 @@ Item {
                     }
                 }
 
-                // corner handles
                 Repeater {
                     model: 4
                     Rectangle {
@@ -232,15 +257,14 @@ Item {
                                 if (!pressed) return
                                 const p = mapToItem(canvas, mouse.x, mouse.y)
                                 if (h.isRight) win.x2 = Math.max(win.x1 + 16, Math.min(canvas.width, p.x))
-                                else         win.x1 = Math.max(0, Math.min(win.x2 - 16, p.x))
+                                else           win.x1 = Math.max(0, Math.min(win.x2 - 16, p.x))
                                 if (h.isBottom) win.y2 = Math.max(win.y1 + 16, Math.min(canvas.height, p.y))
-                                else          win.y1 = Math.max(0, Math.min(win.y2 - 16, p.y))
+                                else            win.y1 = Math.max(0, Math.min(win.y2 - 16, p.y))
                             }
                         }
                     }
                 }
 
-                // hint (snackbar style)
                 Rectangle {
                     visible: root.mode === "screen" || !win.hasSel
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -255,12 +279,11 @@ Item {
                         color: M3.inverseOnSurface
                         font.pixelSize: 14
                         text: root.mode === "screen"
-                              ? "Entire screen  ·  Enter to capture"
-                              : "Drag to select an area  ·  Enter to capture  ·  Esc to cancel"
+                              ? "Entire screen  ·  Enter to capture  ·  Esc to cancel"
+                              : "Drag to select  ·  Enter to capture  ·  Esc to cancel"
                     }
                 }
 
-                // floating toolbar
                 Rectangle {
                     id: bar
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -279,7 +302,7 @@ Item {
                     Behavior on scale { NumberAnimation { duration: 450; easing.type: Easing.OutBack; easing.overshoot: 1.8 } }
                     Behavior on opacity { NumberAnimation { duration: 200 } }
 
-                    MouseArea { anchors.fill: parent }   // swallow clicks in gaps
+                    MouseArea { anchors.fill: parent }
 
                     RowLayout {
                         id: barRow
@@ -310,7 +333,8 @@ Item {
                             onClicked: root.toFile = !root.toFile
                         }
                         MButton {
-                            label: root.delaySec === 0 ? "Timer" : root.delaySec + "s"; icon: "timer"
+                            label: root.delaySec === 0 ? "Timer" : root.delaySec + "s"
+                            icon: "timer"
                             toggled: root.delaySec > 0
                             onClicked: root.delaySec = ({0: 3, 3: 5, 5: 10, 10: 0})[root.delaySec]
                         }
