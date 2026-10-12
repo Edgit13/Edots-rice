@@ -1,0 +1,10 @@
+{
+  "language": "uk",
+  "userName": "",
+  "autoStart": false,
+  "notifEnabled": true,
+  "browser": "firefox",
+  "fileManager": "nautilus",
+  "terminalCommand": "ghostty",
+  "weatherCity": ""
+}

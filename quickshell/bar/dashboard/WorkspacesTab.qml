@@ -1,38 +1,80 @@
 import "root:/theme"
 import "root:/services"
+import "root:/modules/workspace"
 import QtQuick
 import QtQuick.Layouts
 
-// WorkspacesTab — огляд тегів/клієнтів по всіх моніторах.
+// WorkspacesTab — огляд тегів і активного вікна (M3 Expressive).
+// Теги малюються тим самим WorkspaceStrip, що й у барі, але більші.
 Item {
     id: root
 
     readonly property var monitorNames: Object.keys(MangoService.monitors)
+    readonly property var fc: MangoService.focusedClient
+    readonly property bool hasClient: !!fc && fc.id !== null && fc.id !== undefined
 
-    component IconButton: Rectangle {
+    function stats(mon) {
+        const n = MangoService.tagCount(mon)
+        let occ = 0, clients = 0
+        for (let i = 1; i <= n; i++) {
+            const t = MangoService.tag(mon, i)
+            if (t.occupied) occ++
+            clients += t.clients || 0
+        }
+        return { occupied: occ, clients: clients, active: MangoService.activeIndex(mon) }
+    }
+
+    // кнопка-дія: коло/пігулка → при натисканні морф у менший радіус
+    component ActionButton: Rectangle {
         id: btn
         property string icon: ""
-        property color tint: Theme.color.fgSurfaceVariant
+        property string label: ""
+        property string tone: "tonal"        // tonal | error | toggle
+        property bool toggled: false
         signal clicked()
 
-        implicitWidth: 32
-        implicitHeight: 32
-        radius: 16
+        readonly property color fg: tone === "error" ? Theme.color.fgErrorContainer
+                                  : (tone === "toggle" && !toggled) ? Theme.color.fgSurfaceVariant
+                                  : Theme.color.fgSecondaryContainer
 
-        color: bma.pressed
-             ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
-             : bma.containsMouse
-                 ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
-                 : "transparent"
+        implicitHeight: Theme.components.buttonS
+        implicitWidth: row.implicitWidth + Theme.space.xl
+        color: tone === "error" ? Theme.color.errorContainer
+             : (tone === "toggle" && !toggled) ? Theme.color.surfaceContainerHighest
+             : Theme.color.secondaryContainer
+        radius: bma.pressed ? Theme.shape.radius("md", height)
+              : toggled ? Theme.shape.radius("lg", height)
+              : height / 2
+        Behavior on radius { MotionAnimation { role: "morph" } }
         Behavior on color { MotionColorAnimation { role: "hover" } }
 
-        Text {
-            anchors.centerIn: parent
-            text: btn.icon
-            font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-            color: btn.tint
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: btn.fg
+            opacity: bma.pressed ? Theme.components.statePressed
+                   : bma.containsMouse ? Theme.components.stateHover : 0
+            Behavior on opacity { MotionAnimation { role: "hover" } }
         }
 
+        Row {
+            id: row
+            anchors.centerIn: parent
+            spacing: Theme.space.xs
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: btn.icon
+                font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+                color: btn.fg
+            }
+            ThemedText {
+                visible: btn.label.length > 0
+                anchors.verticalCenter: parent.verticalCenter
+                text: btn.label
+                style: Theme.type.labelLarge
+                color: btn.fg
+            }
+        }
         MouseArea {
             id: bma
             anchors.fill: parent
@@ -42,95 +84,123 @@ Item {
         }
     }
 
+    component InfoChip: Rectangle {
+        id: chip
+        property string text: ""
+        property bool accent: false
+        implicitHeight: Theme.components.chipHeight
+        implicitWidth: chipText.implicitWidth + Theme.space.xl
+        radius: Theme.shape.chip
+        color: accent ? Theme.color.primaryContainer : Theme.color.surfaceContainerHighest
+        ThemedText {
+            id: chipText
+            anchors.centerIn: parent
+            text: chip.text
+            style: Theme.type.labelLarge
+            color: chip.accent ? Theme.color.fgPrimaryContainer : Theme.color.fgSurfaceVariant
+        }
+    }
+
     ColumnLayout {
         anchors.fill: parent
         anchors.margins: Theme.space.lg
         spacing: Theme.space.lg
 
+        // ---- активне вікно ----
         DashCard {
-            visible: MangoService.focusedClient && MangoService.focusedClient.id !== null
+            visible: root.hasClient
             Layout.fillWidth: true
             title: "Активне вікно"
 
             RowLayout {
                 width: parent.width
-                spacing: Theme.space.sm
-                ColumnLayout {
-                    spacing: 0
-                    Layout.fillWidth: true
+                spacing: Theme.space.md
+
+                // аватар: форма морфиться, коли вікно floating
+                Rectangle {
+                    Layout.preferredWidth: Theme.components.dp(48)
+                    Layout.preferredHeight: Theme.components.dp(48)
+                    radius: root.fc && root.fc.floating ? Theme.shape.radius("lg", height) : height / 2
+                    color: Theme.color.primaryContainer
+                    Behavior on radius { MotionAnimation { role: "morph" } }
                     ThemedText {
-                        text: MangoService.focusedClient.title || "—"
+                        anchors.centerIn: parent
+                        text: {
+                            const id = root.fc ? (root.fc.appid || "") : ""
+                            const last = id.split(".").pop()
+                            return last.length > 0 ? last.charAt(0).toUpperCase() : "?"
+                        }
+                        style: Theme.type.titleMedium
+                        emphasized: true
+                        color: Theme.color.fgPrimaryContainer
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    spacing: 0
+                    ThemedText {
+                        Layout.fillWidth: true
+                        text: root.fc && root.fc.title ? root.fc.title : "—"
                         style: Theme.type.bodyLarge
                         elide: Text.ElideRight
-                        Layout.fillWidth: true
                     }
                     ThemedText {
-                        text: MangoService.focusedClient.appid || ""
+                        Layout.fillWidth: true
+                        text: root.fc ? (root.fc.appid || "") : ""
                         style: Theme.type.labelSmall
                         color: Theme.color.fgSurfaceVariant
+                        elide: Text.ElideRight
                     }
                 }
-                IconButton {
-                    icon: "\ue5d0"
+
+                ActionButton {
+                    icon: "\ue8aa"
+                    label: "Плаваюче"
+                    tone: "toggle"
+                    toggled: !!root.fc && !!root.fc.floating
                     onClicked: MangoService.toggleFloatingFocusedClient()
                 }
-                IconButton {
+                ActionButton {
                     icon: "\ue5cd"
-                    tint: Theme.color.error
+                    label: "Закрити"
+                    tone: "error"
                     onClicked: MangoService.closeFocusedClient()
                 }
             }
         }
 
+        // ---- монітори ----
         Repeater {
             model: root.monitorNames
             DashCard {
                 id: monCard
                 required property string modelData
+                readonly property var st: root.stats(modelData)
                 Layout.fillWidth: true
                 title: modelData
 
-                RowLayout {
+                ColumnLayout {
                     width: parent.width
-                    spacing: Theme.space.xs
-                    Repeater {
-                        model: MangoService.tagCount(modelData)
-                        Rectangle {
-                            id: tagRect
-                            required property int index
-                            readonly property var t: MangoService.tag(modelData, index + 1)
-                            Layout.preferredWidth: t.active ? 36 : 28
-                            Layout.preferredHeight: 28
-                            radius: Theme.shape.radius("md", height)
+                    spacing: Theme.space.md
 
-                            color: t.urgent ? Theme.color.errorContainer
-                                 : t.active ? Theme.color.primary
-                                 : t.occupied ? Theme.color.secondaryContainer
-                                 : tma.pressed
-                                     ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
-                                     : tma.containsMouse
-                                         ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
-                                         : Theme.color.surfaceContainerHighest
-                            Behavior on color { MotionColorAnimation { role: "hover" } }
-
-                            ThemedText {
-                                anchors.centerIn: parent
-                                text: tagRect.index + 1
-                                style: Theme.type.labelSmall
-                                color: tagRect.t.active ? Theme.color.fgPrimary
-                                     : tagRect.t.urgent ? Theme.color.fgErrorContainer
-                                     : tagRect.t.occupied ? Theme.color.fgSecondaryContainer
-                                     : Theme.color.fgSurfaceVariant
-                            }
-
-                            MouseArea {
-                                id: tma
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: MangoService.switchTag(monCard.modelData, tagRect.index + 1)
-                            }
+                    Item {
+                        Layout.fillWidth: true
+                        implicitHeight: strip.implicitHeight
+                        WorkspaceStrip {
+                            id: strip
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            monitor: monCard.modelData
+                            itemSize: Theme.components.buttonS
                         }
+                    }
+
+                    RowLayout {
+                        Layout.alignment: Qt.AlignHCenter
+                        spacing: Theme.space.sm
+                        InfoChip { text: "Тег " + monCard.st.active; accent: true; visible: monCard.st.active > 0 }
+                        InfoChip { text: "Зайнято: " + monCard.st.occupied }
+                        InfoChip { text: "Вікон: " + monCard.st.clients }
                     }
                 }
             }

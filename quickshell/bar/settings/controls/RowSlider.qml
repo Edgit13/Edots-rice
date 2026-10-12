@@ -6,27 +6,27 @@ import QtQuick.Layouts
 
 ColumnLayout {
     id: r
-    required property string category
-    required property string configKey
-    required property string label
-    property string description: ""
-    property string suffix: ""
-    property int decimals: 2
+    required property string cat
+    required property string key
+    required property var field
 
     Layout.fillWidth: true
     spacing: M3.s4
-    visible: SettingsSearch.matches(label)
+    visible: SettingsSearch.matches(r.field.label || r.key)
 
-    readonly property var s: SettingsState.schema[category] ? SettingsState.schema[category][configKey] : null
-    readonly property real value: s ? Number(SettingsState.get(category, configKey) ?? s.default) : 0
-    readonly property real fraction: s ? (value - s.min) / Math.max(0.0001, s.max - s.min) : 0
+    readonly property real value: Number(Settings.get(r.cat, r.key) ?? r.field.default)
+    readonly property real lo: r.field.min !== undefined ? r.field.min : 0
+    readonly property real hi: r.field.max !== undefined ? r.field.max : 100
+    readonly property real fraction: (value - lo) / Math.max(0.0001, hi - lo)
+    readonly property int decimals: (r.field.step !== undefined && r.field.step < 1) ? 2 : 0
+    readonly property string suffix: r.field.suffix || ""
 
     RowLayout {
         Layout.fillWidth: true
         spacing: M3.s8
         Text {
             Layout.fillWidth: true
-            text: r.label
+            text: r.field.label || r.key
             color: M3.m3OnSurface
             font: M3.bodyLarge
         }
@@ -35,7 +35,7 @@ ColumnLayout {
             color: M3.m3OnSurfaceVariant
             font: M3.labelMedium
         }
-        ResetDot { category: r.category; configKey: r.configKey }
+        ResetDot { cat: r.cat; key: r.key }
     }
 
     MaterialSlider {
@@ -45,18 +45,17 @@ ColumnLayout {
         decimals: r.decimals
         suffix: r.suffix
         onMoved: (f) => {
-            if (!r.s) return
-            const raw = r.s.min + f * (r.s.max - r.s.min)
-            const step = r.s.step || 0
+            const raw = r.lo + f * (r.hi - r.lo)
+            const step = r.field.step || 0
             const snapped = step > 0 ? Math.round(raw / step) * step : raw
-            SettingsState.set(r.category, r.configKey, snapped)
+            Settings.set(r.cat, r.key, snapped)
         }
     }
 
     Text {
-        visible: r.description.length > 0
+        visible: !!r.field.desc
         Layout.fillWidth: true
-        text: r.description
+        text: r.field.desc || ""
         color: M3.m3OnSurfaceVariant
         font: M3.bodySmall
         wrapMode: Text.Wrap

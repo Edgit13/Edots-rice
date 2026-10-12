@@ -13,5 +13,8 @@
   "mode": "expanded",
   "elevation": 1,
   "position": "top",
-  "mainMonitor": ""
+  "mainMonitor": "",
+  "modules": {
+    "workspaces": true
+  }
 }

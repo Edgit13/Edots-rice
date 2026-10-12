@@ -4,12 +4,14 @@ import "../material"
 import Quickshell
 import QtQuick
 
+// ResetDot — маленька кнопка ↺ збоку опції. Видима лише коли значення != default.
 Rectangle {
     id: rd
-    required property string category
-    required property string configKey
+    required property string cat
+    required property string key
 
-    visible: SettingsState.isDirty(category, configKey)
+    readonly property bool dirty: Settings.isDirty(rd.cat, rd.key)
+    visible: rd.dirty
     implicitWidth: 24; implicitHeight: 24
     radius: M3.rFull
     color: ma.containsMouse ? M3.hoverOf(M3.primary) : "transparent"
@@ -25,6 +27,6 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: SettingsState.resetKey(rd.category, rd.configKey)
+        onClicked: Settings.resetKey(rd.cat, rd.key)
     }
 }

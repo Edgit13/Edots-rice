@@ -1,186 +1,166 @@
-pragma ComponentBehavior: Bound
-import "root:/legacy"
-import "root:/widgets"
-import Quickshell
-import Quickshell.Services.Mpris
+import "root:/theme"
+import "root:/services"
+import "root:/media"
 import QtQuick
 import QtQuick.Layouts
 
-// MediaSurface — Material You (Android 13 media player layout).
+// MediaSurface — M3 Expressive плеєр для оверлею (460×320 картка).
+// Обкладинка морфиться (пауза → коло), хвиляста шкала, кнопка play морфиться коло ↔ squircle.
 Item {
     id: root
 
-    function fmt(ms) {
-        const s = Math.max(0, Math.floor(ms / 1000))
-        return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0")
-    }
+    // ---- порожній стан ----
+    ColumnLayout {
+        anchors.centerIn: parent
+        visible: !MediaService.has
+        spacing: Theme.space.sm
 
-    readonly property var player: {
-        const list = Mpris.players.values
-        if (!list || list.length === 0) return null
-        for (let i = 0; i < list.length; i++) {
-            if (list[i].isPlaying) return list[i]
-        }
-        return list[0]
-    }
-
-    component MediaBtn: Rectangle {
-        id: mb
-        property string glyph: ""
-        property bool enabled_: true
-        property bool filled: false
-        signal clicked()
-        width: filled ? 46 : 38
-        height: width
-        radius: width / 2
-        opacity: enabled_ ? 1.0 : 0.38
-        color: {
-            if (filled) return mbMa.pressed ? Md.mix(Md.primaryContainer, Md.m3OnSurface, 0.15) : Md.primaryContainer
-            if (mbMa.pressed) return Md.pressedOf(Md.m3OnSurface)
-            if (mbMa.containsMouse) return Md.hoverOf(Md.m3OnSurface)
-            return "transparent"
-        }
-        Behavior on color { ColorAnimation { duration: Md.durFast } }
         Text {
-            anchors.centerIn: parent
-            text: mb.glyph
-            color: mb.filled ? Md.m3OnPrimaryContainer : Md.m3OnSurfaceVariant
-            font { family: "SF Pro Display"; pixelSize: mb.filled ? 17 : 13 }
+            Layout.alignment: Qt.AlignHCenter
+            text: "\ue405"
+            font { family: Theme.type.icons; pixelSize: Theme.type.iconXL }
+            color: Theme.color.fgSurfaceVariant
         }
-        MouseArea {
-            id: mbMa
-            anchors.fill: parent
-            hoverEnabled: true
-            enabled: mb.enabled_
-            cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-            onClicked: mb.clicked()
+        ThemedText {
+            Layout.alignment: Qt.AlignHCenter
+            text: "Nothing playing"
+            style: Theme.type.bodyLarge
+            color: Theme.color.fgSurfaceVariant
         }
     }
 
     RowLayout {
         anchors.fill: parent
-        spacing: 14
+        visible: MediaService.has
+        spacing: Theme.space.lg
 
-        // ---- art ----
-        Rectangle {
-            Layout.preferredWidth: 88
-            Layout.preferredHeight: 88
+        MediaArt {
+            Layout.preferredWidth: Math.min(Theme.components.dp(148), root.height)
+            Layout.preferredHeight: Layout.preferredWidth
             Layout.alignment: Qt.AlignVCenter
-            radius: Md.rM
-            color: Md.surfaceContainerHighest
-            clip: true
-
-            Image {
-                id: artCover
-                anchors.fill: parent
-                source: (root.player && root.player.trackArtUrl) ? root.player.trackArtUrl : ""
-                fillMode: Image.PreserveAspectCrop
-                visible: status === Image.Ready
-            }
-            // Android 12 loading: кільце, поки обкладинка не завантажилась
-            LoadingIndicator {
-                anchors.centerIn: parent
-                visible: !artCover.visible
-            }
+            source: MediaService.artUrl
+            playing: MediaService.playing
+            morphOnPause: true
         }
 
-        // ---- info + controls + progress ----
         ColumnLayout {
             Layout.fillWidth: true
+            Layout.fillHeight: true
             spacing: 2
 
-            // чіп виводу (Android 13): іконка + пристрій
-            RowLayout {
-                spacing: 5
-                Text {
-                    text: "\ue050"
-                    color: Md.m3OnSurfaceVariant
-                    font { family: "Material Symbols Rounded"; pixelSize: 12 }
-                }
-                Text {
-                    Layout.fillWidth: true
-                    text: root.player ? (root.player.identity || "Player") : "No players"
-                    color: Md.m3OnSurfaceVariant
-                    font { family: "SF Pro Display"; pixelSize: 10; weight: 600 }
-                    elide: Text.ElideRight
-                }
-            }
-            Text {
-                Layout.fillWidth: true
-                text: root.player ? (root.player.trackTitle || "Unknown track") : "Nothing playing"
-                color: Md.m3OnSurface
-                font { family: "SF Pro Display"; weight: 600; pixelSize: 15 }
-                elide: Text.ElideRight
-            }
-            Text {
-                Layout.fillWidth: true
-                text: root.player ? (root.player.trackArtist || "\u2014") : ""
-                color: Md.m3OnSurfaceVariant
-                font { family: "SF Pro Display"; pixelSize: 12 }
-                elide: Text.ElideRight
-            }
+            // чіп джерела (клік — наступний плеєр)
+            Rectangle {
+                id: chip
+                Layout.alignment: Qt.AlignLeft
+                implicitHeight: Theme.components.tooltipHeight
+                implicitWidth: Math.min(parent.width, chipRow.implicitWidth + Theme.space.xl)
+                radius: chipMa.pressed ? Theme.shape.xs : height / 2
+                color: Theme.color.secondaryContainer
+                Behavior on radius { MotionAnimation { role: "morph" } }
 
-            Item { Layout.preferredHeight: 6 }
-
-            RowLayout {
-                spacing: 6
-                MediaBtn {
-                    glyph: "\u25C0\u25C0"
-                    enabled_: root.player && root.player.canGoPrevious
-                    onClicked: root.player.previous()
-                }
-                MediaBtn {
-                    glyph: (root.player && root.player.isPlaying) ? "\u25AE\u25AE" : "\u25B6"
-                    filled: true
-                    enabled_: root.player && root.player.canTogglePlaying
-                    onClicked: root.player.isPlaying = !root.player.isPlaying
-                }
-                MediaBtn {
-                    glyph: "\u25B6\u25B6"
-                    enabled_: root.player && root.player.canGoNext
-                    onClicked: root.player.next()
-                }
-            }
-
-            // ---- progress ----
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: 0
-
-                Item {
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: 18
-                    readonly property real fraction: {
-                        if (!root.player || !root.player.length || root.player.length <= 0) return 0
-                        return Math.min(1, root.player.position / root.player.length)
-                    }
-                    Rectangle {
+                Row {
+                    id: chipRow
+                    anchors.centerIn: parent
+                    spacing: Theme.space.xxs
+                    Text {
                         anchors.verticalCenter: parent.verticalCenter
-                        width: parent.width
-                        height: 4
-                        radius: 2
-                        color: Md.surfaceContainerHighest
-                        Rectangle {
-                            width: parent.width * parent.parent.fraction
-                            height: parent.height
-                            radius: 2
-                            color: Md.primary
-                        }
-                        MouseArea {
-                            anchors.fill: parent
-                            anchors.topMargin: -7
-                            anchors.bottomMargin: -7
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: (mouse) => {
-                                if (root.player && root.player.length > 0) {
-                                    const f = Math.max(0, Math.min(1, mouse.x / width))
-                                    root.player.position = f * root.player.length
-                                }
-                            }
-                        }
+                        text: "\ue405"
+                        font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                        color: Theme.color.fgSecondaryContainer
+                    }
+                    ThemedText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: MediaService.identity || "Player"
+                        style: Theme.type.labelSmall
+                        color: Theme.color.fgSecondaryContainer
+                        elide: Text.ElideRight
+                        width: Math.min(implicitWidth, chip.parent.width - Theme.space.xxxl - Theme.space.sm)
+                    }
+                    ThemedText {
+                        visible: MediaService.players.length > 1
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "· " + MediaService.players.length
+                        style: Theme.type.labelSmall
+                        color: Theme.color.fgSecondaryContainer
                     }
                 }
+                MouseArea {
+                    id: chipMa
+                    anchors.fill: parent
+                    enabled: MediaService.players.length > 1
+                    cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                    onClicked: {
+                        const l = MediaService.players
+                        MediaService.manual = l[(l.indexOf(MediaService.player) + 1) % l.length]
+                    }
+                }
+            }
 
+            ThemedText {
+                Layout.fillWidth: true
+                Layout.topMargin: Theme.space.xs
+                text: MediaService.title || "Unknown track"
+                style: Theme.type.titleMedium
+                emphasized: true
+                elide: Text.ElideRight
+            }
+            ThemedText {
+                Layout.fillWidth: true
+                text: MediaService.artist || "\u2014"
+                style: Theme.type.bodyMedium
+                color: Theme.color.fgSurfaceVariant
+                elide: Text.ElideRight
+            }
+
+            Item { Layout.fillHeight: true }
+
+            MediaProgress {
+                Layout.fillWidth: true
+                value: MediaService.fraction
+                playing: MediaService.playing
+                seekable: MediaService.canSeek
+                onSeeked: f => MediaService.seek(f)
+            }
+            RowLayout {
+                Layout.fillWidth: true
+                ThemedText {
+                    text: MediaService.fmt(MediaService.position)
+                    style: Theme.type.labelSmall
+                    color: Theme.color.fgSurfaceVariant
+                }
+                Item { Layout.fillWidth: true }
+                ThemedText {
+                    text: MediaService.length > 0 ? MediaService.fmt(MediaService.length) : "--:--"
+                    style: Theme.type.labelSmall
+                    color: Theme.color.fgSurfaceVariant
+                }
+            }
+
+            RowLayout {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: Theme.space.xxs
+                spacing: Theme.space.xs
+
+                MediaButton {
+                    icon: "\ue045"
+                    size: Theme.components.dp(44)
+                    enabled: MediaService.canPrev
+                    onClicked: MediaService.previous()
+                }
+                MediaButton {
+                    icon: MediaService.playing ? "\ue034" : "\ue037"
+                    variant: "filled"
+                    size: Theme.components.dp(56)
+                    morphed: MediaService.playing
+                    enabled: MediaService.canToggle
+                    onClicked: MediaService.togglePlay()
+                }
+                MediaButton {
+                    icon: "\ue044"
+                    size: Theme.components.dp(44)
+                    enabled: MediaService.canNext
+                    onClicked: MediaService.next()
+                }
             }
         }
     }

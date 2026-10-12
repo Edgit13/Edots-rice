@@ -1,144 +1,207 @@
 import "root:/theme"
-import Quickshell
-import Quickshell.Services.Mpris
+import "root:/services"
+import "root:/media"
 import QtQuick
 import QtQuick.Layouts
 
-// MediaTab — повний плеєр (MPRIS): обкладинка, назва/виконавець, прогрес, керування.
+// MediaTab — повний плеєр для дашборду (M3 Expressive, у дусі end-4):
+// велика обкладинка з морфом, чіпи плеєрів, хвиляста шкала, shuffle/repeat + морф-кнопка play.
 Item {
     id: root
 
-    readonly property var activePlayer: {
-        const players = Mpris.players.values
-        for (let i = 0; i < players.length; i++)
-            if (players[i].playbackState === MprisPlaybackState.Playing) return players[i]
-        return players.length > 0 ? players[0] : null
-    }
-    readonly property bool has: activePlayer !== null
-    readonly property bool playing: has && activePlayer.playbackState === MprisPlaybackState.Playing
+    readonly property bool has: MediaService.has
+    readonly property real artSide: Math.max(Theme.components.dp(160), Math.min(Theme.components.dp(300), root.height - Theme.space.lg * 2))
 
-    component MediaButton: Rectangle {
-        id: btn
-        property string icon: ""
-        property bool emphasized: false
-        property bool big: false
+    component PlayerChip: Rectangle {
+        id: chip
+        property string label: ""
+        property bool selected: false
         signal clicked()
 
-        implicitWidth: big ? 56 : 40
-        implicitHeight: big ? 56 : 40
-        radius: width / 2
-
-        color: emphasized
-             ? (ma.pressed
-                 ? Theme.stateLayer(Theme.color.primary, Theme.color.fgPrimary, Theme.components.statePressed)
-                 : ma.containsMouse
-                     ? Theme.stateLayer(Theme.color.primary, Theme.color.fgPrimary, Theme.components.stateHover)
-                     : Theme.color.primary)
-             : (ma.pressed
-                 ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
-                 : ma.containsMouse
-                     ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
-                     : "transparent")
+        implicitHeight: Theme.components.chipHeight
+        implicitWidth: chipText.implicitWidth + Theme.space.xl + Theme.space.xs
+        radius: selected ? height / 2 : Theme.shape.chip           // форма морфиться при виборі
+        color: selected ? Theme.color.secondaryContainer : "transparent"
+        border.width: selected ? 0 : 1
+        border.color: Theme.color.outlineVariant
+        Behavior on radius { MotionAnimation { role: "morph" } }
         Behavior on color { MotionColorAnimation { role: "hover" } }
 
-        Text {
+        ThemedText {
+            id: chipText
             anchors.centerIn: parent
-            text: btn.icon
-            font { family: Theme.type.icons; pixelSize: btn.big ? Theme.type.iconL : Theme.type.iconM }
-            color: btn.emphasized ? Theme.color.fgPrimary : Theme.color.fgSurface
+            text: chip.label
+            style: Theme.type.labelLarge
+            color: chip.selected ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
         }
-
         MouseArea {
-            id: ma
             anchors.fill: parent
-            hoverEnabled: true
             cursorShape: Qt.PointingHandCursor
-            onClicked: btn.clicked()
+            onClicked: chip.clicked()
         }
     }
 
+    // ---- порожній стан ----
     ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: Theme.space.lg
-        spacing: Theme.space.lg
-
+        anchors.centerIn: parent
+        visible: !root.has
+        spacing: Theme.space.sm
+        Text {
+            Layout.alignment: Qt.AlignHCenter
+            text: "\ue405"
+            font { family: Theme.type.icons; pixelSize: Theme.type.iconXL * 1.5 }
+            color: Theme.color.fgSurfaceVariant
+        }
         ThemedText {
-            visible: !root.has
+            Layout.alignment: Qt.AlignHCenter
             text: "Нічого не грає"
             style: Theme.type.bodyLarge
             color: Theme.color.fgSurfaceVariant
-            Layout.alignment: Qt.AlignCenter
-            Layout.fillHeight: true
+        }
+    }
+
+    RowLayout {
+        anchors.fill: parent
+        anchors.margins: Theme.space.lg
+        visible: root.has
+        spacing: Theme.space.lg * 2
+
+        MediaArt {
+            Layout.preferredWidth: root.artSide
+            Layout.preferredHeight: root.artSide
+            Layout.alignment: Qt.AlignVCenter
+            source: MediaService.artUrl
+            playing: MediaService.playing
+            morphOnPause: true
+            iconSize: Theme.type.iconXL * 1.5
         }
 
         ColumnLayout {
-            visible: root.has
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.alignment: Qt.AlignVCenter
             spacing: Theme.space.md
 
-            Rectangle {
-                Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: 200
-                Layout.preferredHeight: 200
-                radius: Theme.shape.cardLarge
-                color: Theme.color.surfaceContainerHighest
-                clip: true
-
-                Image {
-                    anchors.fill: parent
-                    source: root.has ? root.activePlayer.trackArtUrl : ""
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    visible: status === Image.Ready
+            // чіпи плеєрів (якщо їх кілька) або просто назва джерела
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: Theme.space.xs
+                visible: MediaService.players.length > 1
+                Repeater {
+                    model: MediaService.players
+                    PlayerChip {
+                        required property var modelData
+                        label: modelData.identity || "Player"
+                        selected: modelData === MediaService.player
+                        onClicked: MediaService.manual = modelData
+                    }
                 }
-                Text {
-                    anchors.centerIn: parent
-                    visible: !root.has || root.activePlayer.trackArtUrl.length === 0
-                    text: "\ue405"
-                    font { family: Theme.type.icons; pixelSize: Theme.type.iconXL * 1.5 }
+                Item { Layout.fillWidth: true }
+            }
+            ThemedText {
+                visible: MediaService.players.length <= 1
+                text: MediaService.identity
+                style: Theme.type.labelMedium
+                color: Theme.color.primary
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+                ThemedText {
+                    Layout.fillWidth: true
+                    text: MediaService.title || "Без назви"
+                    style: Theme.type.titleMedium
+                    emphasized: true
+                    elide: Text.ElideRight
+                }
+                ThemedText {
+                    Layout.fillWidth: true
+                    visible: text.length > 0
+                    text: MediaService.artist
+                    style: Theme.type.bodyMedium
                     color: Theme.color.fgSurfaceVariant
+                    elide: Text.ElideRight
+                }
+                ThemedText {
+                    Layout.fillWidth: true
+                    visible: text.length > 0
+                    text: MediaService.album
+                    style: Theme.type.labelSmall
+                    color: Theme.color.outline
+                    elide: Text.ElideRight
                 }
             }
 
             ColumnLayout {
                 Layout.fillWidth: true
+                Layout.topMargin: Theme.space.sm
                 spacing: 0
-                ThemedText {
-                    text: root.has ? (root.activePlayer.trackTitle || "Без назви") : ""
-                    style: Theme.type.titleMedium
+
+                MediaProgress {
                     Layout.fillWidth: true
-                    elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignHCenter
+                    value: MediaService.fraction
+                    playing: MediaService.playing
+                    seekable: MediaService.canSeek
+                    onSeeked: f => MediaService.seek(f)
                 }
-                ThemedText {
-                    text: root.has ? (root.activePlayer.trackArtist || "") : ""
-                    style: Theme.type.bodyMedium
-                    color: Theme.color.fgSurfaceVariant
+                RowLayout {
                     Layout.fillWidth: true
-                    elide: Text.ElideRight
-                    horizontalAlignment: Text.AlignHCenter
+                    ThemedText {
+                        text: MediaService.fmt(MediaService.position)
+                        style: Theme.type.labelSmall
+                        color: Theme.color.fgSurfaceVariant
+                    }
+                    Item { Layout.fillWidth: true }
+                    ThemedText {
+                        text: MediaService.length > 0 ? MediaService.fmt(MediaService.length) : "--:--"
+                        style: Theme.type.labelSmall
+                        color: Theme.color.fgSurfaceVariant
+                    }
                 }
             }
 
             RowLayout {
-                Layout.fillWidth: true
-                spacing: Theme.space.md
                 Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: Theme.space.xs
+                spacing: Theme.space.sm
 
                 MediaButton {
-                    icon: "\ue045"
-                    onClicked: if (root.has) root.activePlayer.previous()
+                    icon: "\ue043"
+                    variant: "toggle"
+                    size: Theme.components.dp(40)
+                    toggled: MediaService.shuffle
+                    enabled: MediaService.shuffleSupported
+                    onClicked: MediaService.toggleShuffle()
                 }
                 MediaButton {
-                    icon: root.playing ? "\ue034" : "\ue037"
-                    emphasized: true
-                    big: true
-                    onClicked: if (root.has) { root.playing ? root.activePlayer.pause() : root.activePlayer.play() }
+                    icon: "\ue045"
+                    variant: "tonal"
+                    size: Theme.components.dp(56)
+                    enabled: MediaService.canPrev
+                    onClicked: MediaService.previous()
+                }
+                MediaButton {
+                    icon: MediaService.playing ? "\ue034" : "\ue037"
+                    variant: "filled"
+                    size: Theme.components.dp(76)
+                    morphed: MediaService.playing
+                    enabled: MediaService.canToggle
+                    onClicked: MediaService.togglePlay()
                 }
                 MediaButton {
                     icon: "\ue044"
-                    onClicked: if (root.has) root.activePlayer.next()
+                    variant: "tonal"
+                    size: Theme.components.dp(56)
+                    enabled: MediaService.canNext
+                    onClicked: MediaService.next()
+                }
+                MediaButton {
+                    icon: MediaService.loopTrack ? "\ue041" : "\ue040"
+                    variant: "toggle"
+                    size: Theme.components.dp(40)
+                    toggled: MediaService.loopOn
+                    enabled: MediaService.loopSupported
+                    onClicked: MediaService.cycleLoop()
                 }
             }
         }

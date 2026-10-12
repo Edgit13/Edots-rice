@@ -6,24 +6,18 @@ import "root:/theme"
 import "root:/dock"
 import "root:/settings"
 import "root:/windows"
+import "root:/screentool"
 import "root:/lockscreen"
 import Quickshell
 import Quickshell.Io
 import QtQuick
 
-// ShellNext — Material 3 Expressive shell for MangoWM.
-// Everything runs in ONE qs process:
-//   • Bar                — per-monitor top bar
-//   • DashboardSurface   — morphs out of BarWindow
-//   • DockLoader         — bar/dock/ (IPC target "dock")
-//   • TaskManagerWindow  — bar/windows/ (IPC target "tasks")
-//   • SettingsWindow     — bar/settings/ (IPC target "settingsapp")
-//   • LockScreen         — bar/lockscreen/ (IPC target "ilock")
 ShellRoot {
     id: root
 
     TaskManagerWindow { id: taskManagerWindow }
     SettingsWindow    { id: settingsWindow }
+    ScreenTool        { id: screenTool }
     LockScreen        { id: lockScreen }
 
     Connections {
@@ -83,6 +77,13 @@ ShellRoot {
         function open(): void   { settingsWindow.open() }
         function toggle(): void { settingsWindow.toggle() }
         function close(): void  { settingsWindow.close() }
+    }
+
+    IpcHandler {
+        target: "screentool"
+        function open(): void   { screenTool.start() }
+        function close(): void  { screenTool.dismiss() }
+        function toggle(): void { screenTool.toggle() }
     }
 
     Variants {

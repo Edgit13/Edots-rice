@@ -1,31 +1,19 @@
 pragma ComponentBehavior: Bound
 import "."
-import "pages"
 import "material"
+import "controls"
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
 Item {
     id: app
-
-    readonly property var categories: [
-        { name: "Appearance",  icon: "palette",         page: 0 },
-        { name: "Colors",      icon: "format_paint",    page: 1 },
-        { name: "Bar",         icon: "space_dashboard", page: 2 },
-        { name: "Lock screen", icon: "lock",            page: 3 },
-        { name: "Animations",  icon: "animation",       page: 4 },
-        { name: "Presets",     icon: "bookmark",        page: 5 },
-        { name: "System",      icon: "settings",        page: 6 },
-        { name: "About",       icon: "info",            page: 7 }
-    ]
     property int currentIndex: 0
 
     RowLayout {
         anchors.fill: parent
         spacing: 0
 
-        // ---- sidebar ----
         Rectangle {
             Layout.fillHeight: true
             Layout.preferredWidth: 200
@@ -39,13 +27,13 @@ Item {
                 Text {
                     Layout.fillWidth: true
                     Layout.bottomMargin: M3.s12
-                    text: "Settings"
+                    text: Lang.t("settings.title")
                     color: M3.m3OnSurface
                     font: M3.titleLarge
                 }
 
                 Repeater {
-                    model: app.categories
+                    model: Schema.pages
                     Rectangle {
                         required property var modelData
                         required property int index
@@ -69,7 +57,7 @@ Item {
                             }
                             Text {
                                 Layout.fillWidth: true
-                                text: modelData.name
+                                text: Lang.t(modelData.name)
                                 color: app.currentIndex === index ? M3.m3OnSecondaryContainer : M3.m3OnSurface
                                 font: app.currentIndex === index ? M3.labelLarge : M3.bodyMedium
                             }
@@ -93,7 +81,6 @@ Item {
             color: M3.outlineVariant
         }
 
-        // ---- content ----
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
@@ -134,7 +121,7 @@ Item {
                             anchors.fill: parent
                             verticalAlignment: Text.AlignVCenter
                             visible: search.text.length === 0
-                            text: "Search settings…"
+                            text: Lang.t("search.placeholder")
                             color: M3.m3OnSurfaceVariant
                             font: M3.bodyMedium
                         }
@@ -158,14 +145,100 @@ Item {
                     y: M3.s8
                     spacing: M3.s12
 
-                    PageAppearance   { Layout.fillWidth: true; visible: app.currentIndex === 0 || SettingsSearch.active }
-                    PageColors       { Layout.fillWidth: true; visible: app.currentIndex === 1 || SettingsSearch.active }
-                    PageBar          { Layout.fillWidth: true; visible: app.currentIndex === 2 || SettingsSearch.active }
-                    PageLockscreen   { Layout.fillWidth: true; visible: app.currentIndex === 3 || SettingsSearch.active }
-                    PageAnimations   { Layout.fillWidth: true; visible: app.currentIndex === 4 || SettingsSearch.active }
-                    PagePresets      { Layout.fillWidth: true; visible: app.currentIndex === 5 || SettingsSearch.active }
-                    PageSystem       { Layout.fillWidth: true; visible: app.currentIndex === 6 || SettingsSearch.active }
-                    PageAbout        { Layout.fillWidth: true; visible: app.currentIndex === 7 || SettingsSearch.active }
+                    Repeater {
+                        model: Settings.sectionsForPage(app.currentIndex)
+
+                        ColumnLayout {
+                            id: sectionWrap
+                            required property var modelData
+                            Layout.fillWidth: true
+                            spacing: M3.s8
+
+                            Text {
+                                Layout.fillWidth: true
+                                Layout.topMargin: M3.s16
+                                text: Lang.t(sectionWrap.modelData.label).toUpperCase()
+                                color: M3.primary
+                                font {
+                                    family: M3.labelMedium.family
+                                    pixelSize: M3.labelMedium.pixelSize
+                                    weight: 700
+                                    letterSpacing: 1.5
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                implicitHeight: bodyCol.implicitHeight + M3.s24 * 2
+                                radius: M3.rL
+                                color: M3.surfaceContainer
+
+                                ColumnLayout {
+                                    id: bodyCol
+                                    anchors {
+                                        left: parent.left
+                                        right: parent.right
+                                        top: parent.top
+                                        margins: M3.s16
+                                    }
+                                    spacing: M3.s12
+
+                                    Repeater {
+                                        model: sectionWrap.modelData.fields
+                                        SchemaRow {
+                                            required property var modelData
+                                            Layout.fillWidth: true
+                                            cat: modelData.cat
+                                            key: modelData.key
+                                            field: modelData.field
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        visible: app.currentIndex === Schema.pages.length - 1
+                        spacing: M3.s8
+
+                        Text {
+                            Layout.fillWidth: true
+                            Layout.topMargin: M3.s16
+                            text: Lang.t("page.about").toUpperCase()
+                            color: M3.primary
+                            font {
+                                family: M3.labelMedium.family
+                                pixelSize: M3.labelMedium.pixelSize
+                                weight: 700
+                                letterSpacing: 1.5
+                            }
+                        }
+                        Rectangle {
+                            Layout.fillWidth: true
+                            implicitHeight: aboutCol.implicitHeight + M3.s24 * 2
+                            radius: M3.rL
+                            color: M3.surfaceContainer
+
+                            ColumnLayout {
+                                id: aboutCol
+                                anchors {
+                                    left: parent.left; right: parent.right; top: parent.top
+                                    margins: M3.s16
+                                }
+                                spacing: M3.s8
+                                Text { Layout.fillWidth: true; text: Lang.t("about.title"); color: M3.m3OnSurface; font: M3.titleMedium }
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: Lang.t("about.body")
+                                    color: M3.m3OnSurfaceVariant
+                                    font: M3.bodyMedium
+                                    wrapMode: Text.Wrap
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

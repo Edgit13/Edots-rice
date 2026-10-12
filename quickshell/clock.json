@@ -2,7 +2,7 @@
   "dateFormat": "d MMMM",
   "fullDateFormat": "dddd, d MMMM",
   "hour12": false,
-  "showSeconds": false,
+  "showSeconds": true,
   "utcOffsetMinutes": null,
   "zoneLabel": ""
 }
