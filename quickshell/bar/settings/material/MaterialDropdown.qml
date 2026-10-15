@@ -1,10 +1,12 @@
 pragma ComponentBehavior: Bound
-import "."
+import "root:/theme"
 import QtQuick
 import QtQuick.Controls
 
+// M3 Expressive Dropdown (menu): поле-заголовок + popup зі scale/fade, вибраний пункт — secondaryContainer.
 Item {
     id: dd
+
     property var options: []
     property var value: null
     property string label: ""
@@ -12,9 +14,9 @@ Item {
     property bool open: popup.visible
     signal selected(var v)
 
-    implicitHeight: 40
-    implicitWidth: 180
-    opacity: enabled_ ? 1 : M3.disabledOpacity
+    implicitHeight: Theme.components.dp(48)
+    implicitWidth: Theme.components.dp(200)
+    opacity: enabled_ ? 1 : Theme.components.disabledContent
 
     readonly property var current: {
         for (let i = 0; i < options.length; i++) {
@@ -33,35 +35,41 @@ Item {
     Rectangle {
         id: header
         anchors.fill: parent
-        radius: M3.rS
-        color: ma.containsMouse ? M3.surfaceContainerHighest : M3.surfaceContainer
-        border.width: dd.open ? 2 : 1
-        border.color: dd.open ? M3.primary : M3.outline
-        Behavior on color { ColorAnimation { duration: M3.durFast } }
-        Behavior on border.color { ColorAnimation { duration: M3.durFast } }
+        radius: Theme.shape.field
+        color: Theme.color.surfaceContainerHighest
+        border.width: dd.open ? Theme.components.dp(2) : 0
+        border.color: Theme.color.primary
+        Behavior on border.color { MotionColorAnimation { role: "hover" } }
 
-        Row {
+        Rectangle {
             anchors.fill: parent
-            anchors.leftMargin: M3.s12
-            anchors.rightMargin: M3.s12
-            spacing: M3.s8
+            radius: parent.radius
+            color: Theme.color.fgSurface
+            opacity: ma.pressed ? Theme.components.statePressed
+                   : ma.containsMouse ? Theme.components.stateHover : 0
+            Behavior on opacity { MotionAnimation { role: "hover" } }
+        }
 
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: dd.currentLabel
-                color: M3.m3OnSurface
-                font: M3.bodyMedium
-                elide: Text.ElideRight
-                width: parent.width - 30
-            }
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "keyboard_arrow_down"
-                color: M3.m3OnSurfaceVariant
-                font { family: "Material Symbols Rounded"; pixelSize: 18 }
-                rotation: dd.open ? 180 : 0
-                Behavior on rotation { NumberAnimation { duration: M3.durFast } }
-            }
+        ThemedText {
+            anchors.left: parent.left
+            anchors.leftMargin: Theme.space.lg
+            anchors.right: arrow.left
+            anchors.rightMargin: Theme.space.sm
+            anchors.verticalCenter: parent.verticalCenter
+            text: dd.currentLabel
+            style: Theme.type.bodyLarge
+            elide: Text.ElideRight
+        }
+        Text {
+            id: arrow
+            anchors.right: parent.right
+            anchors.rightMargin: Theme.space.md
+            anchors.verticalCenter: parent.verticalCenter
+            text: "keyboard_arrow_down"
+            color: Theme.color.fgSurfaceVariant
+            font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
+            rotation: dd.open ? 180 : 0
+            Behavior on rotation { MotionAnimation { role: "morph" } }
         }
 
         MouseArea {
@@ -76,24 +84,33 @@ Item {
 
     Popup {
         id: popup
-        y: header.height + 4
+        y: header.height + Theme.space.xs
         width: header.width
-        height: Math.min(280, popupCol.implicitHeight + M3.s8 * 2)
+        height: Math.min(Theme.components.dp(300), popupCol.implicitHeight + Theme.space.sm * 2)
         padding: 0
         modal: false
         focus: true
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        transformOrigin: Popup.Top
+
+        enter: Transition {
+            MotionAnimation { property: "scale"; from: 0.9; to: 1; role: "expand" }
+            MotionAnimation { property: "opacity"; from: 0; to: 1; role: "fade" }
+        }
+        exit: Transition {
+            MotionAnimation { property: "opacity"; to: 0; role: "exit" }
+        }
 
         background: Rectangle {
-            radius: M3.rM
-            color: M3.surfaceContainerHigh
+            radius: Theme.shape.menu
+            color: Theme.color.surfaceContainerHigh
             border.width: 1
-            border.color: M3.outlineVariant
+            border.color: Theme.color.outlineVariant
         }
 
         contentItem: Flickable {
             anchors.fill: parent
-            anchors.margins: M3.s8
+            anchors.margins: Theme.space.sm
             clip: true
             contentHeight: popupCol.implicitHeight
             boundsBehavior: Flickable.StopAtBounds
@@ -101,37 +118,50 @@ Item {
             Column {
                 id: popupCol
                 width: parent.width
-                spacing: 2
+                spacing: Theme.space.listGap
 
                 Repeater {
                     model: dd.options
                     delegate: Rectangle {
+                        id: item
                         required property var modelData
                         required property int index
                         readonly property var v: (typeof modelData === "object" && modelData !== null) ? modelData.value : modelData
                         readonly property string l: (typeof modelData === "object" && modelData !== null) ? (modelData.label || String(modelData.value)) : String(modelData)
+                        readonly property bool sel: dd.value === v
 
                         width: parent.width
-                        height: 36
-                        radius: M3.rS
-                        color: (ma2.containsMouse || dd.value === v) ? M3.hoverOf(M3.m3OnSurface) : "transparent"
+                        height: Theme.components.dp(40)
+                        radius: sel ? Theme.shape.radius("md", height) : Theme.shape.sm
+                        color: sel ? Theme.color.secondaryContainer : "transparent"
+                        Behavior on radius { MotionAnimation { role: "morph" } }
+                        Behavior on color { MotionColorAnimation { role: "hover" } }
 
-                        Text {
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: parent.radius
+                            color: Theme.color.fgSurface
+                            opacity: ma2.pressed ? Theme.components.statePressed
+                                   : ma2.containsMouse ? Theme.components.stateHover : 0
+                            Behavior on opacity { MotionAnimation { role: "hover" } }
+                        }
+
+                        ThemedText {
                             anchors.left: parent.left
-                            anchors.leftMargin: M3.s12
+                            anchors.leftMargin: Theme.space.lg
                             anchors.verticalCenter: parent.verticalCenter
-                            text: parent.l
-                            color: dd.value === parent.v ? M3.primary : M3.m3OnSurface
-                            font: M3.bodyMedium
+                            text: item.l
+                            style: Theme.type.bodyLarge
+                            color: item.sel ? Theme.color.fgSecondaryContainer : Theme.color.fgSurface
                         }
                         Text {
                             anchors.right: parent.right
-                            anchors.rightMargin: M3.s12
+                            anchors.rightMargin: Theme.space.lg
                             anchors.verticalCenter: parent.verticalCenter
-                            visible: dd.value === parent.v
+                            visible: item.sel
                             text: "check"
-                            color: M3.primary
-                            font { family: "Material Symbols Rounded"; pixelSize: 18 }
+                            color: Theme.color.fgSecondaryContainer
+                            font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
                         }
 
                         MouseArea {
@@ -140,8 +170,8 @@ Item {
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                dd.value = parent.v
-                                dd.selected(parent.v)
+                                dd.value = item.v
+                                dd.selected(item.v)
                                 popup.close()
                             }
                         }

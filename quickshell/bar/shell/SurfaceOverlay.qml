@@ -2,17 +2,19 @@ import "root:/surfaces"
 import "root:/theme"
 import "root:/shell"
 import "root:/services"
+import "root:/settings"
+import "root:/settings/material"
 import Quickshell
 import Quickshell.Wayland
 import QtQuick
 import QtQuick.Layouts
 
-// SurfaceOverlay — M3 Expressive плаваюче спливаюче вікно для поверхонь
-// (Launcher, Wifi, Mixer, Clipboard, Media, Power, Wallpaper).
-//
-// "dashboard" тут навмисно ігнорується: дашборд більше не окреме вікно, він
-// морфиться з самої смуги (DashboardSurface усередині BarWindow). Якби overlay
-// реагував на нього, показував би порожню картку "Controls".
+// SurfaceOverlay — поверхні (Launcher, Wifi, Mixer, Clipboard, Media, Power, Wallpaper) у стилі end-4:
+// просто плаваюча панель біля бару — без scrim, без повноекранної поверхні (отже й без блюру).
+//  • launcher / clipboard / wallpaper — по центру краю бару, як пошук в end-4
+//  • mixer / wifi / media / power — ближче до кута (кінець бару)
+//  • вікно = лише картка; закриття: повторний клік по модулю, Esc, ✕
+// "dashboard" тут ігнорується: він морфиться з самої смуги (DashboardSurface у BarWindow).
 PanelWindow {
     id: win
 
@@ -23,9 +25,6 @@ PanelWindow {
     readonly property bool isCurrentMonitor: {
         const focusedMon = MangoService.focusedClient.monitor
         if (focusedMon && focusedMon.length > 0) return focusedMon === monitorName
-        // Ніде немає focused-клієнта (напр. HDMI-A-1 порожній) — відкриваємо на головному
-        // моніторі з BarConfig, а не на screens[0] (який може бути eDP-1 без жодного зв'язку
-        // з тим, який монітор реально "головний").
         const names = Quickshell.screens.map(function (s) { return s.name })
         const main = names.indexOf(BarConfig.mainMonitor) >= 0 ? BarConfig.mainMonitor : names[0]
         return names.length > 0 && main === monitorName
@@ -37,228 +36,160 @@ PanelWindow {
     readonly property bool isOpen: isAllowedSurface
         && (isCurrentMonitor || Quickshell.screens.length === 1)
 
-    visible: isOpen
+    // тримаємо поверхню, поки грає анімація закриття
+    property string shownSurface: "idle"
+    // не покладаємось на isAllowedSurface: його binding може оновитись ПІСЛЯ цього обробника
+    onActiveSurfaceChanged: if (overlaySurfaces.indexOf(activeSurface) >= 0) shownSurface = activeSurface
+    onVisibleChanged: if (!visible) shownSurface = "idle"
+    Component.onCompleted: if (overlaySurfaces.indexOf(activeSurface) >= 0) shownSurface = activeSurface
+
+    readonly property var meta: ({
+        launcher:  { icon: "\ue5c3", title: "ui.surface.launcher",  w: 560, h: 520, end: false, typing: true },
+        wallpaper: { icon: "\ue1bc", title: "ui.surface.wallpaper", w: 620, h: 480, end: false, typing: false },
+        clipboard: { icon: "\ue14f", title: "ui.surface.clipboard", w: 540, h: 480, end: false, typing: true },
+        mixer:     { icon: "\ue429", title: "ui.surface.mixer",     w: 480, h: 420, end: true,  typing: false },
+        wifi:      { icon: "\ue63e", title: "ui.surface.wifi",      w: 460, h: 440, end: true,  typing: false },
+        media:     { icon: "\ue405", title: "ui.surface.media",     w: 460, h: 320, end: true,  typing: false },
+        power:     { icon: "\ue8ac", title: "ui.surface.power",     w: 360, h: 290, end: true,  typing: false }
+    })
+    readonly property var m: meta[shownSurface] || meta.launcher
+
+    // ---- розташування відносно бару ----
+    readonly property string bar: BarConfig.positionFor(monitorName)
+    readonly property bool vertical: bar === "left" || bar === "right"
+    readonly property real pad: Theme.components.dp(16)                       // запас під тінь і зсув
+    readonly property real reserve: BarConfig.thicknessFor(monitorName) + Theme.space.md * 2
+    readonly property real edgeM: Math.max(0, reserve - pad)                  // від краю екрана до картки = reserve
+    readonly property real sideM: Math.max(0, Theme.space.lg - pad)
+    readonly property real startM: Math.max(0, Theme.space.md - pad)
+
+    visible: isOpen || card.opacity > 0.01
     color: "transparent"
+    exclusionMode: ExclusionMode.Ignore
 
     anchors {
-        top: true
-        bottom: true
-        left: true
-        right: true
+        top: win.bar === "top" || win.vertical
+        bottom: win.bar === "bottom"
+        left: win.bar === "left"
+        right: win.bar === "right" || (!win.vertical && win.m.end)
+    }
+    margins {
+        top: win.bar === "top" ? win.edgeM : (win.vertical ? win.startM + pad : 0)
+        bottom: win.bar === "bottom" ? win.edgeM : 0
+        left: win.bar === "left" ? win.edgeM : 0
+        right: win.bar === "right" ? win.edgeM : ((!win.vertical && win.m.end) ? win.sideM : 0)
     }
 
-    exclusionMode: ExclusionMode.Ignore
+    implicitWidth: card.width + pad * 2
+    implicitHeight: card.height + pad * 2
+    mask: Region { item: card }                                               // клік повз картку проходить наскрізь
+
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: (isOpen && activeSurface === "launcher")
-        ? WlrKeyboardFocus.Exclusive
-        : (isOpen ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None)
+    WlrLayershell.namespace: "m3-surface"
+    WlrLayershell.keyboardFocus: isOpen
+        ? (m.typing ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand)
+        : WlrKeyboardFocus.None
 
-    mask: Region {
-        item: isOpen ? scrim : null
-    }
+    onIsOpenChanged: if (isOpen) card.forceActiveFocus()
 
-    // Scrim backdrop
-    Rectangle {
-        id: scrim
-        anchors.fill: parent
-        color: Theme.color.scrim
-        opacity: win.isOpen ? 0.45 : 0
+    Item {
+        id: card
+        width: Theme.components.dp(win.m.w)
+        height: Theme.components.dp(win.m.h)
+        anchors.centerIn: parent
+        focus: true
+
+        // виїзд з боку бару
+        readonly property real dirX: win.bar === "left" ? -1 : (win.bar === "right" ? 1 : 0)
+        readonly property real dirY: win.bar === "top" ? -1 : (win.bar === "bottom" ? 1 : 0)
+        property real slide: win.isOpen ? 0 : Theme.components.dp(14)
+        anchors.horizontalCenterOffset: dirX * slide
+        anchors.verticalCenterOffset: dirY * slide
+
+        scale: win.isOpen ? 1 : 0.92
+        opacity: win.isOpen ? 1 : 0
+        transformOrigin: win.bar === "bottom" ? Item.Bottom : (win.bar === "top" ? Item.Top : (win.bar === "left" ? Item.Left : Item.Right))
+        Behavior on slide   { MotionAnimation { role: win.isOpen ? "move" : "exit" } }
+        Behavior on scale   { MotionAnimation { role: win.isOpen ? "expand" : "collapse" } }
         Behavior on opacity { MotionAnimation { role: win.isOpen ? "enter" : "exit" } }
-        focus: win.isOpen
 
-        Keys.onEscapePressed: function(e) {
-            if (win.activeSurface !== "idle") {
-                ShellState.closeSurfaces()
-                e.accepted = true
-            }
+        Keys.onEscapePressed: function (e) {
+            ShellState.closeSurfaces()
+            e.accepted = true
         }
 
-        MouseArea {
+        ElevationShadow {
             anchors.fill: parent
-            onClicked: ShellState.closeSurfaces()
+            level: 0.5
+            radius: Theme.shape.dialog
+            color: Theme.color.surfaceContainerHigh
         }
 
-        // Центральна картка поверхні (M3 Expressive)
-        Item {
-            id: cardContainer
-            anchors.centerIn: parent
+        Rectangle {
+            anchors.fill: parent
+            radius: Theme.shape.dialog
+            color: Theme.color.surfaceContainerHigh
+            border.width: 1
+            border.color: Theme.color.outlineVariant
+            clip: true
 
-            property real cardW: {
-                if (win.activeSurface === "launcher") return 560
-                if (win.activeSurface === "wallpaper") return 620
-                if (win.activeSurface === "clipboard") return 540
-                if (win.activeSurface === "mixer") return 480
-                if (win.activeSurface === "wifi") return 460
-                if (win.activeSurface === "media") return 460
-                if (win.activeSurface === "power") return 360
-                return 480
-            }
-            property real cardH: {
-                if (win.activeSurface === "launcher") return 520
-                if (win.activeSurface === "wallpaper") return 480
-                if (win.activeSurface === "clipboard") return 480
-                if (win.activeSurface === "mixer") return 420
-                if (win.activeSurface === "wifi") return 440
-                if (win.activeSurface === "media") return 320
-                if (win.activeSurface === "power") return 290
-                return 400
-            }
+            MouseArea { anchors.fill: parent }
 
-            width: cardW
-            height: cardH
-            scale: win.isOpen ? 1.0 : 0.92
-            opacity: win.isOpen ? 1.0 : 0.0
-
-            Behavior on width { MotionAnimation { role: "morph" } }
-            Behavior on height { MotionAnimation { role: "morph" } }
-            Behavior on scale { MotionAnimation { role: "press" } }
-            Behavior on opacity { MotionAnimation { role: win.isOpen ? "enter" : "exit" } }
-
-            ElevationShadow {
+            ColumnLayout {
                 anchors.fill: parent
-                level: 4
-                radius: Theme.shape.dialog
-                color: Theme.color.surfaceContainerHigh
-            }
+                anchors.margins: Theme.space.lg
+                spacing: Theme.space.md
 
-            Rectangle {
-                id: card
-                anchors.fill: parent
-                radius: Theme.shape.dialog
-                color: Theme.color.surfaceContainerHigh
-                border.width: 1
-                border.color: Theme.color.outlineVariant
-                clip: true
+                // заголовок
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.space.sm
 
-                MouseArea {
-                    anchors.fill: parent
+                    Rectangle {
+                        implicitWidth: Theme.components.dp(36)
+                        implicitHeight: implicitWidth
+                        radius: Theme.shape.radius("lg", height)
+                        color: Theme.color.primaryContainer
+                        Text {
+                            anchors.centerIn: parent
+                            text: win.m.icon
+                            font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+                            color: Theme.color.fgPrimaryContainer
+                        }
+                    }
+                    ThemedText {
+                        text: Lang.t(win.m.title)
+                        style: Theme.type.titleMedium
+                        emphasized: true
+                    }
+                    Item { Layout.fillWidth: true }
+                    MaterialIconButton {
+                        icon: "close"
+                        onClicked: ShellState.closeSurfaces()
+                    }
                 }
 
-                ColumnLayout {
-                    anchors.fill: parent
-                    anchors.margins: Theme.space.lg
-                    spacing: Theme.space.md
+                // вміст
+                Item {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
 
-                    // Заголовок поверхні з кнопкою закриття
-                    RowLayout {
-                        Layout.fillWidth: true
-                        spacing: Theme.space.sm
-
-                        Text {
-                            text: {
-                                if (win.activeSurface === "launcher") return "\ue5c3"
-                                if (win.activeSurface === "wallpaper") return "\ue1bc"
-                                if (win.activeSurface === "clipboard") return "\ue14f"
-                                if (win.activeSurface === "mixer") return "\ue429"
-                                if (win.activeSurface === "wifi") return "\ue63e"
-                                if (win.activeSurface === "media") return "\ue405"
-                                if (win.activeSurface === "power") return "\ue8ac"
-                                return "\ue8b8"
-                            }
-                            font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
-                            color: Theme.color.primary
-                        }
-
-                        ThemedText {
-                            text: {
-                                if (win.activeSurface === "launcher") return "Applications"
-                                if (win.activeSurface === "wallpaper") return "Wallpapers"
-                                if (win.activeSurface === "clipboard") return "Clipboard History"
-                                if (win.activeSurface === "mixer") return "Volume Mixer"
-                                if (win.activeSurface === "wifi") return "Wi-Fi Networks"
-                                if (win.activeSurface === "media") return "Media Control"
-                                if (win.activeSurface === "power") return "Power Options"
-                                return "Controls"
-                            }
-                            style: Theme.type.titleMedium
-                            emphasized: true
-                            color: Theme.color.fgSurface
-                        }
-
-                        Item { Layout.fillWidth: true }
-
-                        Rectangle {
-                            width: 32; height: 32
-                            radius: 16
-                            color: closeMa.containsMouse ? Theme.color.surfaceContainerHighest : "transparent"
-                            Behavior on color { MotionColorAnimation { role: "hover" } }
-
-                            Text {
-                                anchors.centerIn: parent
-                                text: "\ue5cd"
-                                font { family: Theme.type.icons; pixelSize: 18 }
-                                color: Theme.color.fgSurfaceVariant
-                            }
-
-                            MouseArea {
-                                id: closeMa
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: ShellState.closeSurfaces()
-                            }
+                    Loader {
+                        anchors.fill: parent
+                        active: win.shownSurface === "launcher"
+                        visible: active
+                        sourceComponent: LauncherSurface {}
+                        onLoaded: {
+                            if (item && item.appLaunched)
+                                item.appLaunched.connect(function () { ShellState.closeSurfaces() })
                         }
                     }
-
-                    // Контент поверхні
-                    Item {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-
-                        Loader {
-                            anchors.fill: parent
-                            active: win.activeSurface === "launcher"
-                            visible: active
-                            sourceComponent: LauncherSurface {}
-                            onLoaded: {
-                                if (item && item.appLaunched) {
-                                    item.appLaunched.connect(function() { ShellState.closeSurfaces() })
-                                }
-                            }
-                        }
-
-                        Loader {
-                            anchors.fill: parent
-                            active: win.activeSurface === "wallpaper"
-                            visible: active
-                            sourceComponent: WallpaperSurface {}
-                        }
-
-                        Loader {
-                            anchors.fill: parent
-                            active: win.activeSurface === "clipboard"
-                            visible: active
-                            sourceComponent: ClipboardSurface {}
-                        }
-
-                        Loader {
-                            anchors.fill: parent
-                            active: win.activeSurface === "mixer"
-                            visible: active
-                            sourceComponent: MixerSurface {}
-                        }
-
-                        Loader {
-                            anchors.fill: parent
-                            active: win.activeSurface === "wifi"
-                            visible: active
-                            sourceComponent: WifiSurface {}
-                        }
-
-                        Loader {
-                            anchors.fill: parent
-                            active: win.activeSurface === "media"
-                            visible: active
-                            sourceComponent: MediaSurface {}
-                        }
-
-                        Loader {
-                            anchors.fill: parent
-                            active: win.activeSurface === "power"
-                            visible: active
-                            sourceComponent: PowerSurface {}
-                        }
-                    }
+                    Loader { anchors.fill: parent; active: win.shownSurface === "wallpaper"; visible: active; sourceComponent: WallpaperSurface {} }
+                    Loader { anchors.fill: parent; active: win.shownSurface === "clipboard"; visible: active; sourceComponent: ClipboardSurface {} }
+                    Loader { anchors.fill: parent; active: win.shownSurface === "mixer";     visible: active; sourceComponent: MixerSurface {} }
+                    Loader { anchors.fill: parent; active: win.shownSurface === "wifi";      visible: active; sourceComponent: WifiSurface {} }
+                    Loader { anchors.fill: parent; active: win.shownSurface === "media";     visible: active; sourceComponent: MediaSurface {} }
+                    Loader { anchors.fill: parent; active: win.shownSurface === "power";     visible: active; sourceComponent: PowerSurface {} }
                 }
             }
         }

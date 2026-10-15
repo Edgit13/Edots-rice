@@ -13,7 +13,7 @@ RowLayout {
 
     Layout.fillWidth: true
     spacing: M3.s12
-    visible: SettingsSearch.matches(r.field.label || r.key)
+    visible: SettingsSearch.matches(Lang.searchText(r.cat, r.key, r.field))
 
     readonly property color value: Settings.get(r.cat, r.key)
 
@@ -22,14 +22,14 @@ RowLayout {
         spacing: 2
         Text {
             Layout.fillWidth: true
-            text: r.field.label || r.key
+            text: Lang.label(r.cat, r.key, r.field)
             color: M3.m3OnSurface
             font: M3.bodyLarge
         }
         Text {
             Layout.fillWidth: true
-            visible: !!r.field.desc
-            text: r.field.desc || ""
+            visible: Lang.desc(r.cat, r.key, r.field).length > 0
+            text: Lang.desc(r.cat, r.key, r.field)
             color: M3.m3OnSurfaceVariant
             font: M3.bodySmall
             wrapMode: Text.Wrap
@@ -76,7 +76,7 @@ RowLayout {
             anchors.margins: M3.s12
             spacing: M3.s8
 
-            Text { text: "Pick color"; color: M3.m3OnSurface; font: M3.labelLarge }
+            Text { text: Lang.t("ui.pickColor"); color: M3.m3OnSurface; font: M3.labelLarge }
 
             Rectangle {
                 Layout.fillWidth: true

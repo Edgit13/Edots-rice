@@ -1,69 +1,74 @@
 pragma ComponentBehavior: Bound
-import Quickshell
+import "root:/theme"
 import QtQuick
 import QtQuick.Layouts
 
-// Material 3 Button: filled (default) | tonal | outlined | text.
-// icon — гліф Material Symbols; tooltip — необов'язковий.
+// M3 Expressive Button: filled | tonal | outlined | text. Форма: пігулка → при натисканні морф у менший радіус.
 Rectangle {
     id: btn
 
     property string text: ""
     property string icon: ""
-    property string style: "filled"      // filled | tonal | outlined | text
-    property bool enabled_: true          // (enabled — зарезервовано Item)
+    property string style: "filled"
+    property bool enabled_: true
     property string tooltip: ""
     signal clicked()
 
-    implicitWidth: Math.max(64, row.implicitWidth + M3.s24)
-    implicitHeight: 36
-    radius: M3.rFull
-    opacity: enabled_ ? 1.0 : M3.disabledOpacity
+    implicitWidth: Math.max(Theme.components.dp(64), row.implicitWidth + Theme.space.xl)
+    implicitHeight: Theme.components.buttonS
+    opacity: enabled_ ? 1 : Theme.components.disabledContent
 
-    readonly property color _fg: {
-        if (!btn.enabled_) return M3.m3OnSurfaceVariant
-        switch (style) {
-        case "tonal":    return M3.m3OnSecondaryContainer
-        case "outlined": return M3.primary
-        case "text":     return M3.primary
-        default:         return M3.m3OnPrimary       // filled
-        }
-    }
-    color: {
-        if (!btn.enabled_) return M3.surfaceContainerHigh
-        if (ma.containsMouse && ma.pressed) return M3.pressedOf(btn._bg)
-        if (ma.containsMouse) return M3.hoverOf(btn._bg)
-        return btn._bg
-    }
     readonly property color _bg: {
         switch (style) {
-        case "tonal":    return M3.secondaryContainer
-        case "outlined": return M3.surfaceContainerLow
+        case "tonal":    return Theme.color.secondaryContainer
+        case "outlined": return "transparent"
         case "text":     return "transparent"
-        default:         return M3.primary
+        default:         return Theme.color.primary
         }
     }
-    border.width: style === "outlined" ? 1 : 0
-    border.color: M3.outline
+    readonly property color _fg: {
+        switch (style) {
+        case "tonal":    return Theme.color.fgSecondaryContainer
+        case "outlined": return Theme.color.primary
+        case "text":     return Theme.color.primary
+        default:         return Theme.color.fgPrimary
+        }
+    }
 
-    Behavior on color { ColorAnimation { duration: M3.durFast } }
+    color: btn._bg
+    radius: ma.pressed ? Theme.shape.buttonPressed : Theme.shape.radius("full", height)
+    border.width: style === "outlined" ? 1 : 0
+    border.color: Theme.color.outline
+
+    Behavior on color { MotionColorAnimation { role: "hover" } }
+    Behavior on radius { MotionAnimation { role: "morph" } }
+
+    // state layer
+    Rectangle {
+        anchors.fill: parent
+        radius: parent.radius
+        color: btn._fg
+        opacity: ma.pressed ? Theme.components.statePressed
+               : ma.containsMouse ? Theme.components.stateHover : 0
+        Behavior on opacity { MotionAnimation { role: "hover" } }
+    }
 
     RowLayout {
         id: row
         anchors.centerIn: parent
-        spacing: M3.s8
+        spacing: Theme.space.sm
 
         Text {
             visible: btn.icon.length > 0
             text: btn.icon
             color: btn._fg
-            font { family: "Material Symbols Rounded"; pixelSize: 17 }
+            font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
         }
-        Text {
+        ThemedText {
             visible: btn.text.length > 0
             text: btn.text
             color: btn._fg
-            font: M3.labelLarge
+            style: Theme.type.labelLarge
         }
     }
 
@@ -79,19 +84,19 @@ Rectangle {
     Rectangle {
         visible: btn.tooltip.length > 0 && ma.containsMouse
         anchors.top: parent.bottom
-        anchors.topMargin: 4
+        anchors.topMargin: Theme.space.xs
         anchors.horizontalCenter: parent.horizontalCenter
-        implicitWidth: tipTxt.implicitWidth + 12
-        implicitHeight: 22
-        radius: M3.rS
-        color: M3.surfaceContainerHigh
+        implicitWidth: tipTxt.implicitWidth + Theme.space.md * 2
+        implicitHeight: Theme.components.tooltipHeight
+        radius: Theme.shape.tooltip
+        color: Theme.color.inverseSurface
         z: 99
-        Text {
+        ThemedText {
             id: tipTxt
             anchors.centerIn: parent
             text: btn.tooltip
-            color: M3.m3OnSurface
-            font: M3.labelMedium
+            style: Theme.type.labelSmall
+            color: Theme.color.inverseOnSurface
         }
     }
 }

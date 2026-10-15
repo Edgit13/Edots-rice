@@ -1,7 +1,7 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import ".."
 import "../material"
-import Quickshell
 import QtQuick
 import QtQuick.Layouts
 
@@ -12,50 +12,52 @@ ColumnLayout {
     required property var field
 
     Layout.fillWidth: true
-    spacing: M3.s4
-    visible: SettingsSearch.matches(r.field.label || r.key)
+    spacing: Theme.space.sm
+    visible: SettingsSearch.matches(Lang.searchText(r.cat, r.key, r.field))
 
     RowLayout {
         Layout.fillWidth: true
-        spacing: M3.s8
-        Text {
+        spacing: Theme.space.sm
+        ThemedText {
             Layout.fillWidth: true
-            text: r.field.label || r.key
-            color: M3.m3OnSurface
-            font: M3.bodyLarge
+            text: Lang.label(r.cat, r.key, r.field)
+            style: Theme.type.bodyLarge
         }
         ResetDot { cat: r.cat; key: r.key }
     }
 
     Rectangle {
         Layout.fillWidth: true
-        implicitHeight: 38
-        radius: M3.rS
-        color: M3.surfaceContainerLow
-        border.width: input.activeFocus ? 2 : 1
-        border.color: input.activeFocus ? M3.primary : M3.outline
+        implicitHeight: Theme.components.dp(48)
+        radius: Theme.shape.field
+        color: Theme.color.surfaceContainerHighest
+        border.width: input.activeFocus ? Theme.components.dp(2) : 0
+        border.color: Theme.color.primary
+        Behavior on border.color { MotionColorAnimation { role: "hover" } }
 
         TextInput {
             id: input
             anchors.fill: parent
-            anchors.leftMargin: M3.s12
-            anchors.rightMargin: M3.s12
+            anchors.leftMargin: Theme.space.lg
+            anchors.rightMargin: Theme.space.lg
             verticalAlignment: TextInput.AlignVCenter
-            color: M3.m3OnSurface
-            font: M3.bodyMedium
+            color: Theme.color.fgSurface
+            font.family: Theme.type.bodyLarge.family
+            font.pixelSize: Theme.type.bodyLarge.size
             selectByMouse: true
+            clip: true
             text: String(Settings.get(r.cat, r.key) ?? "")
             onEditingFinished: Settings.set(r.cat, r.key, text)
             Keys.onReturnPressed: { Settings.set(r.cat, r.key, text); focus = false }
         }
     }
 
-    Text {
-        visible: !!r.field.desc
+    ThemedText {
+        visible: Lang.desc(r.cat, r.key, r.field).length > 0
         Layout.fillWidth: true
-        text: r.field.desc || ""
-        color: M3.m3OnSurfaceVariant
-        font: M3.bodySmall
+        text: Lang.desc(r.cat, r.key, r.field)
+        style: Theme.type.bodySmall
+        color: Theme.color.fgSurfaceVariant
         wrapMode: Text.Wrap
     }
 }

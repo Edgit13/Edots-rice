@@ -16,5 +16,13 @@
   "mainMonitor": "",
   "modules": {
     "workspaces": true
+  },
+  "osd": {
+    "position": "left",
+    "margin": 28,
+    "size": 0.9
+  },
+  "notif": {
+    "dnd": false
   }
 }

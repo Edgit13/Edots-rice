@@ -1,4 +1,5 @@
 import "root:/theme"
+import "root:/settings"
 import "root:/services"
 import "root:/modules/workspace"
 import QtQuick
@@ -110,7 +111,7 @@ Item {
         DashCard {
             visible: root.hasClient
             Layout.fillWidth: true
-            title: "Активне вікно"
+            title: Lang.t("ui.ws.active")
 
             RowLayout {
                 width: parent.width
@@ -156,14 +157,14 @@ Item {
 
                 ActionButton {
                     icon: "\ue8aa"
-                    label: "Плаваюче"
+                    label: Lang.t("ui.ws.floating")
                     tone: "toggle"
                     toggled: !!root.fc && !!root.fc.floating
                     onClicked: MangoService.toggleFloatingFocusedClient()
                 }
                 ActionButton {
                     icon: "\ue5cd"
-                    label: "Закрити"
+                    label: Lang.t("ui.ws.close")
                     tone: "error"
                     onClicked: MangoService.closeFocusedClient()
                 }
@@ -198,9 +199,9 @@ Item {
                     RowLayout {
                         Layout.alignment: Qt.AlignHCenter
                         spacing: Theme.space.sm
-                        InfoChip { text: "Тег " + monCard.st.active; accent: true; visible: monCard.st.active > 0 }
-                        InfoChip { text: "Зайнято: " + monCard.st.occupied }
-                        InfoChip { text: "Вікон: " + monCard.st.clients }
+                        InfoChip { text: Lang.tn("ui.ws.tag", monCard.st.active); accent: true; visible: monCard.st.active > 0 }
+                        InfoChip { text: Lang.tn("ui.ws.occupied", monCard.st.occupied) }
+                        InfoChip { text: Lang.tn("ui.ws.windows", monCard.st.clients) }
                     }
                 }
             }

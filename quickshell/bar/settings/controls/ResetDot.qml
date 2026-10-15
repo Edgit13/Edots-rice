@@ -1,10 +1,11 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import ".."
 import "../material"
-import Quickshell
 import QtQuick
+import QtQuick.Layouts
 
-// ResetDot — маленька кнопка ↺ збоку опції. Видима лише коли значення != default.
+// ResetDot — кнопка ↺ збоку опції. Видима лише коли значення != default.
 Rectangle {
     id: rd
     required property string cat
@@ -12,15 +13,25 @@ Rectangle {
 
     readonly property bool dirty: Settings.isDirty(rd.cat, rd.key)
     visible: rd.dirty
-    implicitWidth: 24; implicitHeight: 24
-    radius: M3.rFull
-    color: ma.containsMouse ? M3.hoverOf(M3.primary) : "transparent"
+    implicitWidth: Theme.components.dp(32)
+    implicitHeight: Theme.components.dp(32)
+    radius: ma.pressed ? Theme.shape.iconButtonPressed : Theme.shape.radius("full", height)
+    color: "transparent"
+    Behavior on radius { MotionAnimation { role: "morph" } }
 
+    Rectangle {
+        anchors.fill: parent
+        radius: parent.radius
+        color: Theme.color.primary
+        opacity: ma.pressed ? Theme.components.statePressed
+               : ma.containsMouse ? Theme.components.stateHover : 0
+        Behavior on opacity { MotionAnimation { role: "hover" } }
+    }
     Text {
         anchors.centerIn: parent
         text: "restart_alt"
-        color: M3.primary
-        font { family: "Material Symbols Rounded"; pixelSize: 16 }
+        color: Theme.color.primary
+        font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
     }
     MouseArea {
         id: ma

@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import "."
 import "material"
 import Quickshell
@@ -28,31 +29,34 @@ PanelWindow {
     // scrim
     Rectangle {
         anchors.fill: parent
-        color: M3.scrim
+        color: Theme.color.scrim
         opacity: win.visible ? 0.5 : 0
-        Behavior on opacity { NumberAnimation { duration: M3.durMed } }
+        Behavior on opacity { MotionAnimation { role: "fade" } }
         MouseArea { anchors.fill: parent; onClicked: win.close() }
     }
 
-    // main card
+    // main card (M3E: shape.dialog, scale-морф із overshoot)
     Rectangle {
         id: card
         anchors.centerIn: parent
-        width: Math.min(1020, parent.width - 80)
-        height: Math.min(680, parent.height - 80)
-        radius: M3.rXL
-        color: M3.surfaceContainerHigh
+        width: Math.min(Theme.components.dp(1080), parent.width - Theme.space.xxl * 2)
+        height: Math.min(Theme.components.dp(700), parent.height - Theme.space.xxl * 2)
+        radius: Theme.shape.dialog
+        color: Theme.color.surface
         border.width: 1
-        border.color: M3.outlineVariant
+        border.color: Theme.color.outlineVariant
 
-        scale: win.visible ? 1.0 : 0.94
-        opacity: win.visible ? 1.0 : 0.0
-        Behavior on scale   { NumberAnimation { duration: M3.durMed; easing.type: Easing.OutBack; easing.overshoot: 1.15 } }
-        Behavior on opacity { NumberAnimation { duration: M3.durFast } }
+        scale: win.visible ? 1 : 0.92
+        opacity: win.visible ? 1 : 0
+        Behavior on scale { MotionAnimation { role: "expand" } }
+        Behavior on opacity { MotionAnimation { role: "fade" } }
 
         focus: true
         Keys.onEscapePressed: win.close()
 
-        SettingsApp { anchors.fill: parent; anchors.margins: M3.s16 }
+        SettingsApp {
+            anchors.fill: parent
+            anchors.margins: Theme.space.sm
+        }
     }
 }

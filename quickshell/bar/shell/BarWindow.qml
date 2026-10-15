@@ -1,7 +1,9 @@
 import "root:/config"
 import "root:/theme"
 import "root:/shell"
+import "root:/modules/common"
 import "root:/modules/workspace"
+import "root:/modules/resources"
 import "root:/modules/launcher"
 import "root:/modules/window"
 import "root:/modules/clock"
@@ -28,6 +30,7 @@ PanelWindow {
     readonly property int gap: Theme.space.screenMargin
     readonly property int reserve: thickness + gap * 2
     readonly property int cross: thickness - Theme.space.xs * 2
+    readonly property int inner: cross - Theme.space.xxs * 2          // висота елементів усередині BarGroup
 
     readonly property var morphModules: [dashboardSurface]
     readonly property bool dashOpen: dashboardSurface.occupies
@@ -133,56 +136,76 @@ PanelWindow {
                     visible: Config.get("modules", "launcher") !== false
                     onActivated: ShellState.toggleSurface("launcher")
                 },
-                WorkspaceStrip {
-                    monitor: win.monitorName
-                    vertical: win.vertical
-                    itemSize: win.cross - Theme.space.sm
-                    visible: Config.get("modules", "workspaces") !== false
-                },
                 WindowModule {
                     monitor: win.monitorName
                     vertical: win.vertical
                     cross: win.cross
+                },
+                BarGroup {
+                    vertical: win.vertical
+                    MediaModule {
+                        vertical: win.vertical
+                        cross: win.inner
+                        visible: Config.get("modules", "media") !== false
+                        onMediaRequested: ShellState.toggleSurface("media")
+                    }
                 }
             ]
 
             center: [
-                ClockModule {
-                    id: clockModule
+                BarGroup {
                     vertical: win.vertical
-                    cross: win.cross
-                    visible: Config.get("modules", "clock") !== false
-                    onClicked: ShellState.toggleDashboard(win.monitorName)
+                    ResourcesModule {
+                        vertical: win.vertical
+                        cross: win.inner
+                        visible: Config.get("modules", "resources") !== false
+                    }
+                },
+                BarGroup {
+                    vertical: win.vertical
+                    WorkspaceStrip {
+                        monitor: win.monitorName
+                        vertical: win.vertical
+                        itemSize: win.inner
+                        visible: Config.get("modules", "workspaces") !== false
+                    }
+                },
+                BarGroup {
+                    vertical: win.vertical
+                    ClockModule {
+                        id: clockModule
+                        vertical: win.vertical
+                        cross: win.inner
+                        visible: Config.get("modules", "clock") !== false
+                        onClicked: ShellState.toggleDashboard(win.monitorName)
+                    }
                 }
             ]
 
             trailing: [
-                MediaModule {
+                BarGroup {
                     vertical: win.vertical
-                    cross: win.cross
-                    visible: Config.get("modules", "media") !== false
-                    onMediaRequested: ShellState.toggleSurface("media")
-                },
-                VolumeModule {
-                    vertical: win.vertical
-                    cross: win.cross
-                    visible: Config.get("modules", "mixer") !== false
-                    onMixerRequested: ShellState.toggleSurface("mixer")
-                },
-                NetworkModule {
-                    vertical: win.vertical
-                    cross: win.cross
-                    visible: Config.get("modules", "wifi") !== false
-                    onWifiRequested: ShellState.toggleSurface("wifi")
-                },
-                BatteryModule {
-                    vertical: win.vertical
-                    cross: win.cross
-                },
-                NotificationModule {
-                    vertical: win.vertical
-                    cross: win.cross
-                    visible: Config.get("modules", "notifications") !== false
+                    VolumeModule {
+                        vertical: win.vertical
+                        cross: win.inner
+                        visible: Config.get("modules", "mixer") !== false
+                        onMixerRequested: ShellState.toggleSurface("mixer")
+                    }
+                    NetworkModule {
+                        vertical: win.vertical
+                        cross: win.inner
+                        visible: Config.get("modules", "wifi") !== false
+                        onWifiRequested: ShellState.toggleSurface("wifi")
+                    }
+                    BatteryModule {
+                        vertical: win.vertical
+                        cross: win.inner
+                    }
+                    NotificationModule {
+                        vertical: win.vertical
+                        cross: win.inner
+                        visible: Config.get("modules", "notifications") !== false
+                    }
                 },
                 PowerModule {
                     vertical: win.vertical

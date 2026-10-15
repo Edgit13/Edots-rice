@@ -3,6 +3,9 @@ pragma ComponentBehavior: Bound
 
 import "root:/shell"
 import "root:/theme"
+import "root:/services"
+import "root:/osd"
+import "root:/notifications"
 import "root:/dock"
 import "root:/settings"
 import "root:/windows"
@@ -89,6 +92,40 @@ ShellRoot {
     Variants {
         model: Quickshell.screens
         SurfaceOverlay {}
+    }
+
+    // власний демон сповіщень: спливаючі вікна + центр (swaync більше не потрібен)
+    Variants {
+        model: Quickshell.screens
+        NotificationPopups {}
+    }
+    Variants {
+        model: Quickshell.screens
+        NotificationCenter {}
+    }
+    IpcHandler {
+        target: "notifications"
+        function toggle(): void { NotificationService.toggleCenter() }
+        function open(): void   { NotificationService.openCenter() }
+        function close(): void  { NotificationService.closeCenter() }
+        function clear(): void  { NotificationService.clearAll() }
+        function dnd(): void    { NotificationService.setDnd(!NotificationService.dnd) }
+    }
+
+    // M3 OSD (гучність / яскравість)
+    Variants {
+        model: Quickshell.screens
+        OsdWindow {}
+    }
+
+    // клавіші: qs -c <cfg> ipc call osd volumeUp  (не обов'язково — OSD і так реагує на зміни)
+    IpcHandler {
+        target: "osd"
+        function volumeUp(): void         { OsdService.volumeStep(0.05) }
+        function volumeDown(): void       { OsdService.volumeStep(-0.05) }
+        function volumeMute(): void       { OsdService.volumeMute() }
+        function brightnessUp(): void     { OsdService.brightnessStep(5) }
+        function brightnessDown(): void   { OsdService.brightnessStep(-5) }
     }
 
     Bar {}

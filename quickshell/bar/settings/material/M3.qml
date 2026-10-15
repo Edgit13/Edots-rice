@@ -1,121 +1,75 @@
 pragma Singleton
+import "root:/theme"
 import Quickshell
-import Quickshell.Io
 import QtQuick
 
-// ==========================================================================
-// M3.qml — SHARED Material 3 foundation для ВСІЄЇ Edots (Bar + Capture).
-// Єдина точка: ~/.config/quickshell/material/M3.qml
-// (symlink: bar/material, QuickSnip/material).
-// Колір — НАПРЯМУ з ~/.config/quickshell/colors.json (live-watch):
-// зміна шпалер → увесь M3 (і бар, і Capture) перефарбовується миттєво.
-// ==========================================================================
-
+// M3.qml — compat-шар. Власного M3 більше немає: усе (кольори, типографіка, відступи, форми, рух)
+// береться з Theme. Лишається, щоб старі контроли (RowColor, ExpressiveDot, pages.bak) не ламались.
 Singleton {
     id: m3
 
-    // ---------- source colors (Edots colors.json) ----------
-    property var data: ({})
-    FileView {
-        id: colorsFile
-        path: Quickshell.env("HOME") + "/.config/quickshell/colors.json"
-        watchChanges: true
-        onFileChanged: reload()
-        onTextChanged: m3.parse()
-        Component.onCompleted: m3.parse()
-    }
-    function parse() {
-        try { m3.data = JSON.parse(colorsFile.text()) } catch (e) { m3.data = {} }
-    }
-    function v(k, fb) { return m3.data[k] !== undefined ? m3.data[k] : fb }
+    // ---- colors ----
+    readonly property color primary: Theme.color.primary
+    readonly property color m3OnPrimary: Theme.color.fgPrimary
+    readonly property color primaryContainer: Theme.color.primaryContainer
+    readonly property color m3OnPrimaryContainer: Theme.color.fgPrimaryContainer
+    readonly property color secondary: Theme.color.secondary
+    readonly property color secondaryContainer: Theme.color.secondaryContainer
+    readonly property color m3OnSecondaryContainer: Theme.color.fgSecondaryContainer
+    readonly property color tertiary: Theme.color.tertiary
+    readonly property color tertiaryContainer: Theme.color.tertiaryContainer
+    readonly property color error: Theme.color.error
+    readonly property color m3OnError: Theme.color.fgError
+    readonly property color errorContainer: Theme.color.errorContainer
+    readonly property color surface: Theme.color.surface
+    readonly property color surfaceContainerLow: Theme.color.surfaceContainerLow
+    readonly property color surfaceContainer: Theme.color.surfaceContainer
+    readonly property color surfaceContainerHigh: Theme.color.surfaceContainerHigh
+    readonly property color surfaceContainerHighest: Theme.color.surfaceContainerHighest
+    readonly property color m3OnSurface: Theme.color.fgSurface
+    readonly property color m3OnSurfaceVariant: Theme.color.fgSurfaceVariant
+    readonly property color outline: Theme.color.outline
+    readonly property color outlineVariant: Theme.color.outlineVariant
+    readonly property color scrim: Theme.color.scrim
 
-    readonly property color bg0: v("bg0", "#060f0c")
-    readonly property color bg1: v("bg1", "#0a1a16")
-    readonly property color bg2: v("bg2", "#0f2922")
-    readonly property color bg3: v("bg3", "#15372e")
-    readonly property color bg4: v("bg4", "#1c4a3d")
-    readonly property color fg:    v("fg", "#dae7e3")
-    readonly property color grey1: v("grey1", "#31816c")
-    readonly property color grey2: v("grey2", "#90d5c2")
-    readonly property color accent:  v("accent", "#74e7c8")
-    readonly property color red:    v("red", "#d27c79")
-    readonly property color blue:   v("blue", "#d27c79")
-    readonly property color purple: v("purple", "#d1df9f")
+    function mix(base, tint, f) { return Qt.tint(base, Qt.rgba(tint.r, tint.g, tint.b, f)) }
+    function hoverOf(c)   { return Qt.rgba(c.r, c.g, c.b, Theme.components.stateHover) }
+    function focusOf(c)   { return Qt.rgba(c.r, c.g, c.b, Theme.components.stateFocus) }
+    function pressedOf(c) { return Qt.rgba(c.r, c.g, c.b, Theme.components.statePressed) }
 
-    // ---------- M3 roles ----------
-    function mix(base, tint, f) {
-        return Qt.tint(base, Qt.rgba(tint.r, tint.g, tint.b, f))
-    }
+    // ---- typography ----
+    function _f(t) { return ({ family: t.family, pixelSize: t.size, weight: t.weight }) }
+    readonly property font labelSmall:    _f(Theme.type.labelSmall)
+    readonly property font labelMedium:   _f(Theme.type.labelMedium)
+    readonly property font labelLarge:    _f(Theme.type.labelLarge)
+    readonly property font bodySmall:     _f(Theme.type.bodySmall)
+    readonly property font bodyMedium:    _f(Theme.type.bodyMedium)
+    readonly property font bodyLarge:     _f(Theme.type.bodyLarge)
+    readonly property font titleSmall:    _f(Theme.type.titleSmall)
+    readonly property font titleMedium:   _f(Theme.type.titleMedium)
+    readonly property font titleLarge:    _f(Theme.type.titleLarge)
+    readonly property font headlineSmall: _f(Theme.type.headlineSmall)
+    readonly property font monoLarge:     _f(Theme.type.monoLarge)
+    readonly property font monoMedium:    _f(Theme.type.monoMedium)
 
-    readonly property color primary:            accent
-    readonly property color m3OnPrimary:          bg0
-    readonly property color primaryContainer:   mix(bg2, accent, 0.32)
-    readonly property color m3OnPrimaryContainer: mix(accent, fg, 0.65)
+    // ---- spacing / shape / motion ----
+    readonly property real s4: Theme.space.xs
+    readonly property real s8: Theme.space.sm
+    readonly property real s12: Theme.space.md
+    readonly property real s16: Theme.space.lg
+    readonly property real s24: Theme.space.xl
+    readonly property real s32: Theme.space.xxl
 
-    readonly property color secondary:            blue
-    readonly property color secondaryContainer:   mix(bg2, blue, 0.28)
-    readonly property color m3OnSecondaryContainer: mix(blue, fg, 0.65)
+    readonly property real rXS: Theme.shape.xs
+    readonly property real rS: Theme.shape.sm
+    readonly property real rM: Theme.shape.md
+    readonly property real rL: Theme.shape.lg
+    readonly property real rXL: Theme.shape.xl
+    readonly property real rFull: 9999
 
-    readonly property color tertiary:            purple
-    readonly property color tertiaryContainer:   mix(bg2, purple, 0.28)
+    readonly property int durFast: Theme.motion.duration("hover")
+    readonly property int durMed: Theme.motion.duration("stateChange")
+    readonly property int durSlow: Theme.motion.duration("fade")
 
-    readonly property color error:            red
-    readonly property color m3OnError:          bg0
-    readonly property color errorContainer:   mix(bg2, red, 0.30)
-
-    readonly property color surface:                 bg0
-    readonly property color surfaceContainerLow:     mix(bg1, fg, 0.02)
-    readonly property color surfaceContainer:        bg1
-    readonly property color surfaceContainerHigh:    bg2
-    readonly property color surfaceContainerHighest: bg3
-
-    readonly property color m3OnSurface:        fg
-    readonly property color m3OnSurfaceVariant: grey2
-
-    readonly property color outline:        grey1
-    readonly property color outlineVariant: mix(grey1, fg, 0.25)
-
-    readonly property color scrim: "#000000"
-
-    // state layers (M3: hover 8%, focus/pressed 12%)
-    function hoverOf(c)   { return Qt.rgba(c.r, c.g, c.b, 0.08) }
-    function focusOf(c)   { return Qt.rgba(c.r, c.g, c.b, 0.12) }
-    function pressedOf(c) { return Qt.rgba(c.r, c.g, c.b, 0.12) }
-
-    // ---------- typography ----------
-    readonly property string fontFamily: "SF Pro Display"
-    readonly property string fontMono:   "SF Mono"
-    readonly property font labelSmall:    ({ family: fontFamily, pixelSize: 10, weight: 500 })
-    readonly property font labelMedium:   ({ family: fontFamily, pixelSize: 11, weight: 500 })
-    readonly property font labelLarge:    ({ family: fontFamily, pixelSize: 12, weight: 500 })
-    readonly property font bodySmall:     ({ family: fontFamily, pixelSize: 11, weight: 400 })
-    readonly property font bodyMedium:    ({ family: fontFamily, pixelSize: 12, weight: 400 })
-    readonly property font bodyLarge:     ({ family: fontFamily, pixelSize: 14, weight: 400 })
-    readonly property font titleSmall:    ({ family: fontFamily, pixelSize: 13, weight: 600 })
-    readonly property font titleMedium:   ({ family: fontFamily, pixelSize: 15, weight: 600 })
-    readonly property font titleLarge:    ({ family: fontFamily, pixelSize: 18, weight: 600 })
-    readonly property font headlineSmall: ({ family: fontFamily, pixelSize: 21, weight: 700 })
-    readonly property font monoLarge:     ({ family: fontMono, pixelSize: 15, weight: 600 })
-    readonly property font monoMedium:    ({ family: fontMono, pixelSize: 12, weight: 500 })
-
-    // ---------- spacing / shape / motion ----------
-    readonly property real s4: 4
-    readonly property real s8: 8
-    readonly property real s12: 12
-    readonly property real s16: 16
-    readonly property real s24: 24
-    readonly property real s32: 32
-
-    readonly property real rXS: 4
-    readonly property real rS: 8
-    readonly property real rM: 12
-    readonly property real rL: 16
-    readonly property real rXL: 28
-    readonly property real rFull: 999
-
-    readonly property int durFast: 120
-    readonly property int durMed: 200
-    readonly property int durSlow: 350
-
-    readonly property real disabledOpacity: 0.38
+    readonly property real disabledOpacity: Theme.components.disabledContent
 }

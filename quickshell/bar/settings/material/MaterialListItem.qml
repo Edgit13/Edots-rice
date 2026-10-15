@@ -1,10 +1,12 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import QtQuick
 import QtQuick.Layouts
 
-// Material 3 ListItem: icon/headline/supporting/trailing.
+// M3 ListItem: icon / headline / supporting / trailing.
 Rectangle {
     id: li
+
     property string icon: ""
     property string headline: ""
     property string supporting: ""
@@ -12,10 +14,20 @@ Rectangle {
     default property alias trailing: tr.children
 
     Layout.fillWidth: true
-    implicitHeight: row.implicitHeight + M3.s16
-    radius: M3.rM
-    color: ma.containsMouse && li.enabled_ ? M3.hoverOf(M3.surfaceContainerHigh) : "transparent"
-    opacity: li.enabled_ ? 1.0 : M3.disabledOpacity
+    implicitHeight: Math.max(supporting.length > 0 ? Theme.components.listItemTwo : Theme.components.listItemOne,
+                             row.implicitHeight + Theme.space.md * 2)
+    radius: Theme.shape.listItem
+    color: "transparent"
+    opacity: li.enabled_ ? 1 : Theme.components.disabledContent
+
+    Rectangle {
+        anchors.fill: parent
+        radius: parent.radius
+        color: Theme.color.fgSurface
+        opacity: ma.pressed ? Theme.components.statePressed
+               : ma.containsMouse && li.enabled_ ? Theme.components.stateHover : 0
+        Behavior on opacity { MotionAnimation { role: "hover" } }
+    }
 
     RowLayout {
         id: row
@@ -23,39 +35,38 @@ Rectangle {
             left: parent.left
             right: parent.right
             verticalCenter: parent.verticalCenter
-            leftMargin: M3.s12
-            rightMargin: M3.s12
+            leftMargin: Theme.space.lg
+            rightMargin: Theme.space.lg
         }
-        spacing: M3.s12
+        spacing: Theme.space.lg
 
         Text {
             visible: li.icon.length > 0
             text: li.icon
-            color: M3.m3OnSurfaceVariant
-            font { family: "Material Symbols Rounded"; pixelSize: 20 }
+            color: Theme.color.fgSurfaceVariant
+            font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
         }
         ColumnLayout {
             Layout.fillWidth: true
-            spacing: 1
-            Text {
+            spacing: 0
+            ThemedText {
                 Layout.fillWidth: true
                 text: li.headline
-                color: M3.m3OnSurface
-                font: M3.bodyLarge
+                style: Theme.type.bodyLarge
                 elide: Text.ElideRight
             }
-            Text {
+            ThemedText {
                 visible: li.supporting.length > 0
                 Layout.fillWidth: true
                 text: li.supporting
-                color: M3.m3OnSurfaceVariant
-                font: M3.bodySmall
+                style: Theme.type.bodyMedium
+                color: Theme.color.fgSurfaceVariant
                 elide: Text.ElideRight
             }
         }
         RowLayout {
             id: tr
-            spacing: M3.s4
+            spacing: Theme.space.xs
         }
     }
 

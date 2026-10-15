@@ -1,4 +1,5 @@
 import "root:/theme"
+import "root:/settings"
 import "root:/services"
 import "root:/media"
 import QtQuick
@@ -23,7 +24,7 @@ Item {
         }
         ThemedText {
             Layout.alignment: Qt.AlignHCenter
-            text: "Nothing playing"
+            text: Lang.t("ui.media.none")
             style: Theme.type.bodyLarge
             color: Theme.color.fgSurfaceVariant
         }
@@ -70,7 +71,7 @@ Item {
                     }
                     ThemedText {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: MediaService.identity || "Player"
+                        text: MediaService.identity || Lang.t("ui.media.player")
                         style: Theme.type.labelSmall
                         color: Theme.color.fgSecondaryContainer
                         elide: Text.ElideRight
@@ -99,7 +100,7 @@ Item {
             ThemedText {
                 Layout.fillWidth: true
                 Layout.topMargin: Theme.space.xs
-                text: MediaService.title || "Unknown track"
+                text: MediaService.title || Lang.t("ui.media.unknown")
                 style: Theme.type.titleMedium
                 emphasized: true
                 elide: Text.ElideRight

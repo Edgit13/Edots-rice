@@ -1,18 +1,20 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import ".."
 import "../material"
 import QtQuick
 import QtQuick.Layouts
 
+// Секція-картка (рідко використовується напряму: SettingsApp малює connected-list сам).
 Rectangle {
     id: c
     property string title: ""
     default property alias content: body.data
 
     Layout.fillWidth: true
-    implicitHeight: col.implicitHeight + M3.s24 * 2
-    radius: M3.rL
-    color: M3.surfaceContainer
+    implicitHeight: col.implicitHeight + Theme.space.lg * 2
+    radius: Theme.shape.cardLarge
+    color: Theme.color.surfaceContainer
 
     ColumnLayout {
         id: col
@@ -20,22 +22,21 @@ Rectangle {
             left: parent.left
             right: parent.right
             top: parent.top
-            margins: M3.s16
+            margins: Theme.space.lg
         }
-        spacing: M3.s12
+        spacing: Theme.space.md
 
-        Text {
+        ThemedText {
             visible: c.title.length > 0
             Layout.fillWidth: true
             text: c.title
-            color: M3.m3OnSurfaceVariant
-            font: M3.labelLarge
+            style: Theme.type.labelLarge
+            color: Theme.color.fgSurfaceVariant
         }
-
         ColumnLayout {
             id: body
             Layout.fillWidth: true
-            spacing: M3.s8
+            spacing: Theme.space.sm
         }
     }
 }

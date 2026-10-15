@@ -1,10 +1,11 @@
 import "root:/theme"
+import "root:/modules/common"
 import Quickshell
 import Quickshell.Services.Pipewire
 import QtQuick
 
-// VolumeModule — M3 Expressive модуль аудіо через Pipewire.
-// Колесо миші: гучність ±5%; клік: mute / unmute; правий клік: відкрити Mixer.
+// VolumeModule — іконка; значення виїжджає при hover (як індикатори в end-4).
+// Колесо: ±5% · ЛКМ: mute · ПКМ: Mixer.
 Item {
     id: root
 
@@ -18,100 +19,74 @@ Item {
     readonly property int vol: ready ? Math.round(sink.audio.volume * 100) : 0
 
     readonly property string iconGlyph: {
-        if (!ready || muted) return "\ue04f"   // volume_off
-        if (vol === 0) return "\ue04e"        // volume_mute
-        if (vol < 50) return "\ue04d"         // volume_down
-        return "\ue050"                       // volume_up
+        if (!ready || muted) return "\ue04f"
+        if (vol === 0) return "\ue04e"
+        if (vol < 50) return "\ue04d"
+        return "\ue050"
     }
+    readonly property real iconBox: Theme.type.iconS
+    readonly property real fullW: (cross + iconBox) / 2 + Theme.space.xs + label.implicitWidth + Theme.space.md
 
-    implicitWidth: vertical ? cross : (contentRow.implicitWidth + Theme.space.sm * 2)
-    implicitHeight: vertical ? (contentCol.implicitHeight + Theme.space.xs * 2) : cross
+    implicitWidth: vertical ? cross : (btn.hovered ? fullW : cross)
+    implicitHeight: vertical ? (vcol.implicitHeight + Theme.space.xs * 2) : cross
+    Behavior on implicitWidth { MotionAnimation { role: "morph" } }
 
-    PwObjectTracker {
-        objects: [root.sink]
-    }
+    PwObjectTracker { objects: [root.sink] }
 
-    Rectangle {
-        id: bg
+    BarButton {
+        id: btn
         anchors.fill: parent
-        radius: Theme.shape.radius("full", Math.min(width, height))
-        color: ma.pressed ? Theme.stateLayer(Theme.color.surfaceContainerHigh, Theme.color.fgSurface, Theme.components.statePressed)
-             : ma.containsMouse ? Theme.stateLayer(Theme.color.surfaceContainerHigh, Theme.color.fgSurface, Theme.components.stateHover)
-             : Theme.color.surfaceContainerHigh
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton) root.mixerRequested()
+            else if (root.sink && root.sink.audio) root.sink.audio.muted = !root.sink.audio.muted
+        }
+        onWheeled: e => {
+            if (!root.sink || !root.sink.audio) return
+            const next = Math.max(0.0, Math.min(1.5, root.sink.audio.volume + (e.angleDelta.y > 0 ? 0.05 : -0.05)))
+            root.sink.audio.volume = next
+            if (root.sink.audio.muted && next > 0) root.sink.audio.muted = false
+        }
 
-        scale: ma.pressed ? 0.94 : 1.0
-        Behavior on color { MotionColorAnimation { role: "hover" } }
-        Behavior on scale { MotionAnimation { role: "press" } }
-
-        // Horizontal layout
         Row {
-            id: contentRow
             visible: !root.vertical
-            anchors.centerIn: parent
+            anchors.verticalCenter: parent.verticalCenter
+            x: (btn.height - root.iconBox) / 2
             spacing: Theme.space.xs
-
             Text {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.iconGlyph
                 font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                color: root.muted ? Theme.color.error : Theme.color.primary
+                color: root.muted ? Theme.color.error : Theme.color.fgSurface
+                Behavior on color { MotionColorAnimation { role: "hover" } }
             }
-
             ThemedText {
+                id: label
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.muted ? "Mute" : (root.vol + "%")
                 style: Theme.type.labelMedium
                 color: root.muted ? Theme.color.outline : Theme.color.fgSurface
+                opacity: btn.hovered ? 1 : 0
+                Behavior on opacity { MotionAnimation { role: "hover" } }
             }
         }
 
-        // Vertical layout
         Column {
-            id: contentCol
+            id: vcol
             visible: root.vertical
             anchors.centerIn: parent
             spacing: 2
-
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: root.iconGlyph
                 font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                color: root.muted ? Theme.color.error : Theme.color.primary
+                color: root.muted ? Theme.color.error : Theme.color.fgSurface
             }
-
             ThemedText {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: root.muted ? "✕" : String(root.vol)
                 style: Theme.type.labelSmall
-                color: root.muted ? Theme.color.outline : Theme.color.fgSurface
-            }
-        }
-    }
-
-    MouseArea {
-        id: ma
-        anchors.fill: parent
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-        cursorShape: Qt.PointingHandCursor
-        onClicked: function(mouse) {
-            if (mouse.button === Qt.RightButton) {
-                root.mixerRequested()
-            } else if (root.sink && root.sink.audio) {
-                root.sink.audio.muted = !root.sink.audio.muted
-            }
-        }
-    }
-
-    WheelHandler {
-        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
-        onWheel: function(event) {
-            if (!root.sink || !root.sink.audio) return
-            const delta = event.angleDelta.y > 0 ? 0.05 : -0.05
-            const nextVol = Math.max(0.0, Math.min(1.5, root.sink.audio.volume + delta))
-            root.sink.audio.volume = nextVol
-            if (root.sink.audio.muted && nextVol > 0) {
-                root.sink.audio.muted = false
+                color: Theme.color.fgSurfaceVariant
             }
         }
     }

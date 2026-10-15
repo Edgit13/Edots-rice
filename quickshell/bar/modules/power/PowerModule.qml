@@ -1,8 +1,8 @@
 import "root:/theme"
 import QtQuick
 
-// PowerModule — M3 Expressive кнопка керування живленням / сесією.
-// Лівий клік: Power menu; Правий клік: Налаштування.
+// PowerModule — кругла кнопка живлення; при hover підсвічується error-кольором, при натисканні форма морфиться.
+// ЛКМ: Power menu · ПКМ: Налаштування.
 Item {
     id: root
 
@@ -15,22 +15,17 @@ Item {
     implicitHeight: cross
 
     Rectangle {
-        id: bg
         anchors.fill: parent
-        radius: Theme.shape.radius("full", Math.min(width, height))
-        color: ma.pressed ? Theme.stateLayer(Theme.color.surfaceContainerHigh, Theme.color.error, Theme.components.statePressed)
-             : ma.containsMouse ? Theme.stateLayer(Theme.color.surfaceContainerHigh, Theme.color.error, Theme.components.stateHover)
-             : Theme.color.surfaceContainerHigh
-
-        scale: ma.pressed ? 0.92 : (ma.containsMouse ? 1.05 : 1.0)
+        radius: ma.pressed ? Theme.shape.radius("md", height) : Theme.shape.radius("full", height)
+        color: ma.containsMouse ? Theme.color.errorContainer : Theme.color.surfaceContainerHigh
+        Behavior on radius { MotionAnimation { role: "morph" } }
         Behavior on color { MotionColorAnimation { role: "hover" } }
-        Behavior on scale { MotionAnimation { role: "press" } }
 
         Text {
             anchors.centerIn: parent
-            text: "\ue8ac"  // power_settings_new
+            text: "\ue8ac"
             font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-            color: ma.containsMouse ? Theme.color.error : Theme.color.fgSurfaceVariant
+            color: ma.containsMouse ? Theme.color.fgErrorContainer : Theme.color.fgSurfaceVariant
             Behavior on color { MotionColorAnimation { role: "hover" } }
         }
     }
@@ -41,12 +36,9 @@ Item {
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: Qt.PointingHandCursor
-        onClicked: function(mouse) {
-            if (mouse.button === Qt.RightButton) {
-                root.settingsRequested()
-            } else {
-                root.powerRequested()
-            }
+        onClicked: function (mouse) {
+            if (mouse.button === Qt.RightButton) root.settingsRequested()
+            else root.powerRequested()
         }
     }
 }

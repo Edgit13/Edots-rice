@@ -1,8 +1,7 @@
 import "root:/theme"
 import QtQuick
 
-// LauncherModule — M3 Expressive trigger для відкриття лаунчера / головного меню.
-// На клік відправляє сигнал activated.
+// LauncherModule — кругла tonal-кнопка (як лівий край бару в end-4); при натисканні форма морфиться.
 Item {
     id: root
 
@@ -10,59 +9,27 @@ Item {
     property int cross: Theme.components.islandCompact
     signal activated()
 
-    implicitWidth: vertical ? cross : (contentRow.implicitWidth + Theme.space.sm * 2)
-    implicitHeight: vertical ? (contentCol.implicitHeight + Theme.space.xs * 2) : cross
+    implicitWidth: cross
+    implicitHeight: cross
 
     Rectangle {
-        id: bg
         anchors.fill: parent
-        radius: Theme.shape.radius("full", Math.min(width, height))
-        color: ma.pressed ? Theme.stateLayer(Theme.color.primary, Theme.color.fgPrimary, Theme.components.statePressed)
-             : ma.containsMouse ? Theme.stateLayer(Theme.color.primaryContainer, Theme.color.fgPrimaryContainer, Theme.components.stateHover)
-             : Theme.color.primaryContainer
+        radius: ma.pressed ? Theme.shape.radius("md", height) : Theme.shape.radius("full", height)
+        color: Theme.color.primaryContainer
+        Behavior on radius { MotionAnimation { role: "morph" } }
 
-        scale: ma.pressed ? 0.92 : (ma.containsMouse ? 1.05 : 1.0)
-        transformOrigin: Item.Center
-
-        Behavior on color { MotionColorAnimation { role: "hover" } }
-        Behavior on scale { MotionAnimation { role: "press" } }
-
-        // Horizontal layout
-        Row {
-            id: contentRow
-            visible: !root.vertical
-            anchors.centerIn: parent
-            spacing: Theme.space.xs
-
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "\ue5c3"   // apps / grid icon
-                font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                color: Theme.color.fgPrimaryContainer
-            }
-
-            ThemedText {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Mango"
-                style: Theme.type.labelLarge
-                emphasized: true
-                color: Theme.color.fgPrimaryContainer
-            }
+        Rectangle {
+            anchors.fill: parent
+            radius: parent.radius
+            color: Theme.color.fgPrimaryContainer
+            opacity: ma.pressed ? Theme.components.statePressed : (ma.containsMouse ? Theme.components.stateHover : 0)
+            Behavior on opacity { MotionAnimation { role: "hover" } }
         }
-
-        // Vertical layout
-        Column {
-            id: contentCol
-            visible: root.vertical
+        Text {
             anchors.centerIn: parent
-            spacing: Theme.space.xxs
-
-            Text {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: "\ue5c3"
-                font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                color: Theme.color.fgPrimaryContainer
-            }
+            text: "\ue5c3"
+            font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+            color: Theme.color.fgPrimaryContainer
         }
     }
 

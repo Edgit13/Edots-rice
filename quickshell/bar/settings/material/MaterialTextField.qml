@@ -1,50 +1,54 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import QtQuick
 import QtQuick.Layouts
 
-// Material 3 OutlinedTextField: label над полем, focus — 2px primary border.
+// M3 Outlined TextField: label над полем, у фокусі — 2dp primary.
 ColumnLayout {
     id: tf
+
     property string label: ""
     property string placeholder: ""
     property string text: input.text
     property bool enabled_: true
-    spacing: M3.s4
+    spacing: Theme.space.xs
     Layout.fillWidth: true
 
-    Text {
+    ThemedText {
         visible: tf.label.length > 0
         text: tf.label
-        color: M3.m3OnSurfaceVariant
-        font: M3.labelMedium
+        style: Theme.type.labelMedium
+        color: input.activeFocus ? Theme.color.primary : Theme.color.fgSurfaceVariant
     }
 
     Rectangle {
         Layout.fillWidth: true
-        Layout.preferredHeight: 38
-        radius: M3.rS
-        color: M3.surfaceContainerLow
-        border.width: input.activeFocus ? 2 : 1
-        border.color: input.activeFocus ? M3.primary : M3.outline
-        opacity: tf.enabled_ ? 1.0 : M3.disabledOpacity
+        Layout.preferredHeight: Theme.components.dp(48)
+        radius: Theme.shape.field
+        color: "transparent"
+        border.width: input.activeFocus ? Theme.components.dp(2) : 1
+        border.color: input.activeFocus ? Theme.color.primary : Theme.color.outline
+        opacity: tf.enabled_ ? 1 : Theme.components.disabledContent
+        Behavior on border.color { MotionColorAnimation { role: "hover" } }
 
         TextInput {
             id: input
             anchors.fill: parent
-            anchors.leftMargin: M3.s12
-            anchors.rightMargin: M3.s12
+            anchors.leftMargin: Theme.space.lg
+            anchors.rightMargin: Theme.space.lg
             verticalAlignment: TextInput.AlignVCenter
-            color: M3.m3OnSurface
-            font: M3.bodyMedium
+            color: Theme.color.fgSurface
+            font.family: Theme.type.bodyLarge.family
+            font.pixelSize: Theme.type.bodyLarge.size
+            selectByMouse: true
             clip: true
 
-            Text {
+            ThemedText {
                 anchors.fill: parent
-                verticalAlignment: Text.AlignVCenter
                 visible: input.text.length === 0
                 text: tf.placeholder
-                color: M3.m3OnSurfaceVariant
-                font: input.font
+                style: Theme.type.bodyLarge
+                color: Theme.color.fgSurfaceVariant
             }
         }
     }

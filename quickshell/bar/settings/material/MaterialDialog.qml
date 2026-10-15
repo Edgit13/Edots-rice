@@ -1,12 +1,13 @@
 pragma ComponentBehavior: Bound
-import Quickshell
+import "root:/theme"
 import QtQuick
 import QtQuick.Layouts
 
-// Material 3 BasicDialog: scrim + surfaceContainerHigh картка (rXL),
-// title / supporting text / actions через аліаси. plain-файл.
-Rectangle {
+// M3 Expressive BasicDialog: scrim + картка (shape.dialog) зі scale-морфом.
+// Scrim і картка — окремі елементи (раніше картка успадковувала 50% opacity від scrim).
+Item {
     id: dlg
+
     property bool open: false
     property string title: ""
     property string supporting: ""
@@ -14,21 +15,27 @@ Rectangle {
     property alias actions: actionsRow.children
 
     anchors.fill: parent
-    color: M3.scrim
-    opacity: dlg.open ? 0.5 : 0.0
-    visible: opacity > 0
-    Behavior on opacity { NumberAnimation { duration: M3.durMed } }
+    visible: scrim.opacity > 0.01
+
+    Rectangle {
+        id: scrim
+        anchors.fill: parent
+        color: Theme.color.scrim
+        opacity: dlg.open ? 0.5 : 0
+        Behavior on opacity { MotionAnimation { role: "fade" } }
+        MouseArea { anchors.fill: parent; enabled: dlg.open }
+    }
 
     Rectangle {
         anchors.centerIn: parent
-        width: Math.min(420, parent.width - 64)
-        implicitHeight: col.implicitHeight + M3.s24 * 2
-        radius: M3.rXL
-        color: M3.surfaceContainerHigh
-        scale: dlg.open ? 1.0 : 0.92
-        opacity: dlg.open ? 1.0 : 0.0
-        Behavior on scale { NumberAnimation { duration: M3.durMed; easing.type: Easing.OutCubic } }
-        Behavior on opacity { NumberAnimation { duration: M3.durFast } }
+        width: Math.min(Theme.components.dialogMaxW, dlg.width - Theme.space.xxl * 2)
+        implicitHeight: col.implicitHeight + Theme.space.xl * 2
+        radius: Theme.shape.dialog
+        color: Theme.color.surfaceContainerHigh
+        scale: dlg.open ? 1 : 0.9
+        opacity: dlg.open ? 1 : 0
+        Behavior on scale { MotionAnimation { role: "expand" } }
+        Behavior on opacity { MotionAnimation { role: "fade" } }
 
         ColumnLayout {
             id: col
@@ -36,35 +43,34 @@ Rectangle {
                 left: parent.left
                 right: parent.right
                 top: parent.top
-                margins: M3.s24
+                margins: Theme.space.xl
             }
-            spacing: M3.s16
+            spacing: Theme.space.lg
 
-            Text {
+            ThemedText {
                 visible: dlg.title.length > 0
                 Layout.fillWidth: true
                 text: dlg.title
-                color: M3.m3OnSurface
-                font: M3.titleLarge
+                style: Theme.type.headlineSmall
                 wrapMode: Text.Wrap
             }
-            Text {
+            ThemedText {
                 visible: dlg.supporting.length > 0
                 Layout.fillWidth: true
                 text: dlg.supporting
-                color: M3.m3OnSurfaceVariant
-                font: M3.bodyMedium
+                style: Theme.type.bodyMedium
+                color: Theme.color.fgSurfaceVariant
                 wrapMode: Text.Wrap
             }
             ColumnLayout {
                 id: contentCol
                 Layout.fillWidth: true
-                spacing: M3.s8
+                spacing: Theme.space.sm
             }
             RowLayout {
                 id: actionsRow
                 Layout.alignment: Qt.AlignRight
-                spacing: M3.s8
+                spacing: Theme.space.sm
             }
         }
     }

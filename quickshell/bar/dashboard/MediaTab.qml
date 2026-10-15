@@ -1,4 +1,5 @@
 import "root:/theme"
+import "root:/settings"
 import "root:/services"
 import "root:/media"
 import QtQuick
@@ -54,7 +55,7 @@ Item {
         }
         ThemedText {
             Layout.alignment: Qt.AlignHCenter
-            text: "Нічого не грає"
+            text: Lang.t("ui.media.none")
             style: Theme.type.bodyLarge
             color: Theme.color.fgSurfaceVariant
         }
@@ -90,7 +91,7 @@ Item {
                     model: MediaService.players
                     PlayerChip {
                         required property var modelData
-                        label: modelData.identity || "Player"
+                        label: modelData.identity || Lang.t("ui.media.player")
                         selected: modelData === MediaService.player
                         onClicked: MediaService.manual = modelData
                     }
@@ -109,7 +110,7 @@ Item {
                 spacing: 2
                 ThemedText {
                     Layout.fillWidth: true
-                    text: MediaService.title || "Без назви"
+                    text: MediaService.title || Lang.t("ui.media.unknown")
                     style: Theme.type.titleMedium
                     emphasized: true
                     elide: Text.ElideRight

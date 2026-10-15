@@ -57,11 +57,40 @@ Singleton {
                 launcher:      { type: "bool", default: true, label: "Launcher", path: "modules.launcher" },
                 window:        { type: "bool", default: true, label: "Window title", path: "modules.window" },
                 media:         { type: "bool", default: true, label: "Media", path: "modules.media" },
+                resources: { type: "bool", default: true, label: "Resources", path: "modules.resources" },
                 mixer:         { type: "bool", default: true, label: "Volume", path: "modules.mixer" },
                 wifi:          { type: "bool", default: true, label: "Wi-Fi", path: "modules.wifi" },
                 notifications: { type: "bool", default: true, label: "Notifications", path: "modules.notifications" },
                 battery:       { type: "bool", default: true, label: "Battery", path: "modules.battery" },
                 power:         { type: "bool", default: true, label: "Power", path: "modules.power" }
+            }
+        },
+        osd: {
+            file: "bar.json",
+            label: "section.osd",
+            fields: {
+                enabled:    { type: "bool", default: true, label: "Show OSD", desc: "Pill on volume / brightness change.", path: "osd.enabled" },
+                volume:     { type: "bool", default: true, label: "Volume", path: "osd.volume" },
+                brightness: { type: "bool", default: true, label: "Brightness", path: "osd.brightness" },
+                position:   { type: "pos",  default: "bottom", label: "Position", desc: "Where on the screen the OSD appears.", path: "osd.position" },
+                margin:     { type: "num", min: 24, max: 400, step: 4, default: 110, label: "Distance from edge", suffix: " px", path: "osd.margin" },
+                size:       { type: "num", min: 0.6, max: 1.6, step: 0.05, default: 1.0, label: "Size", suffix: "×", path: "osd.size" },
+                duration:   { type: "num", min: 0.5, max: 5, step: 0.1, default: 1.8, label: "Duration", suffix: " s", path: "osd.duration" }
+            }
+        },
+        notif: {
+            file: "bar.json",
+            label: "section.notif",
+            fields: {
+                dnd:        { type: "bool", default: false, label: "Do not disturb", desc: "No popups (critical ones still show).", path: "notif.dnd" },
+                toasts:     { type: "bool", default: true, label: "Popups", desc: "Cards that slide in at the screen edge.", path: "notif.toasts" },
+                bar:        { type: "bool", default: true, label: "Show in bar", desc: "Bell expands into the latest notification.", path: "notif.bar" },
+                position:   { type: "pos",  default: "top-right", label: "Popup position", desc: "Where popups appear; the center opens on the same side.", path: "notif.position" },
+                margin:     { type: "num", min: 8, max: 200, step: 4, default: 16, label: "Distance from edge", suffix: " px", path: "notif.margin" },
+                width:      { type: "num", min: 280, max: 560, step: 10, default: 380, label: "Width", suffix: " px", path: "notif.width" },
+                timeout:    { type: "num", min: 1, max: 30, step: 1, default: 6, label: "Timeout (normal)", suffix: " s", path: "notif.timeout" },
+                timeoutLow: { type: "num", min: 1, max: 20, step: 1, default: 4, label: "Timeout (low)", suffix: " s", path: "notif.timeoutLow" },
+                maxVisible: { type: "num", min: 1, max: 8, step: 1, default: 4, label: "Max popups", path: "notif.maxVisible" }
             }
         },
         clock: {
@@ -119,6 +148,8 @@ Singleton {
         { name: "page.appearance", icon: "palette",         cats: ["theme"] },
         { name: "page.colors",     icon: "format_paint",    cats: ["colors"] },
         { name: "page.bar",        icon: "space_dashboard", cats: ["bar", "modules"] },
+        { name: "page.osd",        icon: "volume_up",       cats: ["osd"] },
+        { name: "page.notif",      icon: "notifications",   cats: ["notif"] },
         { name: "page.lockscreen", icon: "lock",            cats: ["lockscreen"] },
         { name: "page.clock",      icon: "schedule",        cats: ["clock"] },
         { name: "page.about",      icon: "info",            cats: [] }

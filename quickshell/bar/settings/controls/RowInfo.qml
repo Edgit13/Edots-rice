@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import ".."
 import "../material"
 import QtQuick
@@ -10,19 +11,18 @@ RowLayout {
     required property string value
 
     Layout.fillWidth: true
-    spacing: M3.s12
+    spacing: Theme.space.md
     visible: SettingsSearch.matches(label)
 
-    Text {
+    ThemedText {
         Layout.fillWidth: true
         text: r.label
-        color: M3.m3OnSurface
-        font: M3.bodyMedium
+        style: Theme.type.bodyLarge
     }
-    Text {
+    ThemedText {
         text: r.value
-        color: M3.m3OnSurfaceVariant
-        font: M3.monoMedium
+        style: Theme.type.monoMedium
+        color: Theme.color.fgSurfaceVariant
         elide: Text.ElideMiddle
     }
 }

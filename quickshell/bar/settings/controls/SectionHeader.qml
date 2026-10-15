@@ -1,19 +1,17 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import ".."
 import "../material"
 import QtQuick
 import QtQuick.Layouts
 
-Text {
+ThemedText {
     required property string label
     Layout.fillWidth: true
-    Layout.topMargin: M3.s16
+    Layout.topMargin: Theme.space.lg
     text: label.toUpperCase()
-    color: M3.primary
-    font {
-        family: M3.labelMedium.family
-        pixelSize: M3.labelMedium.pixelSize
-        weight: 700
-        letterSpacing: 1.5
-    }
+    style: Theme.type.labelMedium
+    emphasized: true
+    color: Theme.color.primary
+    font.letterSpacing: 1.2 * Theme.space.k
 }

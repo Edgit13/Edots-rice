@@ -1,48 +1,65 @@
 pragma ComponentBehavior: Bound
-import Quickshell
+import "root:/theme"
 import QtQuick
 
-// Material 3 IconButton: standard | filled | tonal | outlined.
+// M3 Expressive IconButton: standard | filled | tonal | outlined.
+// Форма: коло → (selected) squircle → (pressed) менший радіус.
 Rectangle {
     id: ib
+
     property string icon: ""
-    property string style: "standard"     // standard | filled | tonal | outlined
+    property string style: "standard"
     property bool selected: false
     property bool enabled_: true
     property string tooltip: ""
     signal clicked()
 
-    width: 38
-    height: 38
-    radius: M3.rFull
-    opacity: enabled_ ? 1.0 : M3.disabledOpacity
+    width: Theme.components.buttonS
+    height: Theme.components.buttonS
+    opacity: enabled_ ? 1 : Theme.components.disabledContent
 
-    readonly property color _fg: {
-        if (style === "filled") return ib.selected ? M3.m3OnPrimary : M3.primary
-        if (style === "tonal")  return M3.m3OnSecondaryContainer
-        if (style === "outlined") return M3.primary
-        return ib.selected ? M3.primary : M3.m3OnSurfaceVariant
-    }
+    radius: ma.pressed ? Theme.shape.iconButtonPressed
+          : ib.selected ? Theme.shape.radius("lg", height)
+          : Theme.shape.radius("full", height)
+    Behavior on radius { MotionAnimation { role: "morph" } }
+
     readonly property color _bg: {
-        if (style === "filled") return ib.selected ? M3.primary : M3.surfaceContainerHighest
-        if (style === "tonal")  return M3.secondaryContainer
-        return M3.surfaceContainerHigh
+        switch (style) {
+        case "filled":   return ib.selected ? Theme.color.primary : Theme.color.surfaceContainerHighest
+        case "tonal":    return ib.selected ? Theme.color.secondaryContainer : Theme.color.surfaceContainerHighest
+        case "outlined": return ib.selected ? Theme.color.inverseSurface : "transparent"
+        default:         return "transparent"
+        }
     }
-    color: {
-        if (!enabled_) return M3.surfaceContainerHigh
-        if (ma.pressed) return M3.pressedOf(_bg)
-        if (ma.containsMouse || ib.selected) return M3.hoverOf(_bg)
-        return style === "standard" && !ib.selected ? "transparent" : _bg
+    readonly property color _fg: {
+        switch (style) {
+        case "filled":   return ib.selected ? Theme.color.fgPrimary : Theme.color.primary
+        case "tonal":    return Theme.color.fgSecondaryContainer
+        case "outlined": return ib.selected ? Theme.color.inverseOnSurface : Theme.color.fgSurfaceVariant
+        default:         return ib.selected ? Theme.color.primary : Theme.color.fgSurfaceVariant
+        }
     }
-    border.width: style === "outlined" ? 1 : 0
-    border.color: M3.outline
-    Behavior on color { ColorAnimation { duration: M3.durFast } }
+
+    color: ib._bg
+    border.width: style === "outlined" && !ib.selected ? 1 : 0
+    border.color: Theme.color.outline
+    Behavior on color { MotionColorAnimation { role: "hover" } }
+
+    Rectangle {
+        anchors.fill: parent
+        radius: parent.radius
+        color: ib._fg
+        opacity: ma.pressed ? Theme.components.statePressed
+               : ma.containsMouse ? Theme.components.stateHover : 0
+        Behavior on opacity { MotionAnimation { role: "hover" } }
+    }
 
     Text {
         anchors.centerIn: parent
         text: ib.icon
         color: ib._fg
-        font { family: "Material Symbols Rounded"; pixelSize: 19 }
+        font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
+        Behavior on color { MotionColorAnimation { role: "hover" } }
     }
 
     MouseArea {
@@ -57,19 +74,19 @@ Rectangle {
     Rectangle {
         visible: ib.tooltip.length > 0 && ma.containsMouse
         anchors.top: parent.bottom
-        anchors.topMargin: 4
+        anchors.topMargin: Theme.space.xs
         anchors.horizontalCenter: parent.horizontalCenter
-        implicitWidth: tipTxt.implicitWidth + 12
-        implicitHeight: 22
-        radius: M3.rS
-        color: M3.surfaceContainerHigh
+        implicitWidth: tipTxt.implicitWidth + Theme.space.md * 2
+        implicitHeight: Theme.components.tooltipHeight
+        radius: Theme.shape.tooltip
+        color: Theme.color.inverseSurface
         z: 99
-        Text {
+        ThemedText {
             id: tipTxt
             anchors.centerIn: parent
             text: ib.tooltip
-            color: M3.m3OnSurface
-            font: M3.labelMedium
+            style: Theme.type.labelSmall
+            color: Theme.color.inverseOnSurface
         }
     }
 }

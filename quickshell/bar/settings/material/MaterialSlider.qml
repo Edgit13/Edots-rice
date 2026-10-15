@@ -1,9 +1,11 @@
 pragma ComponentBehavior: Bound
-import "."
+import "root:/theme"
 import QtQuick
 
+// M3 Expressive Slider: активна/неактивна частини з проміжком навколо handle, handle стискається при натисканні.
 Item {
     id: sl
+
     property real value: 0.5
     property bool enabled_: true
     property bool showValue: false
@@ -11,82 +13,93 @@ Item {
     property int decimals: 2
     signal moved(real v)
 
-    implicitHeight: 28
-    opacity: enabled_ ? 1 : M3.disabledOpacity
+    readonly property real trackH: Theme.components.sliderXS
+    readonly property real handleW: Theme.components.sliderHandleW * (ma.pressed ? 0.5 : 1)
+    readonly property real handleH: trackH + Theme.components.dp(12)
+    readonly property real gap: Theme.components.dp(6)
+
+    implicitHeight: handleH + Theme.space.sm
+    opacity: enabled_ ? 1 : Theme.components.disabledContent
 
     property bool _dragging: false
     property real _dragValue: 0
-
     readonly property real clamped: Math.max(0, Math.min(1, value))
-    readonly property real visualValue: _dragging ? _dragValue : clamped
+    property real shown: _dragging ? _dragValue : clamped
+    Behavior on shown { enabled: !sl._dragging; MotionAnimation { role: "move" } }
 
-    function _fromMouse(mx) {
-        return Math.max(0, Math.min(1, mx / width))
+    readonly property real hx: width * Math.max(0, Math.min(1, shown))
+
+    function _fromMouse(mx) { return Math.max(0, Math.min(1, mx / width)) }
+
+    // активна частина
+    Rectangle {
+        x: 0
+        y: (sl.height - sl.trackH) / 2
+        width: Math.max(0, sl.hx - sl.handleW / 2 - sl.gap)
+        height: sl.trackH
+        color: Theme.color.primary
+        topLeftRadius: height / 2
+        bottomLeftRadius: height / 2
+        topRightRadius: Theme.shape.xs
+        bottomRightRadius: Theme.shape.xs
     }
 
+    // неактивна частина
     Rectangle {
-        id: track
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
-        height: 16
-        radius: 8
-        color: M3.surfaceContainerHighest
-
-        Rectangle {
-            width: parent.width * sl.visualValue
-            height: parent.height
-            radius: parent.radius
-            color: M3.primary
-            Behavior on width { NumberAnimation { duration: M3.durFast } }
-        }
+        x: Math.min(sl.width, sl.hx + sl.handleW / 2 + sl.gap)
+        y: (sl.height - sl.trackH) / 2
+        width: Math.max(0, sl.width - x)
+        height: sl.trackH
+        color: Theme.color.secondaryContainer
+        topLeftRadius: Theme.shape.xs
+        bottomLeftRadius: Theme.shape.xs
+        topRightRadius: height / 2
+        bottomRightRadius: height / 2
     }
 
+    // handle
     Rectangle {
-        id: thumb
-        width: ma.pressed ? 6 : 4
-        height: 24
+        id: handle
+        width: sl.handleW
+        height: sl.handleH
         radius: width / 2
-        x: track.x + track.width * sl.visualValue - width / 2
-        anchors.verticalCenter: parent.verticalCenter
-        color: M3.primary
-        Behavior on width { NumberAnimation { duration: M3.durFast } }
+        x: sl.hx - width / 2
+        y: (sl.height - height) / 2
+        color: Theme.color.primary
+        Behavior on width { MotionAnimation { role: "press" } }
     }
 
+    // value indicator
     Rectangle {
-        visible: sl.showValue && ma.pressed
-        anchors.bottom: track.top
-        anchors.bottomMargin: 6
-        anchors.horizontalCenter: thumb.horizontalCenter
-        implicitWidth: valTxt.implicitWidth + M3.s12
-        implicitHeight: 22
-        radius: M3.rS
-        color: M3.surfaceContainerHighest
-
-        Text {
+        anchors.horizontalCenter: handle.horizontalCenter
+        anchors.bottom: handle.top
+        anchors.bottomMargin: Theme.space.xs
+        implicitWidth: valTxt.implicitWidth + Theme.space.lg
+        implicitHeight: Theme.components.chipHeight
+        radius: Theme.shape.full
+        color: Theme.color.inverseSurface
+        opacity: sl.showValue && ma.pressed ? 1 : 0
+        visible: opacity > 0.01
+        scale: ma.pressed ? 1 : 0.8
+        Behavior on opacity { MotionAnimation { role: "hover" } }
+        Behavior on scale { MotionAnimation { role: "morph" } }
+        ThemedText {
             id: valTxt
             anchors.centerIn: parent
-            text: sl.visualValue.toFixed(sl.decimals) + sl.suffix
-            color: M3.m3OnSurface
-            font: M3.labelMedium
+            text: sl.shown.toFixed(sl.decimals) + sl.suffix
+            style: Theme.type.labelLarge
+            color: Theme.color.inverseOnSurface
         }
     }
 
     MouseArea {
         id: ma
         anchors.fill: parent
-        anchors.topMargin: -6
-        anchors.bottomMargin: -6
         enabled: sl.enabled_
         cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onPressed: (m) => {
-            sl._dragging = true
-            sl._dragValue = sl._fromMouse(m.x)
-        }
-        onPositionChanged: (m) => {
-            if (pressed) sl._dragValue = sl._fromMouse(m.x)
-        }
-        onReleased: (m) => {
+        onPressed: m => { sl._dragging = true; sl._dragValue = sl._fromMouse(m.x) }
+        onPositionChanged: m => { if (pressed) sl._dragValue = sl._fromMouse(m.x) }
+        onReleased: m => {
             sl._dragValue = sl._fromMouse(m.x)
             sl._dragging = false
             sl.moved(sl._dragValue)

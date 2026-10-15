@@ -1,4 +1,5 @@
 import "root:/theme"
+import "root:/settings"
 import "root:/services"
 import "root:/media"
 import QtQuick
@@ -17,7 +18,7 @@ Item {
     readonly property bool hasMedia: MediaService.has && (MediaService.title.length > 0 || MediaService.playing)
     readonly property string displayTrack: MediaService.artist.length > 0
         ? (MediaService.artist + " — " + MediaService.title)
-        : (MediaService.title || "Media")
+        : (MediaService.title || Lang.t("ui.media.title"))
     readonly property real ringSize: Math.max(Theme.components.dp(20), cross - Theme.space.md)
 
     visible: hasMedia
@@ -40,9 +41,9 @@ Item {
         anchors.fill: parent
         radius: ma.pressed ? Math.min(width, height) * 0.28
               : Theme.shape.radius("full", Math.min(width, height))
-        color: ma.pressed ? Theme.stateLayer(Theme.color.tertiaryContainer, Theme.color.fgTertiaryContainer, Theme.components.statePressed)
-             : ma.containsMouse ? Theme.stateLayer(Theme.color.tertiaryContainer, Theme.color.fgTertiaryContainer, Theme.components.stateHover)
-             : Theme.color.tertiaryContainer
+        color: ma.pressed ? Theme.stateLayer(Theme.color.surfaceContainerHigh, Theme.color.fgSurface, Theme.components.statePressed)
+             : ma.containsMouse ? Theme.stateLayer(Theme.color.surfaceContainerHigh, Theme.color.fgSurface, Theme.components.stateHover)
+             : "transparent"
 
         scale: ma.pressed ? 0.95 : 1.0
         Behavior on radius { MotionAnimation { role: "morph" } }
@@ -63,14 +64,14 @@ Item {
                 height: root.ringSize
                 value: MediaService.fraction
                 icon: MediaService.playing ? "\ue034" : "\ue037"
-                ringColor: Theme.color.fgTertiaryContainer
+                ringColor: Theme.color.primary
             }
 
             ThemedText {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.displayTrack
                 style: Theme.type.labelMedium
-                color: Theme.color.fgTertiaryContainer
+                color: Theme.color.fgSurface
                 elide: Text.ElideRight
                 width: Math.min(Theme.components.dp(160), implicitWidth)
             }
@@ -83,7 +84,7 @@ Item {
             height: root.ringSize
             value: MediaService.fraction
             icon: MediaService.playing ? "\ue034" : "\ue037"
-            ringColor: Theme.color.fgTertiaryContainer
+            ringColor: Theme.color.primary
         }
     }
 

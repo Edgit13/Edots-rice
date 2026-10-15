@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import ".."
 import "../material"
 import QtQuick
@@ -11,29 +12,37 @@ ColumnLayout {
     required property var field
 
     Layout.fillWidth: true
-    spacing: M3.s4
-    visible: SettingsSearch.matches(r.field.label || r.key)
+    spacing: Theme.space.xs
+    visible: SettingsSearch.matches(Lang.searchText(r.cat, r.key, r.field))
 
     readonly property real value: Number(Settings.get(r.cat, r.key) ?? r.field.default)
     readonly property real lo: r.field.min !== undefined ? r.field.min : 0
     readonly property real hi: r.field.max !== undefined ? r.field.max : 100
     readonly property real fraction: (value - lo) / Math.max(0.0001, hi - lo)
     readonly property int decimals: (r.field.step !== undefined && r.field.step < 1) ? 2 : 0
-    readonly property string suffix: r.field.suffix || ""
+    readonly property string suffix: Lang.unit(r.field.suffix || "")
 
     RowLayout {
         Layout.fillWidth: true
-        spacing: M3.s8
-        Text {
+        spacing: Theme.space.sm
+        ThemedText {
             Layout.fillWidth: true
-            text: r.field.label || r.key
-            color: M3.m3OnSurface
-            font: M3.bodyLarge
+            text: Lang.label(r.cat, r.key, r.field)
+            style: Theme.type.bodyLarge
         }
-        Text {
-            text: r.value.toFixed(r.decimals) + r.suffix
-            color: M3.m3OnSurfaceVariant
-            font: M3.labelMedium
+        // значення — chip
+        Rectangle {
+            implicitWidth: valTxt.implicitWidth + Theme.space.lg
+            implicitHeight: Theme.components.chipHeight - Theme.space.xs
+            radius: Theme.shape.chip
+            color: Theme.color.surfaceContainerHighest
+            ThemedText {
+                id: valTxt
+                anchors.centerIn: parent
+                text: r.value.toFixed(r.decimals) + r.suffix
+                style: Theme.type.monoSmall
+                color: Theme.color.fgSurfaceVariant
+            }
         }
         ResetDot { cat: r.cat; key: r.key }
     }
@@ -52,12 +61,12 @@ ColumnLayout {
         }
     }
 
-    Text {
-        visible: !!r.field.desc
+    ThemedText {
+        visible: Lang.desc(r.cat, r.key, r.field).length > 0
         Layout.fillWidth: true
-        text: r.field.desc || ""
-        color: M3.m3OnSurfaceVariant
-        font: M3.bodySmall
+        text: Lang.desc(r.cat, r.key, r.field)
+        style: Theme.type.bodySmall
+        color: Theme.color.fgSurfaceVariant
         wrapMode: Text.Wrap
     }
 }

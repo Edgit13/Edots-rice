@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import ".."
 import "../material"
 import QtQuick
@@ -13,24 +14,23 @@ RowLayout {
     signal clicked()
 
     Layout.fillWidth: true
-    spacing: M3.s12
+    spacing: Theme.space.md
     visible: SettingsSearch.matches(label)
 
     ColumnLayout {
         Layout.fillWidth: true
-        spacing: 2
-        Text {
+        spacing: 0
+        ThemedText {
             Layout.fillWidth: true
             text: r.label
-            color: M3.m3OnSurface
-            font: M3.bodyLarge
+            style: Theme.type.bodyLarge
         }
-        Text {
+        ThemedText {
             Layout.fillWidth: true
             visible: r.description.length > 0
             text: r.description
-            color: M3.m3OnSurfaceVariant
-            font: M3.bodySmall
+            style: Theme.type.bodySmall
+            color: Theme.color.fgSurfaceVariant
             wrapMode: Text.Wrap
         }
     }

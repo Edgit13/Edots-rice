@@ -1,4 +1,5 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import ".."
 import "../material"
 import QtQuick
@@ -11,33 +12,32 @@ RowLayout {
     required property var field
 
     Layout.fillWidth: true
-    spacing: M3.s12
-    visible: SettingsSearch.matches(r.field.label || r.key)
+    spacing: Theme.space.md
+    visible: SettingsSearch.matches(Lang.searchText(r.cat, r.key, r.field))
 
     ColumnLayout {
         Layout.fillWidth: true
-        spacing: 2
-        Text {
+        spacing: 0
+        ThemedText {
             Layout.fillWidth: true
-            text: r.field.label || r.key
-            color: M3.m3OnSurface
-            font: M3.bodyLarge
+            text: Lang.label(r.cat, r.key, r.field)
+            style: Theme.type.bodyLarge
         }
-        Text {
+        ThemedText {
             Layout.fillWidth: true
-            visible: !!r.field.desc
-            text: r.field.desc || ""
-            color: M3.m3OnSurfaceVariant
-            font: M3.bodySmall
+            visible: Lang.desc(r.cat, r.key, r.field).length > 0
+            text: Lang.desc(r.cat, r.key, r.field)
+            style: Theme.type.bodySmall
+            color: Theme.color.fgSurfaceVariant
             wrapMode: Text.Wrap
         }
     }
+
+    ResetDot { cat: r.cat; key: r.key }
 
     MaterialSwitch {
         Layout.alignment: Qt.AlignVCenter
         checked: !!Settings.get(r.cat, r.key)
         onToggled: Settings.set(r.cat, r.key, !checked)
     }
-
-    ResetDot { cat: r.cat; key: r.key }
 }

@@ -1,51 +1,77 @@
 pragma ComponentBehavior: Bound
+import "root:/theme"
 import QtQuick
 import QtQuick.Layouts
 
-// Material 3 SegmentedButtons: options=[{icon,label}], selectedIndex.
-Rectangle {
+// M3 Expressive Connected Button Group: options=[{icon,label}], selectedIndex.
+// Вибраний елемент — повна пігулка (primary), решта — заокруглені лише зовнішні краї.
+Item {
     id: seg
+
     property var options: []
     property int selectedIndex: 0
     signal selected(int index)
 
     Layout.fillWidth: true
-    implicitHeight: 38
-    radius: M3.rFull
-    color: M3.surfaceContainerHigh
-    clip: true
+    implicitHeight: Theme.components.buttonS
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 4
-        spacing: 0
+        spacing: Theme.space.listGap
 
         Repeater {
             model: seg.options
             Rectangle {
+                id: cell
                 required property var modelData
                 required property int index
+                readonly property bool sel: seg.selectedIndex === index
+                readonly property bool isFirst: index === 0
+                readonly property bool isLast: index === seg.options.length - 1
+                readonly property real big: height / 2
+                readonly property real small: Theme.shape.xs
+                readonly property color fg: sel ? Theme.color.fgPrimary : Theme.color.fgSurfaceVariant
+
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                radius: M3.rFull
-                color: seg.selectedIndex === index
-                    ? M3.secondaryContainer
-                    : (ma.containsMouse ? M3.hoverOf(M3.surfaceContainerHighest) : "transparent")
-                Behavior on color { ColorAnimation { duration: M3.durFast } }
+                color: sel ? Theme.color.primary : Theme.color.surfaceContainerHighest
+
+                topLeftRadius: (sel || isFirst) ? big : small
+                bottomLeftRadius: (sel || isFirst) ? big : small
+                topRightRadius: (sel || isLast) ? big : small
+                bottomRightRadius: (sel || isLast) ? big : small
+
+                Behavior on color { MotionColorAnimation { role: "stateChange" } }
+                Behavior on topLeftRadius { MotionAnimation { role: "morph" } }
+                Behavior on bottomLeftRadius { MotionAnimation { role: "morph" } }
+                Behavior on topRightRadius { MotionAnimation { role: "morph" } }
+                Behavior on bottomRightRadius { MotionAnimation { role: "morph" } }
+
+                Rectangle {
+                    anchors.fill: parent
+                    topLeftRadius: parent.topLeftRadius
+                    bottomLeftRadius: parent.bottomLeftRadius
+                    topRightRadius: parent.topRightRadius
+                    bottomRightRadius: parent.bottomRightRadius
+                    color: cell.fg
+                    opacity: ma.pressed ? Theme.components.statePressed
+                           : ma.containsMouse ? Theme.components.stateHover : 0
+                    Behavior on opacity { MotionAnimation { role: "hover" } }
+                }
 
                 RowLayout {
                     anchors.centerIn: parent
-                    spacing: M3.s4
+                    spacing: Theme.space.xs
                     Text {
-                        visible: modelData.icon !== undefined && modelData.icon.length > 0
-                        text: modelData.icon || ""
-                        color: seg.selectedIndex === index ? M3.m3OnSecondaryContainer : M3.m3OnSurface
-                        font { family: "Material Symbols Rounded"; pixelSize: 16 }
+                        visible: cell.modelData.icon !== undefined && cell.modelData.icon.length > 0
+                        text: cell.modelData.icon || ""
+                        color: cell.fg
+                        font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
                     }
-                    Text {
-                        text: modelData.label || String(modelData)
-                        color: seg.selectedIndex === index ? M3.m3OnSecondaryContainer : M3.m3OnSurface
-                        font: M3.labelLarge
+                    ThemedText {
+                        text: cell.modelData.label || String(cell.modelData)
+                        style: Theme.type.labelLarge
+                        color: cell.fg
                     }
                 }
 
@@ -55,8 +81,8 @@ Rectangle {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        seg.selectedIndex = index
-                        seg.selected(index)
+                        seg.selectedIndex = cell.index
+                        seg.selected(cell.index)
                     }
                 }
             }

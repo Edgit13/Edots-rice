@@ -50,6 +50,7 @@ alias c='clear'
 
 alias grep='grep --color=auto'
 alias ls='ls -la --group-directories-first --color=auto'
+alias ll='eza -Ga --icons'
 
 # --- 6. Fastfetch on Startup ---
 if type -q fastfetch

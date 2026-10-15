@@ -1,4 +1,5 @@
 import "root:/theme"
+import "root:/settings"
 import "root:/services"
 import "root:/media"
 import QtQuick
@@ -21,7 +22,7 @@ DashCard {
             color: Theme.color.fgSurfaceVariant
         }
         ThemedText {
-            text: "Нічого не грає"
+            text: Lang.t("ui.media.none")
             style: Theme.type.bodyLarge
             color: Theme.color.fgSurfaceVariant
         }
@@ -54,7 +55,7 @@ DashCard {
             }
             ThemedText {
                 Layout.fillWidth: true
-                text: MediaService.title || "Без назви"
+                text: MediaService.title || Lang.t("ui.media.unknown")
                 style: Theme.type.titleMedium
                 emphasized: true
                 elide: Text.ElideRight
