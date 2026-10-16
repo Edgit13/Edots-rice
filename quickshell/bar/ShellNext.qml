@@ -16,6 +16,8 @@ import Quickshell.Io
 import QtQuick
 
 ShellRoot {
+    Component.onCompleted: LayoutService.ensure()
+
     id: root
 
     TaskManagerWindow { id: taskManagerWindow }

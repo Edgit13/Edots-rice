@@ -17,6 +17,7 @@ Loader {
         case "color": return colorComp
         case "str":   return strComp
         case "pos":   return posComp
+        case "layout": return layoutComp
         }
         return null
     }
@@ -32,6 +33,9 @@ Loader {
     }
     Component { id: colorComp
         RowColor { cat: root.cat; key: root.key; field: root.field }
+    }
+    Component { id: layoutComp
+        RowLayoutPicker { cat: root.cat; key: root.key; field: root.field }
     }
     Component { id: posComp
         RowPosition { cat: root.cat; key: root.key; field: root.field }

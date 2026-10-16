@@ -24,5 +24,8 @@
   },
   "notif": {
     "dnd": false
+  },
+  "layout": {
+    "active": "dwindle"
   }
 }

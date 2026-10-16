@@ -93,6 +93,15 @@ Singleton {
                 maxVisible: { type: "num", min: 1, max: 8, step: 1, default: 4, label: "Max popups", path: "notif.maxVisible" }
             }
         },
+        layout: {
+            file: "bar.json",
+            label: "section.layout",
+            fields: {
+                active: { type: "layout", default: "dwindle", label: "Window layout", desc: "Applied to all tags. Needs source=~/.config/mango/layout.conf in config.conf.", path: "layout.active",
+                          options: ["dwindle", "tile", "scroller", "monocle", "grid", "deck", "center_tile", "right_tile", "vertical_tile", "vertical_scroller", "vertical_grid", "vertical_deck", "fair", "vertical_fair"] },
+                cycle:  { type: "str", default: "dwindle,scroller,grid,monocle", label: "Layout cycle", desc: "Comma-separated list for switch_layout (SUPER+Tab).", path: "layout.cycle" }
+            }
+        },
         clock: {
             file: "clock.json",
             label: "section.clock",
@@ -150,6 +159,7 @@ Singleton {
         { name: "page.bar",        icon: "space_dashboard", cats: ["bar", "modules"] },
         { name: "page.osd",        icon: "volume_up",       cats: ["osd"] },
         { name: "page.notif",      icon: "notifications",   cats: ["notif"] },
+        { name: "page.layout",     icon: "view_quilt",      cats: ["layout"] },
         { name: "page.lockscreen", icon: "lock",            cats: ["lockscreen"] },
         { name: "page.clock",      icon: "schedule",        cats: ["clock"] },
         { name: "page.about",      icon: "info",            cats: [] }
