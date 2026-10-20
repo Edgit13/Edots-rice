@@ -7,6 +7,7 @@ Item {
     id: root
 
     property bool accent: false                    // тональна підсвітка (напр. є непрочитані)
+    property color accentColor: Theme.color.secondaryContainer
     property color stateColor: Theme.color.fgSurface
     property int acceptedButtons: Qt.LeftButton
     default property alias content: holder.data
@@ -20,7 +21,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: root.pressed ? Theme.shape.radius("md", height) : Theme.shape.radius("full", height)
-        color: root.accent ? Theme.color.secondaryContainer : "transparent"
+        color: root.accent ? root.accentColor : "transparent"
         Behavior on radius { MotionAnimation { role: "morph" } }
         Behavior on color { MotionColorAnimation { role: "hover" } }
 

@@ -1,3 +1,5 @@
+import "root:/services"
+import "root:/settings"
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -21,6 +23,7 @@ Item {
     property bool toFile: true
     property int delaySec: 0
     property bool busy: false
+    readonly property string recAudio: RecordService.optAudio      // system | mic | none (Settings → Запис екрана)
 
     readonly property string saveDir: Quickshell.env("HOME") + "/Pictures/Screenshots"
 
@@ -93,6 +96,18 @@ Item {
                 }
             }
 
+            // запис: закриваємо оверлей і віддаємо область скрипту screenrec.sh (він сам чекає, поки оверлей зникне)
+            function doRecord() {
+                let geom = "", out = ""
+                if (root.mode === "screen") out = screen.name
+                else if (hasSel) geom = Math.round(screen.x + sx) + "," + Math.round(screen.y + sy) + " " +
+                                        Math.round(sw) + "x" + Math.round(sh)
+                else return
+                const d = root.delaySec
+                root.dismiss()
+                RecordService.start(geom, out, d)
+            }
+
             function resetAndGrab() {
                 win.ready = false
                 win.hasSel = false
@@ -122,6 +137,7 @@ Item {
                 Keys.onEscapePressed: root.dismiss()
                 Keys.onReturnPressed: win.doCapture()
                 Keys.onEnterPressed: win.doCapture()
+                Keys.onPressed: e => { if (e.key === Qt.Key_R) { win.doRecord(); e.accepted = true } }
 
                 onVisibleChanged: if (visible) canvas.forceActiveFocus()
 
@@ -279,8 +295,8 @@ Item {
                         color: M3.inverseOnSurface
                         font.pixelSize: 14
                         text: root.mode === "screen"
-                              ? "Entire screen  ·  Enter to capture  ·  Esc to cancel"
-                              : "Drag to select  ·  Enter to capture  ·  Esc to cancel"
+                              ? "Entire screen  ·  Enter capture  ·  R record  ·  Esc cancel"
+                              : "Drag to select  ·  Enter capture  ·  R record  ·  Esc cancel"
                     }
                 }
 
@@ -338,6 +354,12 @@ Item {
                             toggled: root.delaySec > 0
                             onClicked: root.delaySec = ({0: 3, 3: 5, 5: 10, 10: 0})[root.delaySec]
                         }
+                        MButton {
+                            label: Lang.t("ui.rec.audio." + root.recAudio)
+                            icon: root.recAudio === "none" ? "volume_off" : (root.recAudio === "mic" ? "mic" : "volume_up")
+                            toggled: root.recAudio !== "none"
+                            onClicked: Settings.set("record", "audio", ({ system: "mic", mic: "none", none: "system" })[root.recAudio])
+                        }
 
                         Rectangle { width: 1; height: 24; color: M3.outlineVariant; Layout.leftMargin: 4; Layout.rightMargin: 4 }
 
@@ -350,6 +372,12 @@ Item {
                             label: "Capture"; icon: "photo_camera"
                             enabled: (root.toFile || root.toClipboard) && (root.mode === "screen" || win.hasSel)
                             onClicked: win.doCapture()
+                        }
+                        MButton {
+                            variant: "danger"
+                            label: Lang.t("ui.rec.record"); icon: "fiber_manual_record"
+                            enabled: root.mode === "screen" || win.hasSel
+                            onClicked: win.doRecord()
                         }
                     }
                 }

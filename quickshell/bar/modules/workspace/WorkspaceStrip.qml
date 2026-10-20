@@ -3,10 +3,11 @@ import "root:/services"
 import QtQuick
 
 // WorkspaceStrip — M3 Expressive теги (MangoWM), у дусі end-4:
-//  • сусідні зайняті теги зливаються в одну «connected» групу
-//  • активний тег — primary-індикатор, що еластично розтягується
-//    і має ту саму форму, що й фон групи (заокруглений лише зовні)
-//  • порожній тег — крапка (при hover перетворюється на номер)
+//  • сусідні зайняті теги зливаються в одну «connected» групу (заокруглені лише зовнішні краї)
+//  • активний тег — primary-індикатор, що еластично розтягується між осередками
+//  • порожній тег — крапка (при hover перетворюється на номер), urgent — слот просто перефарбовується в червоний
+// Колесо миші — попередній/наступний тег.
+//   WorkspaceStrip { monitor: win.monitorName; vertical: win.vertical; itemSize: win.cross - Theme.space.sm }
 Item {
     id: root
 
@@ -15,9 +16,12 @@ Item {
     property real itemSize: 24
 
     readonly property int count: MangoService.tagCount(monitor)
-    readonly property int activeIdx: MangoService.activeIndex(monitor)
+    readonly property int activeIdx: MangoService.activeIndex(monitor)   // 1-based, 0 = невідомо
     readonly property real cell: itemSize
     readonly property real gap: Theme.space.xxs
+
+    // urgent: слот просто перефарбовується в червоний (errorContainer) — жодних додаткових фігур поверх
+    readonly property color urgentBg: Theme.color.errorContainer
 
     implicitWidth: vertical ? cell : cell * count
     implicitHeight: vertical ? cell * count : cell
@@ -28,6 +32,7 @@ Item {
         return t.occupied || t.urgent || t.active
     }
 
+    // ---- еластичний індикатор ----
     property real indStart: 0
     property real indEnd: 0
     property bool forward: true
@@ -45,7 +50,7 @@ Item {
         if (activeIdx <= 0) return
         if (!hadActive) { snap(); return }
         const e = activeIdx * cell
-        forward = e > indEnd
+        forward = e > indEnd              // ведучий край рухається швидше
         indStart = (activeIdx - 1) * cell
         indEnd = e
     }
@@ -63,6 +68,10 @@ Item {
             required property int index
             readonly property int n: index + 1
             readonly property bool isOn: root.filled(n)
+            readonly property bool urgent: {
+                const t = MangoService.tag(root.monitor, n)
+                return !!t.urgent && !t.active
+            }
             readonly property bool hasPrev: root.filled(n - 1)
             readonly property bool hasNext: root.filled(n + 1)
             readonly property real big: Math.min(width, height) / 2
@@ -74,8 +83,9 @@ Item {
             y: root.vertical ? index * root.cell + root.gap / 2 : root.gap / 2
             width: root.cell - root.gap
             height: root.cell - root.gap
-            color: Theme.color.secondaryContainer
+            color: bg.urgent ? root.urgentBg : Theme.color.secondaryContainer
             opacity: isOn ? 1 : 0
+            Behavior on color { MotionColorAnimation { role: "stateChange" } }
             visible: opacity > 0.01
 
             topLeftRadius: rStart
@@ -91,31 +101,26 @@ Item {
         }
     }
 
-    // ---- шар 2: індикатор активного тега (та сама форма, що й фон) ----
+    // ---- шар 2: індикатор активного тега ----
     Rectangle {
         id: indicator
         visible: root.activeIdx > 0
         color: Theme.color.primary
-
-        readonly property int a: root.activeIdx
-        readonly property bool hasPrev: root.filled(a - 1)
-        readonly property bool hasNext: root.filled(a + 1)
-        readonly property real big: Math.min(width, height) / 2
-        readonly property real small: Theme.shape.xs
-        readonly property real rStart: hasPrev ? small : big
-        readonly property real rEnd: hasNext ? small : big
-
         readonly property real len: Math.max(0, root.indEnd - root.indStart - root.gap)
         x: root.vertical ? root.gap / 2 : root.indStart + root.gap / 2
         y: root.vertical ? root.indStart + root.gap / 2 : root.gap / 2
         width: root.vertical ? root.cell - root.gap : len
         height: root.vertical ? len : root.cell - root.gap
 
-        topLeftRadius:    rStart
-        topRightRadius:   root.vertical ? rStart : rEnd
-        bottomLeftRadius: root.vertical ? rEnd   : rStart
+        // форма як у сусідніх сегментів: круглі лише зовнішні краї групи, до сусідів — малі радіуси
+        readonly property real big: (root.cell - root.gap) / 2
+        readonly property real small: Theme.shape.xs
+        readonly property real rStart: root.filled(root.activeIdx - 1) ? small : big
+        readonly property real rEnd: root.filled(root.activeIdx + 1) ? small : big
+        topLeftRadius: rStart
+        bottomLeftRadius: root.vertical ? rEnd : rStart
+        topRightRadius: root.vertical ? rStart : rEnd
         bottomRightRadius: rEnd
-
         Behavior on topLeftRadius { MotionAnimation { role: "morph" } }
         Behavior on topRightRadius { MotionAnimation { role: "morph" } }
         Behavior on bottomLeftRadius { MotionAnimation { role: "morph" } }
@@ -143,15 +148,7 @@ Item {
             scale: ma.pressed ? 0.88 : 1
             Behavior on scale { MotionAnimation { role: "press" } }
 
-            Rectangle {
-                anchors.centerIn: parent
-                width: root.cell - root.gap * 3
-                height: width
-                radius: width / 2
-                color: Theme.color.errorContainer
-                opacity: lab.urgent && !lab.isActive ? 1 : 0
-                Behavior on opacity { MotionAnimation { role: "stateChange" } }
-            }
+            // hover state layer (для порожніх)
             Rectangle {
                 anchors.centerIn: parent
                 width: root.cell - root.gap * 2
@@ -161,6 +158,7 @@ Item {
                 opacity: lab.hovered && !lab.isFilled ? Theme.components.stateHover : 0
                 Behavior on opacity { MotionAnimation { role: "hover" } }
             }
+            // крапка (порожній тег)
             Rectangle {
                 anchors.centerIn: parent
                 width: Math.max(4, root.cell * 0.2)
@@ -170,6 +168,7 @@ Item {
                 opacity: (!lab.isFilled && !lab.hovered) ? 0.7 : 0
                 Behavior on opacity { MotionAnimation { role: "hover" } }
             }
+            // номер
             ThemedText {
                 anchors.centerIn: parent
                 text: lab.n

@@ -30,7 +30,7 @@ PanelWindow {
         return names.length > 0 && main === monitorName
     }
 
-    readonly property var overlaySurfaces: ["launcher", "wallpaper", "clipboard", "mixer", "wifi", "media", "power"]
+    readonly property var overlaySurfaces: ["launcher", "wallpaper", "clipboard", "mixer", "wifi", "media", "power", "binds", "resources"]
     readonly property string activeSurface: ShellState.activeSurface
     readonly property bool isAllowedSurface: overlaySurfaces.indexOf(activeSurface) >= 0
     readonly property bool isOpen: isAllowedSurface
@@ -50,7 +50,9 @@ PanelWindow {
         mixer:     { icon: "\ue429", title: "ui.surface.mixer",     w: 480, h: 420, end: true,  typing: false },
         wifi:      { icon: "\ue63e", title: "ui.surface.wifi",      w: 460, h: 440, end: true,  typing: false },
         media:     { icon: "\ue405", title: "ui.surface.media",     w: 460, h: 320, end: true,  typing: false },
-        power:     { icon: "\ue8ac", title: "ui.surface.power",     w: 360, h: 290, end: true,  typing: false }
+        power:     { icon: "\ue8ac", title: "ui.surface.power",     w: 360, h: 290, end: true,  typing: false },
+        binds:     { icon: "\ue312", title: "ui.surface.binds",     w: 700, h: 620, end: false, typing: true },
+        resources: { icon: "\ue322", title: "ui.surface.resources", w: 520, h: 560, end: false, typing: false }
     })
     readonly property var m: meta[shownSurface] || meta.launcher
 
@@ -190,6 +192,8 @@ PanelWindow {
                     Loader { anchors.fill: parent; active: win.shownSurface === "wifi";      visible: active; sourceComponent: WifiSurface {} }
                     Loader { anchors.fill: parent; active: win.shownSurface === "media";     visible: active; sourceComponent: MediaSurface {} }
                     Loader { anchors.fill: parent; active: win.shownSurface === "power";     visible: active; sourceComponent: PowerSurface {} }
+                    Loader { anchors.fill: parent; active: win.shownSurface === "binds";     visible: active; sourceComponent: BindsSurface {} }
+                    Loader { anchors.fill: parent; active: win.shownSurface === "resources"; visible: active; sourceComponent: ResourcesSurface {} }
                 }
             }
         }

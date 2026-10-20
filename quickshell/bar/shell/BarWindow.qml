@@ -4,6 +4,8 @@ import "root:/shell"
 import "root:/modules/common"
 import "root:/modules/workspace"
 import "root:/modules/resources"
+import "root:/modules/gamemode"
+import "root:/modules/record"
 import "root:/modules/launcher"
 import "root:/modules/window"
 import "root:/modules/clock"
@@ -159,6 +161,7 @@ PanelWindow {
                         vertical: win.vertical
                         cross: win.inner
                         visible: Config.get("modules", "resources") !== false
+                        onResourcesRequested: ShellState.toggleSurface("resources")
                     }
                 },
                 BarGroup {
@@ -185,6 +188,14 @@ PanelWindow {
             trailing: [
                 BarGroup {
                     vertical: win.vertical
+                    RecordModule {
+                        vertical: win.vertical
+                        cross: win.inner
+                    }
+                    GameModeModule {
+                        vertical: win.vertical
+                        cross: win.inner
+                    }
                     VolumeModule {
                         vertical: win.vertical
                         cross: win.inner

@@ -4,6 +4,7 @@ pragma ComponentBehavior: Bound
 import "root:/shell"
 import "root:/theme"
 import "root:/services"
+import "root:/states"
 import "root:/osd"
 import "root:/notifications"
 import "root:/dock"
@@ -16,7 +17,11 @@ import Quickshell.Io
 import QtQuick
 
 ShellRoot {
-    Component.onCompleted: LayoutService.ensure()
+    Component.onCompleted: {
+        LayoutService.ensure()
+        GameModeState.ensure()
+        RecordService.ensure()
+    }
 
     id: root
 
@@ -53,6 +58,10 @@ ShellRoot {
         function toggleMedia(): void { ShellState.toggleSurface("media") }
         function showPower(): void   { ShellState.openSurface("power") }
         function togglePower(): void { ShellState.toggleSurface("power") }
+        function showBinds(): void   { ShellState.openSurface("binds") }
+        function toggleBinds(): void { ShellState.toggleSurface("binds") }
+        function showResources(): void   { ShellState.openSurface("resources") }
+        function toggleResources(): void { ShellState.toggleSurface("resources") }
         function showSettings(): void   { ShellState.toggleSettings() }
         function toggleSettings(): void { ShellState.toggleSettings() }
         function close(): void { ShellState.closeSurfaces() }
@@ -88,7 +97,9 @@ ShellRoot {
         target: "screentool"
         function open(): void   { screenTool.start() }
         function close(): void  { screenTool.dismiss() }
-        function toggle(): void { screenTool.toggle() }
+        // під час запису toggle зупиняє його (той самий SUPER+U / Print)
+        function toggle(): void { if (RecordService.recording) RecordService.stop(); else screenTool.toggle() }
+        function stop(): void   { RecordService.stop() }
     }
 
     Variants {

@@ -2,6 +2,7 @@ import "root:/theme"
 import "root:/services"
 import "root:/media"
 import "root:/modules/common"
+import "root:/shell"
 import QtQuick
 
 // ResourcesModule — кільця CPU / RAM з відсотками (як Resources в end-4). Вмикається: Settings → Бар → Модулі.
@@ -10,6 +11,8 @@ Item {
 
     property bool vertical: false
     property int cross: Theme.components.islandCompact
+
+    signal resourcesRequested()
 
     readonly property real ringSize: Math.max(Theme.components.dp(20), cross - Theme.space.sm)
     readonly property real cpu: PerformanceService.cpuPercent
@@ -30,6 +33,10 @@ Item {
 
     BarButton {
         anchors.fill: parent
+        onClicked: {
+            root.resourcesRequested()
+            ShellState.toggleSurface("resources")
+        }
 
         Row {
             id: row

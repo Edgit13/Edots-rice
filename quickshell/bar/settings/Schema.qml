@@ -102,6 +102,30 @@ Singleton {
                 cycle:  { type: "str", default: "dwindle,scroller,grid,monocle", label: "Layout cycle", desc: "Comma-separated list for switch_layout (SUPER+Tab).", path: "layout.cycle" }
             }
         },
+        gamemode: {
+            file: "bar.json",
+            label: "section.gamemode",
+            fields: {
+                effects: { type: "bool", default: true, label: "Disable compositor effects", desc: "Blur, shadows, rounded corners and animations in MangoWM (setoption).", path: "gamemode.effects" },
+                tearing: { type: "bool", default: true, label: "Allow tearing", desc: "Fullscreen games may skip vsync for lower latency.", path: "gamemode.tearing" },
+                power:   { type: "bool", default: true, label: "Performance power profile", desc: "power-profiles-daemon → performance, restored afterwards.", path: "gamemode.power" },
+                idle:    { type: "bool", default: true, label: "Pause idle lock", desc: "swayidle is paused so the screen stays on.", path: "gamemode.idle" },
+                dnd:     { type: "bool", default: true, label: "Do not disturb", path: "gamemode.dnd" },
+                motion:  { type: "bool", default: true, label: "Disable shell animations", path: "gamemode.motion" },
+                notify:  { type: "bool", default: true, label: "Notify on toggle", path: "gamemode.notify" }
+            }
+        },
+        record: {
+            file: "bar.json",
+            label: "section.record",
+            fields: {
+                audio:   { type: "enum", default: "system", options: ["system", "mic", "none"], label: "Audio", desc: "System sound, microphone or no audio.", path: "record.audio" },
+                fps:     { type: "num", min: 10, max: 120, step: 5, default: 30, label: "Frame rate", suffix: " fps", path: "record.fps" },
+                encoder: { type: "enum", default: "software", options: ["software", "vaapi"], label: "Encoder", desc: "vaapi uses the GPU (h264_vaapi) — much lighter on the CPU.", path: "record.encoder" },
+                dir:     { type: "str", default: "~/Videos/Recordings", label: "Save folder", path: "record.dir" },
+                notify:  { type: "bool", default: true, label: "Notify when saved", desc: "With a thumbnail and Open / Show in folder / Copy path actions.", path: "record.notify" }
+            }
+        },
         clock: {
             file: "clock.json",
             label: "section.clock",
@@ -160,6 +184,8 @@ Singleton {
         { name: "page.osd",        icon: "volume_up",       cats: ["osd"] },
         { name: "page.notif",      icon: "notifications",   cats: ["notif"] },
         { name: "page.layout",     icon: "view_quilt",      cats: ["layout"] },
+        { name: "page.gamemode",   icon: "sports_esports",  cats: ["gamemode"] },
+        { name: "page.record",     icon: "videocam",        cats: ["record"] },
         { name: "page.lockscreen", icon: "lock",            cats: ["lockscreen"] },
         { name: "page.clock",      icon: "schedule",        cats: ["clock"] },
         { name: "page.about",      icon: "info",            cats: [] }

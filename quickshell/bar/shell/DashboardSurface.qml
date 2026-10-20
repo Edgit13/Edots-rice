@@ -2,6 +2,7 @@ import "root:/theme"
 import "root:/dashboard"
 import "root:/services"
 import "root:/shell"
+import "root:/settings"
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -49,10 +50,11 @@ Item {
     readonly property int contentHeight: Math.max(300, Math.round(effectiveHeight) - 152)
 
     readonly property var tabs: [
-        { glyph: "\ue871", label: "Огляд" },
-        { glyph: "\ue405", label: "Медіа" },
-        { glyph: "\ue85c", label: "Продуктивність" },
-        { glyph: "\uef4c", label: "Робочі місця" }
+        { glyph: "\ue871", label: Lang.t("ui.tab.overview") },
+        { glyph: "\ue405", label: Lang.t("ui.tab.media") },
+        { glyph: "\ue85c", label: Lang.t("ui.tab.performance") },
+        { glyph: "\uef4c", label: Lang.t("ui.tab.workspaces") },
+        { glyph: "\ue935", label: Lang.t("ui.tab.planner") }
     ]
 
     // Slide offset when hidden — depends on bar side.
@@ -206,7 +208,7 @@ Item {
                 clip: true
 
                 Repeater {
-                    model: 4
+                    model: root.tabs.length
                     Item {
                         id: pageWrap
                         required property int index
@@ -229,7 +231,8 @@ Item {
                                 pageOverview,
                                 pageMedia,
                                 pagePerformance,
-                                pageWorkspaces
+                                pageWorkspaces,
+                                pagePlanner
                             ][pageWrap.index]
                         }
                     }
@@ -314,6 +317,7 @@ Item {
     Component { id: pageMedia;       MediaTab       { } }
     Component { id: pagePerformance; PerformanceTab { } }
     Component { id: pageWorkspaces;  WorkspacesTab  { } }
+    Component { id: pagePlanner;     PlannerTab     { } }
 
     // ── Reveal helper: staggered fade + scale-in ────────────
     component Reveal: Item {

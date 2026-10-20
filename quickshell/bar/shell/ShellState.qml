@@ -8,6 +8,7 @@ Singleton {
     id: root
 
     property string activeSurface: "idle"
+    property string activeMonitor: ""
 
     signal openDashboardRequested(string monitor)
     signal toggleDashboardRequested(string monitor)
@@ -21,17 +22,23 @@ Singleton {
     signal toggleTasksRequested()
     signal closeTasksRequested()
 
-    function openSurface(surface) {
+    function openSurface(surface, monitor) {
+        activeMonitor = monitor || ""
         activeSurface = surface
     }
 
-    function toggleSurface(surface) {
-        if (activeSurface === surface) activeSurface = "idle"
-        else openSurface(surface)
+    function toggleSurface(surface, monitor) {
+        if (activeSurface === surface) {
+            activeSurface = "idle"
+            activeMonitor = ""
+        } else {
+            openSurface(surface, monitor)
+        }
     }
 
     function closeSurfaces() {
         activeSurface = "idle"
+        activeMonitor = ""
     }
 
     function openDashboard(monitor) { openDashboardRequested(monitor || "") }

@@ -19,6 +19,9 @@ Singleton {
     readonly property color secondaryContainer:   Theme.color.secondaryContainer
     readonly property color fgSecondaryContainer: Theme.color.fgSecondaryContainer
 
+    readonly property color errorContainer:       Theme.color.errorContainer
+    readonly property color fgErrorContainer:     Theme.color.fgErrorContainer
+
     readonly property color inverseSurface:       Theme.color.inverseSurface
     readonly property color inverseOnSurface:     Theme.color.inverseOnSurface
 

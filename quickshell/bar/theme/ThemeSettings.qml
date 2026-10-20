@@ -1,5 +1,6 @@
 pragma Singleton
 import "root:/settings"
+import "root:/states"
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -13,10 +14,12 @@ Singleton {
     readonly property bool dynamicColor:       Settings.get("theme", "dynamicColor")
     readonly property string accent:           Settings.get("theme", "accent")
     readonly property string cornerStyle:      Settings.get("theme", "cornerStyle")
-    readonly property bool animations:         Settings.get("theme", "animations")
+    // у ігровому режимі shell не анімується (GameModeState.optMotion)
+    readonly property bool _gm:                GameModeState.active && GameModeState.optMotion
+    readonly property bool animations:         Settings.get("theme", "animations") && !_gm
     readonly property bool expressiveMotion:   Settings.get("theme", "expressiveMotion")
     readonly property real animationSpeed:     Settings.get("theme", "animationSpeed")
-    readonly property bool reduceMotion:       Settings.get("theme", "reduceMotion")
+    readonly property bool reduceMotion:       Settings.get("theme", "reduceMotion") || _gm
     readonly property real uiScale:            Settings.get("theme", "uiScale")
 
     property bool systemDark: true

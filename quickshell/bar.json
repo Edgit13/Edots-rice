@@ -27,5 +27,11 @@
   },
   "layout": {
     "active": "dwindle"
+  },
+  "gamemode": {
+    "motion": false
+  },
+  "record": {
+    "fps": 30
   }
 }

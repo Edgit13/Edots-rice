@@ -1,4 +1,6 @@
 import "root:/theme"
+import "root:/services"
+import "root:/settings"
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -20,7 +22,7 @@ DashCard {
         viewMonth = m; viewYear = y
     }
 
-    readonly property var dayNames: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"]
+    readonly property var dayNames: [0, 1, 2, 3, 4, 5, 6].map(i => Lang.t("ui.dow." + i))
     readonly property var cells: {
         const first = new Date(viewYear, viewMonth, 1)
         const startOffset = (first.getDay() + 6) % 7
@@ -31,8 +33,6 @@ DashCard {
         while (arr.length % 7 !== 0) arr.push(null)
         return arr
     }
-    readonly property var monthNames: ["Січень", "Лютий", "Березень", "Квітень", "Травень", "Червень",
-        "Липень", "Серпень", "Вересень", "Жовтень", "Листопад", "Грудень"]
 
     component NavButton: Rectangle {
         id: btn
@@ -84,7 +84,7 @@ DashCard {
                 Layout.fillWidth: true
                 spacing: Theme.space.xs
                 ThemedText {
-                    text: root.monthNames[root.viewMonth] + " " + root.viewYear
+                    text: Lang.t("ui.month." + root.viewMonth) + " " + root.viewYear
                     style: Theme.type.labelLarge
                     Layout.fillWidth: true
                 }
@@ -128,6 +128,16 @@ DashCard {
                             text: parent.modelData || ""
                             style: Theme.type.labelSmall
                             color: parent.isToday ? Theme.color.fgPrimary : Theme.color.fgSurface
+                        }
+                        Rectangle {                                    // є активні справи на цей день
+                            readonly property string key: parent.modelData === null ? "" :
+                                root.viewYear + "-" + (root.viewMonth < 9 ? "0" : "") + (root.viewMonth + 1) + "-" + (parent.modelData < 10 ? "0" : "") + parent.modelData
+                            visible: key.length > 0 && (TodoService.dueMap[key] || 0) > 0
+                            anchors.horizontalCenter: parent.horizontalCenter
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: 1
+                            width: 4; height: 4; radius: 2
+                            color: parent.isToday ? Theme.color.fgPrimary : Theme.color.primary
                         }
                     }
                 }

@@ -1,21 +1,33 @@
 import "root:/theme"
 import "root:/services"
+import "root:/settings"
 import QtQuick
 import QtQuick.Layouts
 
+// WeatherCard — компактна погода для Overview: значок у squircle, температура, опис, min/max, відчувається.
 DashCard {
     id: root
+
+    function _t(v) { return isNaN(v) ? "—" : Math.round(v) + "°" }
 
     RowLayout {
         width: parent.width
         height: implicitHeight
         spacing: Theme.space.md
 
-        Text {
-            text: WeatherService.iconGlyph
-            font { family: Theme.type.icons; pixelSize: Theme.type.iconXL * 1.4 }
-            color: Theme.color.primary
-            visible: !WeatherService.loading
+        Rectangle {
+            Layout.preferredWidth: Theme.components.dp(64)
+            Layout.preferredHeight: Theme.components.dp(64)
+            radius: Theme.shape.radius("lg", height)
+            color: Theme.color.primaryContainer
+            Text {
+                anchors.centerIn: parent
+                text: WeatherService.iconGlyph
+                font { family: Theme.type.icons; pixelSize: Theme.type.iconXL }
+                color: Theme.color.fgPrimaryContainer
+                opacity: WeatherService.loading ? 0.4 : 1
+                Behavior on opacity { MotionAnimation { role: "fade" } }
+            }
         }
 
         ColumnLayout {
@@ -24,19 +36,19 @@ DashCard {
 
             ThemedText {
                 visible: WeatherService.loading
-                text: "Завантаження…"
+                text: Lang.t("ui.weather.loading")
                 style: Theme.type.bodyMedium
                 color: Theme.color.fgSurfaceVariant
             }
             ThemedText {
                 visible: WeatherService.error && !WeatherService.loading
-                text: "Погода недоступна"
+                text: Lang.t("ui.weather.error")
                 style: Theme.type.bodyMedium
                 color: Theme.color.fgSurfaceVariant
             }
             ThemedText {
                 visible: !WeatherService.loading && !WeatherService.error
-                text: Math.round(WeatherService.temperatureC) + "°C"
+                text: root._t(WeatherService.temperatureC) + "C"
                 style: Theme.type.displaySmall
                 emphasized: true
             }
@@ -47,10 +59,17 @@ DashCard {
                 color: Theme.color.fgSurfaceVariant
             }
             ThemedText {
+                visible: !WeatherService.loading && !WeatherService.error
+                text: "↑" + root._t(WeatherService.highC) + "  ↓" + root._t(WeatherService.lowC)
+                         + (isNaN(WeatherService.feelsLikeC) ? "" : "  ·  " + Lang.t("ui.weather.feels") + " " + root._t(WeatherService.feelsLikeC))
+                style: Theme.type.labelSmall
+                color: Theme.color.fgSurfaceVariant
+            }
+            ThemedText {
                 visible: WeatherService.city.length > 0
                 text: WeatherService.city
                 style: Theme.type.labelSmall
-                color: Theme.color.fgSurfaceVariant
+                color: Theme.color.outline
             }
         }
     }

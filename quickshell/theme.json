@@ -13,7 +13,7 @@
   "dynamicColor": true,
   "accent": "#74e7c8",
   "uiScale": 1,
-  "cornerStyle": "material",
+  "cornerStyle": "expressive",
   "expressiveMotion": true,
   "reduceMotion": false
 }

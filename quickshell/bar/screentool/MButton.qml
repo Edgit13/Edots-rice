@@ -13,13 +13,14 @@ Rectangle {
     signal clicked()
 
     readonly property bool isPrimary: variant === "primary"
-    readonly property color fg: isPrimary ? M3.fgPrimaryContainer : (toggled ? M3.fgSecondaryContainer : M3.fgSurfaceVariant)
+    readonly property bool isDanger: variant === "danger"
+    readonly property color fg: isDanger ? M3.fgErrorContainer : isPrimary ? M3.fgPrimaryContainer : (toggled ? M3.fgSecondaryContainer : M3.fgSurfaceVariant)
 
     implicitHeight: 44
     implicitWidth: Math.max(44, content.implicitWidth + 32)
 
-    color: isPrimary ? M3.primaryContainer : (toggled ? M3.secondaryContainer : "transparent")
-    radius: mouse.pressed ? 10 : ((toggled || (isPrimary && mouse.containsMouse)) ? height / 2 : 16)
+    color: isDanger ? M3.errorContainer : isPrimary ? M3.primaryContainer : (toggled ? M3.secondaryContainer : "transparent")
+    radius: mouse.pressed ? 10 : ((toggled || ((isPrimary || isDanger) && mouse.containsMouse)) ? height / 2 : 16)
 
     Behavior on color { ColorAnimation { duration: 150 } }
     Behavior on radius { NumberAnimation { duration: 320; easing.type: Easing.OutBack; easing.overshoot: 1.6 } }
