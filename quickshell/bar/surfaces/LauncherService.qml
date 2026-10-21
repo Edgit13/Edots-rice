@@ -95,7 +95,14 @@ Singleton {
         if (!app || !app.path)
             return
 
-        Quickshell.execDetached(["gtk-launch", app.id.replace(/\.desktop$/, "")])
+        // Беремо команду з .desktop файлу і прибираємо заповнювачі (наприклад, %U, %f)
+        let cmd = app.exec ? app.exec.replace(/%[fFuUdDnNickvm]/g, "").trim() : ""
+
+        if (cmd.length > 0) {
+            Quickshell.execDetached(["sh", "-c", cmd])
+        } else {
+            Quickshell.execDetached(["gtk-launch", app.id.replace(/\.desktop$/, "")])
+        }
     }
 
     function launchSelected() {
