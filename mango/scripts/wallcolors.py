@@ -30,7 +30,8 @@ GTK3_COLORS_CSS = CONFIG / "gtk-3.0" / "gtk-colors.css"
 FISH_COLORS_FISH = CONFIG / "fish" / "fish-colors.fish"
 FIREFOX_COLORS_CSS = CONFIG / "firefox-colors.css"
 KDEGLOBALS = CONFIG / "kdeglobals"
-DOLPHIN_COLOR_SCHEME = HOME / ".local/share/color-schemes/scheme.colors"
+
+KDE_COLOR_SCHEME = HOME / ".local/share/color-schemes/Edots-Wallpaper.colors"
 LOG_FILE = HOME / "wallcolours.log"
 
 logging.basicConfig(
@@ -42,7 +43,6 @@ logging.basicConfig(
 
 
 def get_matugen_colors(image_path: str):
-    """Повертає (source_color, colors_dict, role_hex_fn) з matugen --json hex."""
     try:
         result = subprocess.run(
             ["matugen", "image", image_path, "-m", "dark", "--json", "hex", "--quiet", "--source-color-index", "0"],
@@ -59,7 +59,6 @@ def get_matugen_colors(image_path: str):
                 def role_hex(name):
                     node = colors.get(name)
                     if isinstance(node, dict):
-                        # UI темний → dark першим ("default" може бути light залежно від версії matugen)
                         for variant in ("dark", "default", "light"):
                             v = node.get(variant)
                             if isinstance(v, str) and v.startswith("#"):
@@ -94,7 +93,6 @@ def get_source_color(image_path: str) -> str:
 
 
 def md3_tokens(role_hex):
-    """Повний M3-набір з matugen-схеми (правильний контраст з коробки)."""
     if role_hex is None:
         return {}
     keys = ["primary", "on_primary", "primary_container", "on_primary_container",
@@ -111,7 +109,6 @@ def md3_tokens(role_hex):
         if v:
             out[k] = v
     if "on_surface" in out and "surface" in out:
-        # світла схема на темній піллі дає темний текст — не віддаємо md3, QML візьме fallback
         if hex_to_hls(out["surface"])[1] > 0.5:
             return {}
         out["md3"] = True
@@ -161,11 +158,6 @@ def build_palette(source_hex: str) -> dict:
 
 
 def write_dock_colors(palette: dict):
-    """Material 3 roles for the Quickshell dock (~/.config/quickshell/dock-colors.json).
-
-    True M3 roles from matugen when the dark scheme is available, otherwise
-    derived from the generated palette so the dock always has valid colors.
-    """
     roles = {
         "background": palette.get("surface", palette["bg0"]),
         "on_primary": palette.get("on_primary", palette["bg0"]),
@@ -282,18 +274,39 @@ def write_swaylock_colors(p: dict, wallpaper_path: str):
 
 
 def copy_swaylock_wallpaper(wallpaper_path: str):
-    SWAYLOCK_TARGET_WALLPAPER.parent.mkdir(parents=True, exist_ok=True)
+    target_dir = SWAYLOCK_TARGET_WALLPAPER.parent
+    # ВИПРАВЛЕНО: Тепер правильно обробляємо символічні посилання
+    if target_dir.is_symlink():
+        real_dir = target_dir.resolve()
+        real_dir.mkdir(parents=True, exist_ok=True)
+    elif target_dir.exists() and not target_dir.is_dir():
+        target_dir.unlink()
+        target_dir.mkdir(parents=True, exist_ok=True)
+    else:
+        target_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(wallpaper_path, SWAYLOCK_TARGET_WALLPAPER)
 
 
 def write_kdeglobals(p: dict):
-    cfg = configparser.ConfigParser(interpolation=None)
+    # ВИПРАВЛЕНО: Додано allow_no_value=True та обробку помилок
+    cfg = configparser.ConfigParser(interpolation=None, strict=False, allow_no_value=True)
     cfg.optionxform = str
     if KDEGLOBALS.exists():
-        cfg.read(KDEGLOBALS, encoding="utf-8")
+        try:
+            cfg.read(KDEGLOBALS, encoding="utf-8")
+        except Exception as e:
+            logging.warning("Could not parse existing kdeglobals (KDE specific syntax). Creating a fresh one.")
+            cfg = configparser.ConfigParser(interpolation=None, strict=False, allow_no_value=True)
+            cfg.optionxform = str
+
     def rgb(hex_str):
         r, g, b = hex_to_rgb(hex_str)
         return f"{r},{g},{b}"
+
+    if not cfg.has_section("General"):
+        cfg.add_section("General")
+    cfg.set("General", "ColorScheme", "Edots-Wallpaper")
+
     mapping = {
         ("Colors:Window", "BackgroundNormal"): rgb(p["bg0"]),
         ("Colors:Window", "BackgroundAlternate"): rgb(p["bg2"]),
@@ -334,6 +347,94 @@ def write_kdeglobals(p: dict):
         cfg.write(fh, space_around_delimiters=False)
 
 
+def write_kde_color_scheme(p: dict):
+    def rgb(hex_str):
+        r, g, b = hex_to_rgb(hex_str)
+        return f"{r},{g},{b}"
+
+    content = f"""[ColorEffects:Disabled]
+Color={rgb(p['bg3'])}
+ColorAmount=0
+ColorEffect=0
+ContrastAmount=0.65
+ContrastEffect=1
+IntensityAmount=0.1
+IntensityEffect=2
+
+[ColorEffects:Inactive]
+ChangeSelectionColor=true
+Color={rgb(p['bg3'])}
+ColorAmount=0.025
+ColorEffect=2
+ContrastAmount=0.1
+ContrastEffect=2
+Enable=false
+IntensityAmount=0
+IntensityEffect=0
+
+[Colors:Button]
+BackgroundAlternate={rgb(p['bg3'])}
+BackgroundNormal={rgb(p['bg1'])}
+DecorationFocus={rgb(p['accent'])}
+DecorationHover={rgb(p['accent'])}
+ForegroundActive={rgb(p['accent'])}
+ForegroundInactive={rgb(p['grey1'])}
+ForegroundLink={rgb(p['blue'])}
+ForegroundNegative={rgb(p['red'])}
+ForegroundNeutral={rgb(p['yellow'])}
+ForegroundNormal={rgb(p['fg'])}
+ForegroundPositive={rgb(p['green'])}
+ForegroundVisited={rgb(p['purple'])}
+
+[Colors:Selection]
+BackgroundAlternate={rgb(p['accent'])}
+BackgroundNormal={rgb(p['accent'])}
+ForegroundActive={rgb(p['bg0'])}
+ForegroundInactive={rgb(p['bg0'])}
+ForegroundLink={rgb(p['blue'])}
+ForegroundNegative={rgb(p['red'])}
+ForegroundNeutral={rgb(p['yellow'])}
+ForegroundNormal={rgb(p['bg0'])}
+ForegroundPositive={rgb(p['green'])}
+ForegroundVisited={rgb(p['purple'])}
+
+[Colors:View]
+BackgroundAlternate={rgb(p['bg2'])}
+BackgroundNormal={rgb(p['bg1'])}
+DecorationFocus={rgb(p['accent'])}
+DecorationHover={rgb(p['accent'])}
+ForegroundActive={rgb(p['accent'])}
+ForegroundInactive={rgb(p['grey1'])}
+ForegroundLink={rgb(p['blue'])}
+ForegroundNegative={rgb(p['red'])}
+ForegroundNeutral={rgb(p['yellow'])}
+ForegroundNormal={rgb(p['fg'])}
+ForegroundPositive={rgb(p['green'])}
+ForegroundVisited={rgb(p['purple'])}
+
+[Colors:Window]
+BackgroundAlternate={rgb(p['bg2'])}
+BackgroundNormal={rgb(p['bg0'])}
+DecorationFocus={rgb(p['accent'])}
+DecorationHover={rgb(p['accent'])}
+ForegroundActive={rgb(p['accent'])}
+ForegroundInactive={rgb(p['grey1'])}
+ForegroundLink={rgb(p['blue'])}
+ForegroundNegative={rgb(p['red'])}
+ForegroundNeutral={rgb(p['yellow'])}
+ForegroundNormal={rgb(p['fg'])}
+ForegroundPositive={rgb(p['green'])}
+ForegroundVisited={rgb(p['purple'])}
+
+[General]
+ColorScheme=Edots-Wallpaper
+Name=Edots-Wallpaper
+shadeSortColumn=true
+"""
+    KDE_COLOR_SCHEME.parent.mkdir(parents=True, exist_ok=True)
+    KDE_COLOR_SCHEME.write_text(content, encoding="utf-8")
+
+
 def main():
     if len(sys.argv) != 2:
         raise SystemExit("Usage: wallcolors.py /path/to/wallpaper")
@@ -341,6 +442,7 @@ def main():
     color, matugen_colors, role_hex = get_matugen_colors(wallpaper)
     palette = build_palette(color)
     palette.update(md3_tokens(role_hex))
+
     write_quickshell_colors(palette, wallpaper)
     write_dock_colors(palette)
     write_kitty_colors(palette)
@@ -352,16 +454,21 @@ def main():
     write_firefox_colors(palette)
     write_swaylock_colors(palette, wallpaper)
     copy_swaylock_wallpaper(wallpaper)
+
+    write_kde_color_scheme(palette)
     write_kdeglobals(palette)
+
     logging.info("Updated MangoWM color pipeline for wallpaper: %s", wallpaper)
 
-    # Wait briefly to ensure file writes are fully flushed to disk
     time.sleep(0.25)
 
-    # Reload SwayNC
     subprocess.run(["swaync-client", "-rs"])
 
-    # Restart Quickshell to apply the new colors.json
+    try:
+        subprocess.run(["plasma-apply-colorscheme", "Edots-Wallpaper"], capture_output=True)
+    except FileNotFoundError:
+        pass
+
     subprocess.run("killall quickshell; quickshell &", shell=True)
 
 if __name__ == "__main__":
