@@ -2,7 +2,6 @@ import "root:/theme"
 import "root:/services"
 import "root:/media"
 import "root:/modules/common"
-import "root:/shell"
 import QtQuick
 
 // ResourcesModule — кільця CPU / RAM з відсотками (як Resources в end-4). Вмикається: Settings → Бар → Модулі.
@@ -33,10 +32,7 @@ Item {
 
     BarButton {
         anchors.fill: parent
-        onClicked: {
-            root.resourcesRequested()
-            ShellState.toggleSurface("resources")
-        }
+        onClicked: root.resourcesRequested()          // відкриває/закриває BarWindow (onResourcesRequested) — тут не дублюємо
 
         Row {
             id: row
