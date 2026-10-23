@@ -1,22 +1,17 @@
 /* ==========================================================================
-   userChrome.css — Ricelin theme for Firefox
-   Pulls live colors from ~/.config/firefox-colors.css, written by
-   wallcolors.py on every wallpaper change (same pipeline as your
-   kitty/quickshell/gtk/swaync colors).
-
+   userChrome.css — Ricelin theme for Firefox (Firefox 156+)
+   ==========================================================================
    SETUP:
    1. about:config -> toolkit.legacyUserProfileCustomizations.stylesheet -> true
    2. Put this file at: <profile>/chrome/userChrome.css
-   3. Restart Firefox
+   3. Run wallcolors.py once so chrome/firefox-colors.css appears
+   4. Restart Firefox
    ========================================================================== */
 
-@import url("../../../../.config/firefox-colors.css");
+/* Wallcolors.py тепер пише файл прямо в цю ж теку (chrome/) */
+@import url("firefox-colors.css");
 
 :root {
-  /* Fallbacks so the UI doesn't break before wallcolors.py has run once.
-     Named --uc-* (not --wc-*) on purpose: a custom property that
-     references itself via var(), even with a fallback, is treated as
-     a cycle and resolves to invalid rather than the fallback. */
   --uc-bg0: var(--wc-bg0, #0e0f12);
   --uc-bg1: var(--wc-bg1, #16181d);
   --uc-bg2: var(--wc-bg2, #1e2127);
@@ -31,6 +26,9 @@
   --uc-radius: 10px;
   --uc-radius-pill: 999px;
   --uc-font: "JetBrainsMono Nerd Font Propo", "SF Pro Display", sans-serif;
+
+  /* Firefox 145+ керує округленням кнопок тулбару через цей токен */
+  --toolbarbutton-border-radius: 8px !important;
 }
 
 /* ---------- Base window chrome ---------- */
@@ -53,7 +51,6 @@ toolbar {
   box-shadow: none !important;
 }
 
-/* Kill the harsh separator lines Firefox draws between toolbars */
 #navigator-toolbox::after,
 #nav-bar::before,
 #TabsToolbar::after {
@@ -61,7 +58,7 @@ toolbar {
   box-shadow: none !important;
 }
 
-/* ---------- Tabs: rounded pills like the bar's workspace pills ---------- */
+/* ---------- Tabs ---------- */
 #TabsToolbar {
   padding: 4px 6px !important;
 }
@@ -81,7 +78,8 @@ toolbar {
   background-color: var(--uc-bg2) !important;
 }
 
-.tabbrowser-tab[selected="true"] .tab-background {
+/* Firefox 156+ uses empty [selected] attribute */
+.tabbrowser-tab[selected] .tab-background {
   background-color: var(--uc-bg3) !important;
   box-shadow: inset 0 0 0 1px rgba(var(--uc-accent-rgb), 0.35) !important;
 }
@@ -91,11 +89,10 @@ toolbar {
   font-size: 12px !important;
 }
 
-.tabbrowser-tab[selected="true"] .tab-label {
+.tabbrowser-tab[selected] .tab-label {
   color: var(--uc-accent) !important;
 }
 
-/* Close button + new-tab button ghost until hovered */
 .tab-close-button,
 #tabs-newtab-button {
   border-radius: var(--uc-radius-pill) !important;
@@ -106,7 +103,7 @@ toolbar {
   background-color: var(--uc-bg3) !important;
 }
 
-/* ---------- URL bar: floating pill, matches GameMode/notch pill style ---------- */
+/* ---------- URL bar ---------- */
 #nav-bar {
   padding: 6px 8px !important;
 }
@@ -123,7 +120,7 @@ toolbar {
   box-shadow: none !important;
 }
 
-#urlbar[focused="true"] #urlbar-background {
+#urlbar[focused] #urlbar-background {
   border-color: rgba(var(--uc-accent-rgb), 0.55) !important;
   box-shadow: 0 0 0 3px rgba(var(--uc-accent-rgb), 0.12) !important;
 }
@@ -135,7 +132,6 @@ toolbar {
   font-size: 13px !important;
 }
 
-/* Suggestion / autocomplete panel */
 .urlbarView {
   background: var(--uc-bg1) !important;
   color: var(--uc-fg) !important;
@@ -159,7 +155,7 @@ toolbar {
 }
 
 .toolbarbutton-1:hover:active,
-.toolbarbutton-1[open="true"] {
+.toolbarbutton-1[open] {
   background-color: var(--uc-bg3) !important;
 }
 
@@ -177,11 +173,12 @@ toolbar {
   background-color: var(--uc-bg2) !important;
 }
 
-/* ---------- Panels / dropdowns (hamburger menu, etc.) ---------- */
+/* ---------- Panels / dropdowns ---------- */
 panel {
   --panel-background: var(--uc-bg1) !important;
   --panel-color: var(--uc-fg) !important;
-  --arrowpanel-border-color: rgba(var(--uc-fg-rgb), 0.08) !important;
+  /* Renamed token in Firefox 156+: was --arrowpanel-border-color */
+  --panel-border-color: rgba(var(--uc-fg-rgb), 0.08) !important;
 }
 
 menupopup,
@@ -196,7 +193,7 @@ menuitem:hover,
   border-radius: 6px !important;
 }
 
-/* ---------- Scrollbar (chrome only, not web content) ---------- */
+/* ---------- Scrollbar ---------- */
 scrollbar {
   background-color: var(--uc-bg0) !important;
 }
@@ -206,17 +203,58 @@ scrollbar thumb {
   border-radius: var(--uc-radius-pill) !important;
 }
 
-/* ---------- Sidebar ---------- */
-#sidebar-box {
-  background-color: var(--uc-bg0) !important;
-  color: var(--uc-fg) !important;
+/* ---------- Sidebar (Повне вирівнювання під тулбар) ---------- */
+:root {
+  --sidebar-background-color: var(--uc-bg0) !important;
+  --sidebar-text-color: var(--uc-fg) !important;
+  --sidebar-border-color: transparent !important;
 }
 
+/* Вбиваємо всі фони, тіні та градієнти у новій архітектурі сайдбару */
+#sidebar-main,
+#sidebar-box,
+#sidebar,
+sidebar-main,
+.sidebar-panel,
 #sidebar-header {
-  background-color: var(--uc-bg1) !important;
+  background-color: var(--uc-bg0) !important;
+  background-image: none !important;
+  color: var(--uc-fg) !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
-/* ---------- Findbar / notification bars ---------- */
+/* Розділювач (лінія між сайдбаром і сторінкою) — робимо невидимим */
+#sidebar-splitter {
+  background-color: transparent !important;
+  border: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+}
+
+/* Кнопки-іконки в сайдбарі (зірка, годинник, пазл тощо) */
+#sidebar-main .toolbarbutton-1,
+#sidebar-main #sidebar-switcher-target,
+#sidebar-launcher .toolbarbutton-1 {
+  background-color: transparent !important;
+  color: var(--uc-fg) !important;
+  border-radius: var(--uc-radius) !important;
+}
+
+#sidebar-main .toolbarbutton-1:hover,
+#sidebar-main #sidebar-switcher-target:hover,
+#sidebar-launcher .toolbarbutton-1:hover {
+  background-color: var(--uc-bg2) !important;
+}
+
+/* Активна кнопка в сайдбарі */
+#sidebar-main .toolbarbutton-1[checked],
+#sidebar-launcher .toolbarbutton-1[checked] {
+  background-color: var(--uc-bg3) !important;
+  color: var(--uc-accent) !important;
+}
+
+/* ---------- Findbar ---------- */
 findbar,
 notification-message {
   background-color: var(--uc-bg1) !important;

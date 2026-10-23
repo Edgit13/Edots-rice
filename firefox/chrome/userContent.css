@@ -1,20 +1,16 @@
 /* ==========================================================================
    userContent.css — Ricelin theme for Firefox internal pages
-   (about:addons, about:newtab, about:config, about:logins — НЕ about:preferences)
-
-   Ці сторінки — це "content", а не "chrome", тому колір тут задається
-   окремо від userChrome.css через @-moz-document.
-
-   Використовує ту саму палітру з ~/.config/firefox-colors.css.
-
-   НАЛАШТУВАННЯ:
+   (Firefox 156+)
+   ==========================================================================
+   SETUP:
    1. about:config -> toolkit.legacyUserProfileCustomizations.stylesheet -> true
-      (той самий флаг, що й для userChrome.css)
-   2. Покласти файл поруч з userChrome.css: <профіль>/chrome/userContent.css
-   3. Перезапустити Firefox
+   2. Put this file next to userChrome.css: <profile>/chrome/userContent.css
+   3. Run wallcolors.py once so chrome/firefox-colors.css appears
+   4. Restart Firefox
    ========================================================================== */
 
-@import url("../../../../.config/firefox-colors.css");
+/* Wallcolors.py тепер пише файл прямо в цю ж теку (chrome/) */
+@import url("firefox-colors.css");
 
 @-moz-document url-prefix("about:") {
   :root {
@@ -34,7 +30,7 @@
 }
 
 /* ==========================================================================
-   about:addons — Extensions & Themes manager
+   about:addons
    ========================================================================== */
 @-moz-document url-prefix("about:addons") {
   body, html {
@@ -91,13 +87,14 @@
 }
 
 /* ==========================================================================
-   about:newtab / about:home — New tab page
+   about:newtab / about:home
    ========================================================================== */
 @-moz-document url-prefix("about:newtab"), url-prefix("about:home") {
   body,
   .welcome-panel-header,
   main {
     background-color: var(--uc-bg0) !important;
+    --newtab-background-color: var(--uc-bg0) !important;
   }
 
   .search-wrapper input {
@@ -127,7 +124,7 @@
 }
 
 /* ==========================================================================
-   about:config — Advanced preferences editor
+   about:config
    ========================================================================== */
 @-moz-document url-prefix("about:config") {
   body, html {
@@ -164,7 +161,7 @@
 }
 
 /* ==========================================================================
-   about:logins — Saved passwords
+   about:logins
    ========================================================================== */
 @-moz-document url-prefix("about:logins") {
   body, html,
@@ -193,5 +190,44 @@
     background-color: var(--uc-bg2) !important;
     color: var(--uc-fg) !important;
     border-radius: 8px !important;
+  }
+}
+
+/* ==========================================================================
+   about:history, about:bookmarks, about:downloads (Sidebar content)
+   ========================================================================== */
+@-moz-document url-prefix("about:history"),
+               url-prefix("about:bookmarks"),
+               url-prefix("about:downloads") {
+  :root, body {
+    background-color: var(--uc-bg0) !important;
+    color: var(--uc-fg) !important;
+    font-family: var(--uc-font) !important;
+  }
+
+  /* Таблиці історії/завантажень та списки */
+  tree, treechildren, richlistbox {
+    background-color: var(--uc-bg0) !important;
+    color: var(--uc-fg) !important;
+    border: none !important;
+  }
+
+  treechildren::-moz-tree-row(hover),
+  richlistitem:hover {
+    background-color: var(--uc-bg2) !important;
+  }
+
+  treechildren::-moz-tree-row(selected),
+  richlistitem[selected] {
+    background-color: var(--uc-bg3) !important;
+    color: var(--uc-accent) !important;
+  }
+
+  /* Поля пошуку в сайдбарі */
+  input, search-textbox {
+    background-color: var(--uc-bg1) !important;
+    color: var(--uc-fg) !important;
+    border: 1px solid rgba(var(--uc-fg-rgb), 0.1) !important;
+    border-radius: 6px !important;
   }
 }
