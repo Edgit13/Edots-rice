@@ -57,7 +57,7 @@ Item {
                 Layout.fillWidth: true
                 text: row.ssid
                 color: row.inUse ? Md.m3OnPrimaryContainer : Md.m3OnSurface
-                font { family: "SF Pro Display"; pixelSize: 12; weight: row.inUse ? 600 : 400 }
+                font { family: Colors.uiFont; pixelSize: 12; weight: row.inUse ? 600 : 400 }
                 elide: Text.ElideRight
             }
             Text {
@@ -69,7 +69,7 @@ Item {
             Text {
                 text: row.signalPct + "%"
                 color: Md.m3OnSurfaceVariant
-                font { family: "SF Mono"; pixelSize: 11 }
+                font { family: Colors.monoFont; pixelSize: 11 }
                 Layout.preferredWidth: 32
             }
         }
@@ -102,7 +102,7 @@ Item {
                 Layout.fillWidth: true
                 text: "Wi-Fi"
                 color: Md.m3OnSurface
-                font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
+                font { family: Colors.uiFont; pixelSize: 13; weight: 600 }
             }
 
             // лоадер при скануванні (M3 Expressive), інакше — рефреш
@@ -160,7 +160,7 @@ Item {
                 Layout.fillWidth: true
                 text: WifiService.currentNetwork ? ("Підключено: " + WifiService.currentNetwork.ssid) : ""
                 color: Md.primary
-                font { family: "SF Pro Display"; pixelSize: 11 }
+                font { family: Colors.uiFont; pixelSize: 11 }
                 elide: Text.ElideRight
             }
             Text {
@@ -191,13 +191,13 @@ Item {
                 Layout.fillWidth: true
                 text: WifiService.connectionError + " (" + WifiService.pendingSsid + ")"
                 color: Md.error
-                font { family: "SF Pro Display"; pixelSize: 10 }
+                font { family: Colors.uiFont; pixelSize: 10 }
                 elide: Text.ElideRight
             }
             Text {
                 text: "Повторити"
                 color: Md.primary
-                font { family: "SF Pro Display"; pixelSize: 10; underline: true }
+                font { family: Colors.uiFont; pixelSize: 10; underline: true }
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
@@ -226,7 +226,7 @@ Item {
                     Layout.topMargin: 20
                     text: "Увімкни Wi-Fi, щоб побачити мережі"
                     color: Md.m3OnSurfaceVariant
-                    font { family: "SF Pro Display"; pixelSize: 11 }
+                    font { family: Colors.uiFont; pixelSize: 11 }
                 }
 
                 Text {
@@ -236,7 +236,7 @@ Item {
                     Layout.topMargin: 20
                     text: "Мереж не знайдено"
                     color: Md.m3OnSurfaceVariant
-                    font { family: "SF Pro Display"; pixelSize: 11 }
+                    font { family: Colors.uiFont; pixelSize: 11 }
                 }
 
                 Repeater {
@@ -280,7 +280,7 @@ Item {
                 Layout.fillWidth: true
                 text: WifiService.pendingSsid
                 color: Md.m3OnSurface
-                font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
+                font { family: Colors.uiFont; pixelSize: 13; weight: 600 }
                 elide: Text.ElideRight
             }
         }
@@ -293,7 +293,7 @@ Item {
             Text {
                 text: "Підключення..."
                 color: Md.m3OnSurfaceVariant
-                font { family: "SF Pro Display"; pixelSize: 12 }
+                font { family: Colors.uiFont; pixelSize: 12 }
             }
         }
 
@@ -313,7 +313,7 @@ Item {
                 anchors.rightMargin: 10
                 verticalAlignment: TextInput.AlignVCenter
                 color: Md.m3OnSurface
-                font { family: "SF Pro Display"; pixelSize: 12 }
+                font { family: Colors.uiFont; pixelSize: 12 }
                 echoMode: TextInput.Password
                 focus: WifiService.connectionState === "passwordRequired"
                 text: root.passwordInput
@@ -328,7 +328,7 @@ Item {
             visible: WifiService.connectionState === "passwordRequired"
             text: "Enter \u2014 підключитись"
             color: Md.m3OnSurfaceVariant
-            font { family: "SF Pro Display"; pixelSize: 9; italic: true }
+            font { family: Colors.uiFont; pixelSize: 9; italic: true }
         }
     }
 

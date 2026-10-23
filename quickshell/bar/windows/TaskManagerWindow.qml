@@ -132,7 +132,7 @@ PanelWindow {
                 Text {
                     text: "TASKS"
                     color: Colors.accent
-                    font { family: "SF Pro Display"; pixelSize: 10; weight: 700 }
+                    font { family: Colors.uiFont; pixelSize: 10; weight: 700 }
                 }
 
                 // folder tabs
@@ -169,13 +169,13 @@ PanelWindow {
                                         Text {
                                             text: modelData
                                             color: modelData === win.currentFolder ? Colors.accent : Colors.fg
-                                            font { family: "SF Pro Display"; pixelSize: 12; bold: modelData === win.currentFolder }
+                                            font { family: Colors.uiFont; pixelSize: 12; bold: modelData === win.currentFolder }
                                         }
                                         Text {
                                             visible: modelData === win.currentFolder && win.folders.length > 1
                                             text: "✕"
                                             color: Colors.red
-                                            font { family: "SF Pro Display"; pixelSize: 10 }
+                                            font { family: Colors.uiFont; pixelSize: 10 }
                                             MouseArea {
                                                 anchors.fill: parent
                                                 cursorShape: Qt.PointingHandCursor
@@ -204,7 +204,7 @@ PanelWindow {
                             anchors.centerIn: parent
                             text: "+"
                             color: Colors.accent
-                            font { family: "SF Pro Display"; pixelSize: 16 }
+                            font { family: Colors.uiFont; pixelSize: 16 }
                         }
                         MouseArea {
                             anchors.fill: parent
@@ -231,7 +231,7 @@ PanelWindow {
                             id: folderInput
                             Layout.fillWidth: true
                             color: Colors.fg
-                            font { family: "SF Pro Display"; pixelSize: 12 }
+                            font { family: Colors.uiFont; pixelSize: 12 }
                             clip: true
                             Text {
                                 text: "New folder name..."
@@ -250,7 +250,7 @@ PanelWindow {
                                 anchors.centerIn: parent
                                 text: "Save"
                                 color: Colors.bg0
-                                font { family: "SF Pro Display"; pixelSize: 11; bold: true }
+                                font { family: Colors.uiFont; pixelSize: 11; bold: true }
                             }
                             MouseArea {
                                 anchors.fill: parent
@@ -285,7 +285,7 @@ PanelWindow {
                             id: taskTitleInput
                             Layout.fillWidth: true
                             color: Colors.fg
-                            font { family: "SF Pro Display"; pixelSize: 12 }
+                            font { family: Colors.uiFont; pixelSize: 12 }
                             clip: true
                             Text {
                                 text: "Add task title..."
@@ -307,7 +307,7 @@ PanelWindow {
                                 verticalAlignment: TextInput.AlignVCenter
                                 horizontalAlignment: TextInput.AlignHCenter
                                 color: Colors.accent
-                                font { family: "SF Pro Display"; pixelSize: 11 }
+                                font { family: Colors.uiFont; pixelSize: 11 }
                                 Text {
                                     text: "18:00"
                                     color: Colors.grey1
@@ -328,7 +328,7 @@ PanelWindow {
                                 anchors.centerIn: parent
                                 text: "Add"
                                 color: Colors.bg0
-                                font { family: "SF Pro Display"; pixelSize: 11; bold: true }
+                                font { family: Colors.uiFont; pixelSize: 11; bold: true }
                             }
                             MouseArea {
                                 anchors.fill: parent
@@ -378,7 +378,7 @@ PanelWindow {
                                 Layout.fillWidth: true
                                 text: modelData.title
                                 color: Colors.fg
-                                font { family: "SF Pro Display"; pixelSize: 12 }
+                                font { family: Colors.uiFont; pixelSize: 12 }
                                 elide: Text.ElideRight
                             }
 
@@ -393,14 +393,14 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     text: modelData.due
                                     color: Colors.accent
-                                    font { family: "SF Pro Display"; pixelSize: 10 }
+                                    font { family: Colors.uiFont; pixelSize: 10 }
                                 }
                             }
 
                             Text {
                                 text: "✕"
                                 color: Colors.red
-                                font { family: "SF Pro Display"; pixelSize: 12 }
+                                font { family: Colors.uiFont; pixelSize: 12 }
                                 MouseArea {
                                     anchors.fill: parent
                                     cursorShape: Qt.PointingHandCursor
@@ -433,7 +433,7 @@ PanelWindow {
                         Text {
                             text: "TIMER"
                             color: Colors.accent
-                            font { family: "SF Pro Display"; pixelSize: 10; weight: 700 }
+                            font { family: Colors.uiFont; pixelSize: 10; weight: 700 }
                         }
 
                         RowLayout {
@@ -452,7 +452,7 @@ PanelWindow {
                                     verticalAlignment: TextInput.AlignVCenter
                                     horizontalAlignment: TextInput.AlignHCenter
                                     color: Colors.accent
-                                    font { family: "SF Mono"; pixelSize: 12 }
+                                    font { family: Colors.monoFont; pixelSize: 12 }
                                     Text {
                                         text: "10m"
                                         color: Colors.grey1
@@ -475,7 +475,7 @@ PanelWindow {
                                     anchors.leftMargin: 8
                                     verticalAlignment: TextInput.AlignVCenter
                                     color: Colors.fg
-                                    font { family: "SF Pro Display"; pixelSize: 11 }
+                                    font { family: Colors.uiFont; pixelSize: 11 }
                                     clip: true
                                     Text {
                                         text: "Message (optional)..."
@@ -502,7 +502,7 @@ PanelWindow {
                                 anchors.centerIn: parent
                                 text: "Start timer"
                                 color: Colors.accent
-                                font { family: "SF Pro Display"; pixelSize: 12; bold: true }
+                                font { family: Colors.uiFont; pixelSize: 12; bold: true }
                             }
                             HoverHandler { id: timerHover }
                             MouseArea {
@@ -527,14 +527,14 @@ PanelWindow {
                             text: win.timerStatus
                             color: Colors.grey1
                             wrapMode: Text.Wrap
-                            font { family: "SF Pro Display"; pixelSize: 10 }
+                            font { family: Colors.uiFont; pixelSize: 10 }
                         }
 
                         Text {
                             text: "Runs in background; SwayNC notifies you when it\u2019s up."
                             color: Colors.grey1
                             wrapMode: Text.Wrap
-                            font { family: "SF Pro Display"; pixelSize: 10 }
+                            font { family: Colors.uiFont; pixelSize: 10 }
                         }
 
                         Item { Layout.fillHeight: true }
@@ -555,7 +555,7 @@ PanelWindow {
                         Text {
                             text: "PACKAGES"
                             color: Colors.accent
-                            font { family: "SF Pro Display"; pixelSize: 10; weight: 700 }
+                            font { family: Colors.uiFont; pixelSize: 10; weight: 700 }
                         }
 
                         RowLayout {
@@ -574,7 +574,7 @@ PanelWindow {
                                     anchors.leftMargin: 8
                                     verticalAlignment: TextInput.AlignVCenter
                                     color: Colors.fg
-                                    font { family: "SF Pro Display"; pixelSize: 11 }
+                                    font { family: Colors.uiFont; pixelSize: 11 }
                                     clip: true
                                     Text {
                                         text: "package name..."
@@ -596,7 +596,7 @@ PanelWindow {
                                     anchors.centerIn: parent
                                     text: "Search"
                                     color: Colors.accent
-                                    font { family: "SF Pro Display"; pixelSize: 11; bold: true }
+                                    font { family: Colors.uiFont; pixelSize: 11; bold: true }
                                 }
                                 MouseArea {
                                     anchors.fill: parent
@@ -626,7 +626,7 @@ PanelWindow {
                                         anchors.centerIn: parent
                                         text: modelData[0]
                                         color: Colors.accent
-                                        font { family: "SF Pro Display"; pixelSize: 11; bold: true }
+                                        font { family: Colors.uiFont; pixelSize: 11; bold: true }
                                     }
                                     HoverHandler { id: pkgBtnHover }
                                     MouseArea {
@@ -654,7 +654,7 @@ PanelWindow {
                                         anchors.centerIn: parent
                                         text: modelData
                                         color: Colors.fg
-                                        font { family: "SF Pro Display"; pixelSize: 11 }
+                                        font { family: Colors.uiFont; pixelSize: 11 }
                                     }
                                     HoverHandler { id: sysBtnHover }
                                     MouseArea {
@@ -670,7 +670,7 @@ PanelWindow {
                             text: "Opens a terminal (kitty --hold). yay/flatpak handle the rest."
                             color: Colors.grey1
                             wrapMode: Text.Wrap
-                            font { family: "SF Pro Display"; pixelSize: 10 }
+                            font { family: Colors.uiFont; pixelSize: 10 }
                         }
 
                         Item { Layout.fillHeight: true }

@@ -27,6 +27,9 @@ alias pi='upkg install'
 alias ps='upkg search'
 alias pr='upkg remove'
 alias pu='upkg update'
+# --- 3.2. Edots Utility-Extra Aliases ---
+alias upc='upkg clean'
+alias ugtk='gtk-reload'
 
 # --- 4. Navigation & Directory Aliases ---
 alias ..='cd ..'

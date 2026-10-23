@@ -12,6 +12,8 @@ Rectangle {
     default property alias content: grid.data
 
     color: Theme.color.surfaceContainerHigh
+    border.width: Theme.settings.nothing ? ThemeNothing.hairline : 0
+    border.color: Theme.color.outlineVariant
     radius: Theme.shape.radius("full", Math.min(width, height))
     visible: grid.visibleChildren.length > 0
 

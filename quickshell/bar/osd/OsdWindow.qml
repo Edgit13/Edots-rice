@@ -172,7 +172,25 @@ PanelWindow {
                     Behavior on shown { MotionAnimation { role: "move" } }
                     readonly property real hx: width * Math.max(0, Math.min(1, shown))
 
+                    // ---- Nothing: ряд точок замість суцільної шкали ----
+                    readonly property bool nothing: Theme.settings.nothing
+                    readonly property real seg: Math.max(3, trackH * 0.6)
+                    readonly property real pitch: seg + Math.max(3, seg * 0.8)
+                    readonly property int segCount: Math.max(1, Math.floor((width + (pitch - seg)) / pitch))
+                    Repeater {
+                        model: bar.nothing ? bar.segCount : 0
+                        Rectangle {
+                            required property int index
+                            x: index * bar.pitch
+                            y: (bar.height - bar.seg) / 2
+                            width: bar.seg; height: bar.seg; radius: width / 2
+                            color: card.accent
+                            opacity: (index + 0.5) / bar.segCount <= bar.shown ? 1 : ThemeNothing.dotOpacityOff
+                        }
+                    }
+
                     Rectangle {                   // активна частина
+                        visible: !bar.nothing
                         y: (bar.height - bar.trackH) / 2
                         width: Math.max(0, bar.hx - bar.handleW / 2 - bar.gap)
                         height: bar.trackH
@@ -184,6 +202,7 @@ PanelWindow {
                         Behavior on color { MotionColorAnimation { role: "stateChange" } }
                     }
                     Rectangle {                   // неактивна частина
+                        visible: !bar.nothing
                         x: Math.min(bar.width, bar.hx + bar.handleW / 2 + bar.gap)
                         y: (bar.height - bar.trackH) / 2
                         width: Math.max(0, bar.width - x)
@@ -195,6 +214,7 @@ PanelWindow {
                         bottomRightRadius: height / 2
                     }
                     Rectangle {                   // handle
+                        visible: !bar.nothing
                         width: bar.handleW
                         height: bar.trackH + win.d(10)
                         radius: width / 2

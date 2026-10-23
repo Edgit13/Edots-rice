@@ -11,6 +11,7 @@ Text {
     font.pixelSize: style.size
     font.weight: emphasized ? style.emphasizedWeight : style.weight
     font.letterSpacing: style.tracking
+    font.capitalization: style.caps ? Font.AllUppercase : Font.MixedCase
     lineHeight: style.line
     lineHeightMode: Text.FixedHeight
     verticalAlignment: Text.AlignVCenter

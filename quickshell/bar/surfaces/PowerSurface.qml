@@ -59,7 +59,7 @@ ColumnLayout {
                 Layout.fillWidth: true
                 text: pr.label
                 color: Colors.fg
-                font { family: "SF Pro Display"; pixelSize: 12 }
+                font { family: Colors.uiFont; pixelSize: 12 }
                 MouseArea { anchors.fill: parent; propagateComposedEvents: true; enabled: false }
             }
         }

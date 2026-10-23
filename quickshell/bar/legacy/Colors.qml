@@ -1,4 +1,5 @@
 pragma Singleton
+import "root:/settings"
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -16,23 +17,46 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    property color bg0: "#0d0d0d"
-    property color bg1: "#141414"
-    property color bg2: "#1c1c1c"
-    property color bg3: "#262626"
-    property color bg4: "#333333"
-    property color fg: "#e8e8e8"
-    property color accent: "#8ab4f8"
-    property color red: "#f28b82"
-    property color orange: "#fbbc04"
-    property color yellow: "#fdd663"
-    property color green: "#81c995"
-    property color aqua: "#78d9ec"
-    property color blue: "#8ab4f8"
-    property color purple: "#c58af9"
-    property color grey0: "#333333"
-    property color grey1: "#5f6368"
-    property color grey2: "#9aa0a6"
+    // ---- режим дизайну (theme.design = nothing) — лише через Settings, без залежності від theme/ ----
+    readonly property bool nothing: Settings.get("theme", "design") === "nothing"
+    readonly property bool _dark: Settings.get("theme", "mode") !== "light"   // "system" трактуємо як dark
+
+    // значення з colors.json (matugen) — ігноруються в режимі Nothing
+    property var _f: ({})
+    function _v(key, fallback) { return typeof _f[key] === "string" ? _f[key] : fallback }
+
+    // палітра Nothing: [dark, light]
+    function _n(d, l) { return _dark ? d : l }
+
+    readonly property color bg0: nothing ? _n("#000000", "#F2F2F2") : _v("bg0", "#0d0d0d")
+    readonly property color bg1: nothing ? _n("#0B0B0B", "#F8F8F8") : _v("bg1", "#141414")
+    readonly property color bg2: nothing ? _n("#121212", "#EFEFEF") : _v("bg2", "#1c1c1c")
+    readonly property color bg3: nothing ? _n("#1A1A1A", "#E8E8E8") : _v("bg3", "#262626")
+    readonly property color bg4: nothing ? _n("#242424", "#E0E0E0") : _v("bg4", "#333333")
+    readonly property color fg: nothing ? _n("#FFFFFF", "#0A0A0A") : _v("fg", "#e8e8e8")
+    readonly property color accent: nothing ? _n("#FFFFFF", "#0A0A0A") : _v("accent", "#8ab4f8")
+    readonly property color red: nothing ? "#D71921" : _v("red", "#f28b82")
+    readonly property color orange: nothing ? "#F2B84B" : _v("orange", "#fbbc04")
+    readonly property color yellow: nothing ? "#F2B84B" : _v("yellow", "#fdd663")
+    readonly property color green: nothing ? "#8FD694" : _v("green", "#81c995")
+    readonly property color aqua: nothing ? _n("#C4C4C4", "#4A4A4A") : _v("aqua", "#78d9ec")
+    readonly property color blue: nothing ? _n("#C4C4C4", "#4A4A4A") : _v("blue", "#8ab4f8")
+    readonly property color purple: nothing ? _n("#A3A3A3", "#5E5E5E") : _v("purple", "#c58af9")
+    readonly property color grey0: nothing ? _n("#2B2B2B", "#CFCFCF") : _v("grey0", "#333333")
+    readonly property color grey1: nothing ? _n("#5C5C5C", "#8A8A8A") : _v("grey1", "#5f6368")
+    readonly property color grey2: nothing ? _n("#A3A3A3", "#5E5E5E") : _v("grey2", "#9aa0a6")
+
+    // ---- шрифти для старих Surface (у Nothing — NType/Lettera, з тими ж fallback, що й ThemeNothing) ----
+    function _pick(list) {
+        try {
+            const fams = Qt.fontFamilies()
+            for (let i = 0; i < list.length; i++)
+                if (fams.indexOf(list[i]) >= 0) return list[i]
+        } catch (e) {}
+        return list[list.length - 1]
+    }
+    readonly property string uiFont: nothing ? _pick(["NType 82", "NType82", "Inter", "SF Pro Display", "Roboto", "Noto Sans", "Cantarell"]) : "SF Pro Display"
+    readonly property string monoFont: nothing ? _pick(["Lettera Mono", "Lettera Mono LL", "Space Mono", "JetBrainsMono Nerd Font", "JetBrains Mono", "monospace"]) : "SF Mono"
 
     FileView {
         path: Quickshell.env("HOME") + "/.config/quickshell/colors.json"
@@ -40,14 +64,8 @@ Singleton {
         printErrors: false
         onFileChanged: reload()
         onLoaded: {
-            try {
-                const d = JSON.parse(text())
-                for (const key of ["bg0", "bg1", "bg2", "bg3", "bg4", "fg", "accent",
-                                    "red", "orange", "yellow", "green", "aqua", "blue", "purple",
-                                    "grey0", "grey1", "grey2"]) {
-                    if (typeof d[key] === "string") root[key] = d[key]
-                }
-            } catch (e) { console.warn("[Colors] не вдалось розпарсити colors.json: " + e) }
+            try { root._f = JSON.parse(text()) }
+            catch (e) { console.warn("[Colors] не вдалось розпарсити colors.json: " + e) }
         }
     }
 

@@ -12,7 +12,7 @@ Singleton {
 
     readonly property bool enabled: ThemeSettings.animations
     readonly property bool reduced: ThemeSettings.reduceMotion
-    readonly property bool expressive: ThemeSettings.expressiveMotion && !reduced
+    readonly property bool expressive: ThemeSettings.expressiveMotion && !reduced && !ThemeSettings.nothing
     readonly property real speed: ThemeSettings.animationSpeed
 
     // cubic-bezier: [x1, y1, x2, y2, 1, 1]

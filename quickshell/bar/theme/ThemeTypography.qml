@@ -18,13 +18,17 @@ Singleton {
         } catch (e) {}
         return list[0]
     }
-    readonly property string sans: _pick(["SF Pro Display", "Inter", "Roboto", "Noto Sans", "Cantarell"])
-    readonly property string mono: _pick(["SF Mono", "JetBrainsMono Nerd Font", "JetBrains Mono", "monospace"])
+    readonly property bool nothing: ThemeSettings.nothing
+    readonly property string sans: nothing ? ThemeNothing.sans : _pick(["SF Pro Display", "Inter", "Roboto", "Noto Sans", "Cantarell"])
+    readonly property string mono: nothing ? ThemeNothing.mono : _pick(["SF Mono", "JetBrainsMono Nerd Font", "JetBrains Mono", "monospace"])
+    // dot-matrix (лише Nothing; в Material = звичайний sans)
+    readonly property string dot:  nothing ? ThemeNothing.dot : sans
     readonly property string icons: "Material Symbols Rounded"
 
     // size / line-height / weight / tracking (px, M3 spec) × uiScale
-    function _t(size, line, weight, tracking, family) {
+    function _t(size, line, weight, tracking, family, caps) {
         return {
+            caps: !!caps && nothing,
             family: family || sans,
             size: Math.round(size * k),
             line: Math.round(line * k),
@@ -34,9 +38,9 @@ Singleton {
         }
     }
 
-    readonly property var displayLarge:  _t(57, 64, 400, -0.25)
-    readonly property var displayMedium: _t(45, 52, 400, 0)
-    readonly property var displaySmall:  _t(36, 44, 400, 0)
+    readonly property var displayLarge:  _t(57, 64, 400, nothing ? 1 : -0.25, nothing ? dot : sans)
+    readonly property var displayMedium: _t(45, 52, 400, nothing ? 1 : 0, nothing ? dot : sans)
+    readonly property var displaySmall:  _t(36, 44, 400, nothing ? 1 : 0, nothing ? dot : sans)
     readonly property var headlineLarge:  _t(32, 40, 400, 0)
     readonly property var headlineMedium: _t(28, 36, 400, 0)
     readonly property var headlineSmall:  _t(24, 32, 400, 0)
@@ -46,14 +50,17 @@ Singleton {
     readonly property var bodyLarge:  _t(16, 24, 400, 0.5)
     readonly property var bodyMedium: _t(14, 20, 400, 0.25)
     readonly property var bodySmall:  _t(12, 16, 400, 0.4)
-    readonly property var labelLarge:  _t(14, 20, 500, 0.1)
-    readonly property var labelMedium: _t(12, 16, 500, 0.5)
-    readonly property var labelSmall:  _t(11, 16, 500, 0.5)
+    readonly property var labelLarge:  _t(14, 20, 500, nothing ? 0.8 : 0.1, nothing ? mono : sans, true)
+    readonly property var labelMedium: _t(12, 16, 500, nothing ? 1.0 : 0.5, nothing ? mono : sans, true)
+    readonly property var labelSmall:  _t(11, 16, 500, nothing ? 1.2 : 0.5, nothing ? mono : sans, true)
 
     // моно (годинник, числа): tabular-вигляд
-    readonly property var monoLarge:  _t(22, 28, 500, 0, mono)
+    readonly property var monoLarge:  _t(22, 28, nothing ? 400 : 500, 0, nothing ? dot : mono)
     readonly property var monoMedium: _t(14, 20, 500, 0, mono)
     readonly property var monoSmall:  _t(12, 16, 500, 0, mono)
+
+    // годинник у барі: у Nothing — dot-matrix (мін. ~18px, щоб точки читались)
+    readonly property var clockBar: nothing ? _t(18, 22, 400, 0.5, dot) : _t(14, 20, 500, 0, mono)
 
     // іконки (Material Symbols Rounded — єдиний icon pack)
     readonly property int iconXS: Math.round(16 * k)

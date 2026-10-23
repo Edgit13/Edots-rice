@@ -7,7 +7,7 @@ Item {
     id: root
 
     property bool accent: false                    // тональна підсвітка (напр. є непрочитані)
-    property color accentColor: Theme.color.secondaryContainer
+    property color accentColor: Theme.settings.nothing ? Theme.color.surfaceContainerHighest : Theme.color.secondaryContainer
     property color stateColor: Theme.color.fgSurface
     property int acceptedButtons: Qt.LeftButton
     default property alias content: holder.data

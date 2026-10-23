@@ -22,7 +22,7 @@ Singleton {
 
     function blur(level)    { return _lerp(_blur, level) * k }
     function offsetY(level) { return _lerp(_offsetY, level) * k }
-    function opacity(level) { return _lerp(_opacity, level) * (ThemeSettings.resolvedDark ? 1.4 : 1.0) }
+    function opacity(level) { return ThemeSettings.nothing ? 0 : _lerp(_opacity, level) * (ThemeSettings.resolvedDark ? 1.4 : 1.0) }
 
     // tonal surface для рівня (M3: контейнери замість surface tint)
     function surfaceFor(level) {

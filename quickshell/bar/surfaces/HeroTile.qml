@@ -14,11 +14,11 @@ Rectangle {
     property color base: Theme.color.primaryContainer
     property color fgBase: Theme.color.fgPrimaryContainer
     readonly property bool hot: percent > 85
-    readonly property color fg: hot ? Theme.color.fgErrorContainer : fgBase
+    readonly property color fg: hot ? (Theme.settings.nothing ? Theme.color.fgError : Theme.color.fgErrorContainer) : fgBase
 
     implicitHeight: Theme.components.dp(150)
     radius: Theme.shape.cardLarge
-    color: hot ? Theme.color.errorContainer : base
+    color: hot ? (Theme.settings.nothing ? Theme.color.error : Theme.color.errorContainer) : base
     Behavior on color { MotionColorAnimation { role: "stateChange" } }
 
     Connections {

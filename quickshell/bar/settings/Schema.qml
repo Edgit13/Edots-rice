@@ -26,6 +26,8 @@ Singleton {
             label: "section.appearance",
             fields: {
                 mode:             { type: "enum", options: ["system","light","dark"], default: "dark", label: "Color mode", desc: "Follow system or force dark/light." },
+                design:           { type: "enum", options: ["material","nothing"], default: "material", label: "Design style", desc: "Material (default) or Nothing (monochrome, dot-matrix, red accent)." },
+                transition:       { type: "enum", options: ["off","fade","dots","scan"], default: "dots", label: "Theme transition", desc: "Animation when switching design or light/dark." },
                 dynamicColor:     { type: "bool", default: true, label: "Dynamic colors from wallpaper" },
                 accent:           { type: "color", default: "#74e7c8", label: "Custom accent" },
                 cornerStyle:      { type: "enum", options: ["material","expressive","rounded"], default: "expressive", label: "Corner style" },

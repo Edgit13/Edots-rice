@@ -45,14 +45,14 @@ Item {
             ThemedText {
                 anchors.verticalCenter: parent.verticalCenter
                 text: root.timeStr
-                style: Theme.type.monoMedium
-                emphasized: true
+                style: Theme.type.clockBar
+                emphasized: !Theme.settings.nothing
                 color: Theme.color.fgSurface
             }
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 width: 3; height: 3; radius: 1.5
-                color: Theme.color.outline
+                color: Theme.settings.nothing ? ThemeNothing.red : Theme.color.outline
             }
             ThemedText {
                 anchors.verticalCenter: parent.verticalCenter

@@ -19,6 +19,8 @@ Item {
         anchors.fill: parent
         radius: root.radius
         color: root.color
+        border.width: ThemeSettings.nothing ? ThemeNothing.hairline : 0
+        border.color: ThemeColors.outlineVariant
         layer.enabled: root.shadowVisible
         layer.effect: MultiEffect {
             shadowEnabled: true

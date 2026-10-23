@@ -15,5 +15,7 @@
   "uiScale": 1,
   "cornerStyle": "expressive",
   "expressiveMotion": true,
-  "reduceMotion": false
+  "reduceMotion": false,
+  "design": "nothing",
+  "transition": "fade"
 }

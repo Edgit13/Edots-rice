@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+s=org.gnome.desktop.interface
+theme=$(gsettings get $s gtk-theme | tr -d "'")
+[ -z "$theme" ] && theme="Adwaita-dark"
+
+gsettings set $s gtk-theme "gtk-reload-dummy"
+gsettings set $s gtk-theme "$theme"
+
+# Uncomment if Nautilus (libadwaita) still doesn't update:
+# scheme=$(gsettings get $s color-scheme | tr -d "'")
+# gsettings set $s color-scheme "default"
+# gsettings set $s color-scheme "$scheme"

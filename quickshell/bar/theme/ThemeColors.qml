@@ -14,7 +14,7 @@ Singleton {
     readonly property bool dark: ThemeSettings.resolvedDark
     property var wall: ({})       // вміст colors.json
     readonly property bool hasWall: typeof wall.primary === "string"
-    readonly property bool useWall: ThemeSettings.dynamicColor && hasWall
+    readonly property bool useWall: ThemeSettings.dynamicColor && hasWall && !ThemeSettings.nothing
 
     FileView {
         path: Quickshell.env("HOME") + "/.config/quickshell/colors.json"
@@ -26,12 +26,46 @@ Singleton {
         }
     }
 
-    readonly property string source: useWall ? (dark && wall.md3 === true ? "matugen" : "wallpaper-seed") : "accent"
+    readonly property string source: ThemeSettings.nothing ? "nothing" : useWall ? (dark && wall.md3 === true ? "matugen" : "wallpaper-seed") : "accent"
     readonly property string seed: useWall ? wall.primary : ThemeSettings.accent
 
-    readonly property var scheme: _build()
+    // builtScheme — цільова схема; scheme — та, що показується (під час fade — проміжна)
+    readonly property var builtScheme: _build()
+    property var scheme: builtScheme
+    property var fromScheme: ({})
+    property var toScheme: ({})
+    property real blendT: 1
+
+    onBuiltSchemeChanged: _retarget()
+    onBlendTChanged: scheme = blendT >= 1 ? toScheme : _blend(fromScheme, toScheme, blendT)
+
+    NumberAnimation { id: fade; target: root; property: "blendT"; from: 0; to: 1; easing.type: Easing.OutCubic }
+
+    function _retarget() {
+        const to = builtScheme
+        const ms = ThemeSwitch.fadeDuration()
+        fade.stop()
+        if (ms <= 0) { toScheme = to; blendT = 1; scheme = to; return }
+        fromScheme = scheme
+        toScheme = to
+        fade.duration = ms
+        blendT = 0
+        fade.start()
+    }
+    function _blend(a, b, t) {
+        const out = {}
+        for (const k in b) {
+            const x = a[k], y = b[k]
+            if (x === undefined) { out[k] = y; continue }
+            const cx = (typeof x === "string") ? Qt.color(x) : x
+            const cy = (typeof y === "string") ? Qt.color(y) : y
+            out[k] = Qt.rgba(cx.r + (cy.r - cx.r) * t, cx.g + (cy.g - cx.g) * t, cx.b + (cy.b - cx.b) * t, 1)
+        }
+        return out
+    }
 
     function _build() {
+        if (ThemeSettings.nothing) return ThemeNothing.makeScheme(dark)
         const gen = ThemeTonal.makeScheme(seed, dark)
         if (useWall && dark && wall.md3 === true) {
             for (const k in wall) {

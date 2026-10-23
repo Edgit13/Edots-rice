@@ -45,7 +45,9 @@ Item {
     property alias dialog: dialogSlot.data
 
     // колір тіла за станом; можна перевизначити
-    property color baseColor: (_st === "dialog") ? Theme.color.surfaceContainerHighest : Theme.color.surfaceContainerHigh
+    property color baseColor: Theme.settings.nothing
+        ? ((_st === "dialog") ? Theme.color.surfaceContainerLow : Theme.color.surface)
+        : ((_st === "dialog") ? Theme.color.surfaceContainerHighest : Theme.color.surfaceContainerHigh)
 
     // стани взаємодії (readonly)
     readonly property bool hovered: hh.hovered

@@ -18,9 +18,10 @@
     "workspaces": true
   },
   "osd": {
-    "position": "left",
-    "margin": 28,
-    "size": 0.9
+    "position": "bottom-left",
+    "margin": 36,
+    "size": 1,
+    "duration": 2.3000000000000003
   },
   "notif": {
     "dnd": false

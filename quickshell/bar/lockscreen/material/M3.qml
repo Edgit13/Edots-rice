@@ -71,6 +71,7 @@ Singleton {
     // ---- typography: Theme uses .size, Material* expects .pixelSize ----
     readonly property string fontFamily: Theme.type.sans
     readonly property string fontMono:   Theme.type.mono
+    readonly property string clockFamily: Theme.settings.nothing ? Theme.type.dot : Theme.type.sans
 
     function _f(t) {
         return { family: t.family, pixelSize: t.size, weight: t.weight }

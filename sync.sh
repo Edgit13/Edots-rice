@@ -37,20 +37,18 @@ LINKS=(
   "nvim:$CONFIG_HOME/nvim"
   "quickshell:$CONFIG_HOME/quickshell"
   "rofi:$CONFIG_HOME/rofi"
-  "swaylock:$CONFIG_HOME/swaylock"
   "swaync:$CONFIG_HOME/swaync"
 )
 
 # ---------- file symlinks into systemd user dir ----------
 FILE_LINKS=(
-  "systemd/edots-lockscreen.service:$SYSTEMD_HOME/edots-lockscreen.service"
-  "systemd/swayidle.service:$SYSTEMD_HOME/swayidle.service"
 )
 
 # ---------- helpers that go into /usr/local/bin (need sudo) ----------
 BIN_LINKS=(
   "edots/tool-manager/upkg:/usr/local/bin/upkg"
   "edots/tool-manager/utimer:/usr/local/bin/utimer"
+  "edots/gtk-reload/gtk-reload:/usr/local/bin/gtk-reload"
 )
 
 # ---------- output helpers ----------
@@ -127,7 +125,10 @@ cmd_install() {
   run chmod +x "$REPO_DIR"/quickshell/lockscreen/*.sh 2>/dev/null || true
   run chmod +x "$REPO_DIR"/quickshell/scripts/*.sh 2>/dev/null || true
   run chmod +x "$REPO_DIR"/mango/scripts/*.sh 2>/dev/null || true
-  run chmod +x "$REPO_DIR"/edots/tool-manager/upkg "$REPO_DIR"/edots/tool-manager/utimer 2>/dev/null || true
+  # every helper we expose via /usr/local/bin must be executable
+  for pair in "${BIN_LINKS[@]}"; do
+    run chmod +x "$REPO_DIR/${pair%%:*}" 2>/dev/null || true
+  done
   info "chmod +x applied"
 
   echo
@@ -138,11 +139,33 @@ cmd_install() {
     for pair in "${BIN_LINKS[@]}"; do
       local src="$REPO_DIR/${pair%%:*}" dst="${pair#*:}"
       if [ ! -e "$src" ]; then warn "missing in repo, skipping: $src"; continue; fi
+
+      # make sure the target is runnable before we put it on PATH
+      run chmod +x "$src"
+
       if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
         info "already linked: $dst"; continue
       fi
-      run sudo ln -sf "$src" "$dst"
-      info "linked (sudo): $dst -> $src"
+
+      # back up a real file sitting at the destination (don't clobber it)
+      if [ -L "$dst" ]; then
+        warn "replacing stale link: $dst -> $(readlink "$dst")"
+        run sudo rm "$dst"
+      elif [ -e "$dst" ]; then
+        run mkdir -p "$BACKUP_DIR"
+        warn "backing up old (sudo): $dst -> $BACKUP_DIR/"
+        run sudo mv "$dst" "$BACKUP_DIR/"
+      fi
+
+      run sudo mkdir -p "$(dirname "$dst")"
+      run sudo ln -s "$src" "$dst"
+
+      if [ "$DRY_RUN" = "1" ] \
+        || { [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; }; then
+        info "linked (sudo): $dst -> $src"
+      else
+        err "failed to link (sudo): $dst"
+      fi
     done
   fi
 

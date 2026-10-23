@@ -87,6 +87,8 @@ Item {
             width: parent.width
             height: content.implicitHeight + Theme.space.md * 2
             color: card.critical ? Theme.color.errorContainer : Theme.color.surfaceContainerHigh
+            border.width: (Theme.settings.nothing && card.popup) ? ThemeNothing.hairline : 0
+            border.color: card.critical ? Theme.color.error : Theme.color.outlineVariant
             topLeftRadius: card.topR
             topRightRadius: card.topR
             bottomLeftRadius: card.bottomR

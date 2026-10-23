@@ -122,7 +122,7 @@ PanelWindow {
             anchors.fill: parent
             level: 0.5
             radius: Theme.shape.radius("full", win.thickness)
-            color: Theme.color.surfaceContainer
+            color: Theme.settings.nothing ? Theme.color.surface : Theme.color.surfaceContainer
         }
 
         BarLayout {

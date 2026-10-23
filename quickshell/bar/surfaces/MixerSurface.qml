@@ -106,7 +106,7 @@ Item {
         Text {
             text: xs.valueLabel
             color: Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.7)
-            font { family: "SF Mono"; pixelSize: 11 }
+            font { family: Colors.monoFont; pixelSize: 11 }
             Layout.preferredWidth: 38
         }
     }
@@ -129,12 +129,12 @@ Item {
                 Layout.fillWidth: true
                 text: "Volume"
                 color: Colors.fg
-                font { family: "SF Pro Display"; pixelSize: 13; weight: 600 }
+                font { family: Colors.uiFont; pixelSize: 13; weight: 600 }
             }
             Text {
                 text: root.sinkReady ? root.vol + "%" : "-"
                 color: Md.primary
-                font { family: "SF Mono"; pixelSize: 14; weight: 600 }
+                font { family: Colors.monoFont; pixelSize: 14; weight: 600 }
             }
         }
 

@@ -141,6 +141,22 @@ ShellRoot {
         function brightnessDown(): void   { OsdService.brightnessStep(-5) }
     }
 
+    // анімація перемикання теми (повноекранний click-through шар)
+    Variants {
+        model: Quickshell.screens
+        ThemeTransitionOverlay {}
+    }
+
+    // qs ipc call theme toggleDesign | setDesign nothing | toggleMode | setMode dark | setTransition dots
+    IpcHandler {
+        target: "theme"
+        function setDesign(name: string): void { Theme.set("design", name) }
+        function toggleDesign(): void { Theme.set("design", ThemeSettings.wantedDesign === "nothing" ? "material" : "nothing") }
+        function setMode(mode: string): void { Theme.set("mode", mode) }
+        function toggleMode(): void { Theme.set("mode", ThemeSettings.wantedMode === "light" ? "dark" : "light") }
+        function setTransition(style: string): void { Theme.set("transition", style) }
+    }
+
     Bar {}
     DockLoader {}
 }

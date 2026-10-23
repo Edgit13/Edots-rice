@@ -21,7 +21,7 @@ Item {
     readonly property real gap: Theme.space.xxs
 
     // urgent: слот просто перефарбовується в червоний (errorContainer) — жодних додаткових фігур поверх
-    readonly property color urgentBg: Theme.color.errorContainer
+    readonly property color urgentBg: Theme.settings.nothing ? Theme.color.error : Theme.color.errorContainer
 
     implicitWidth: vertical ? cell : cell * count
     implicitHeight: vertical ? cell * count : cell
@@ -176,7 +176,7 @@ Item {
                 emphasized: lab.isActive
                 opacity: (lab.isFilled || lab.hovered) ? 1 : 0
                 color: lab.isActive ? Theme.color.fgPrimary
-                     : lab.urgent ? Theme.color.fgErrorContainer
+                     : lab.urgent ? (Theme.settings.nothing ? Theme.color.fgError : Theme.color.fgErrorContainer)
                      : lab.occupied ? Theme.color.fgSecondaryContainer
                      : Theme.color.fgSurfaceVariant
                 Behavior on opacity { MotionAnimation { role: "hover" } }

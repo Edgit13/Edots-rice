@@ -44,7 +44,7 @@ Item {
                 anchors.rightMargin: 16
                 verticalAlignment: TextInput.AlignVCenter
                 color: Colors.fg
-                font { family: "SF Pro Display"; pixelSize: 12 }
+                font { family: Colors.uiFont; pixelSize: 12 }
                 focus: true
                 selectByMouse: true
                 clip: true
@@ -132,7 +132,7 @@ Item {
                         Text {
                             text: modelData.name
                             color: appRow.current ? Colors.bg0 : Colors.fg
-                            font { family: "SF Pro Display"; pixelSize: 12; weight: 500 }
+                            font { family: Colors.uiFont; pixelSize: 12; weight: 500 }
                             Layout.fillWidth: true
                             elide: Text.ElideRight
                         }
@@ -143,7 +143,7 @@ Item {
                             opacity: appRow.current ? 0.85 : 1.0
                             elide: Text.ElideRight
                             Layout.fillWidth: true
-                            font { family: "SF Pro Display"; pixelSize: 10 }
+                            font { family: Colors.uiFont; pixelSize: 10 }
                         }
                     }
                 }

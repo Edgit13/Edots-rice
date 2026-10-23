@@ -1,4 +1,5 @@
 import "root:/theme"
+import "root:/widgets"
 import QtQuick
 
 // MediaRing — круговий прогрес із іконкою в центрі (для бару).
@@ -19,9 +20,19 @@ Item {
     onRingColorChanged: canvas.requestPaint()
     onWidthChanged: canvas.requestPaint()
 
+    readonly property bool nothing: Theme.settings.nothing
+
+    DotRing {
+        anchors.fill: parent
+        visible: root.nothing
+        value: root.value
+        color: root.ringColor
+    }
+
     Canvas {
         id: canvas
         anchors.fill: parent
+        visible: !root.nothing
         onPaint: {
             const ctx = getContext("2d")
             ctx.clearRect(0, 0, width, height)
@@ -47,7 +58,7 @@ Item {
     Text {
         anchors.centerIn: parent
         text: root.icon
-        font { family: Theme.type.icons; pixelSize: Math.round(root.width * 0.62) }
+        font { family: Theme.type.icons; pixelSize: Math.round(root.width * (root.nothing ? 0.4 : 0.62)) }
         color: root.iconColor
     }
 }

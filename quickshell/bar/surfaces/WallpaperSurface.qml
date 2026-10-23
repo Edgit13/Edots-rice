@@ -54,7 +54,7 @@ Item {
         visible: staticModel.count === 0 && animatedModel.count === 0
         text: "Нема шпалер у " + root.wallpaperDir
         color: Colors.grey1
-        font { family: "SF Pro Display"; pixelSize: 11 }
+        font { family: Colors.uiFont; pixelSize: 11 }
     }
 
     Component {

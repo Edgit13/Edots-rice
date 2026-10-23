@@ -94,7 +94,7 @@ Item {
                 Layout.fillWidth: true
                 text: "Буфер обміну"
                 color: Colors.accent
-                font { family: "SF Pro Display"; pixelSize: 12; weight: 600 }
+                font { family: Colors.uiFont; pixelSize: 12; weight: 600 }
             }
 
             Text {
@@ -123,12 +123,12 @@ Item {
                 Layout.fillWidth: true
                 text: "Очистити всю історію?"
                 color: Colors.red
-                font { family: "SF Pro Display"; pixelSize: 11 }
+                font { family: Colors.uiFont; pixelSize: 11 }
             }
             Text {
                 text: "Так"
                 color: Colors.red
-                font { family: "SF Pro Display"; pixelSize: 11; underline: true }
+                font { family: Colors.uiFont; pixelSize: 11; underline: true }
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
@@ -138,7 +138,7 @@ Item {
             Text {
                 text: "Скасувати"
                 color: Colors.grey2
-                font { family: "SF Pro Display"; pixelSize: 11; underline: true }
+                font { family: Colors.uiFont; pixelSize: 11; underline: true }
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
@@ -154,7 +154,7 @@ Item {
             Layout.topMargin: 20
             text: "Історія порожня"
             color: Colors.grey1
-            font { family: "SF Pro Display"; pixelSize: 11 }
+            font { family: Colors.uiFont; pixelSize: 11 }
         }
 
         Flickable {
@@ -195,7 +195,7 @@ Item {
                                 text: row.modelData.preview
                                 color: Colors.fg
                                 elide: Text.ElideRight
-                                font { family: "SF Pro Display"; pixelSize: 11 }
+                                font { family: Colors.uiFont; pixelSize: 11 }
                             }
 
                             Text {

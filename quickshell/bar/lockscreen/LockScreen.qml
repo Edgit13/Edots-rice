@@ -290,7 +290,7 @@ Item {
                         text: Qt.formatDateTime(clockTimer.date, "hh")
                         color: M3.m3OnSurface
                         font {
-                            family: M3.fontFamily
+                            family: M3.clockFamily
                             pixelSize: Math.round(surf.height * 0.13)
                             weight: Font.Light
                         }
@@ -309,7 +309,7 @@ Item {
                         text: ":"
                         color: M3.primary
                         font {
-                            family: M3.fontFamily
+                            family: M3.clockFamily
                             pixelSize: Math.round(surf.height * 0.13)
                             weight: Font.Light
                         }
@@ -324,7 +324,7 @@ Item {
                         text: Qt.formatDateTime(clockTimer.date, "mm")
                         color: M3.m3OnSurface
                         font {
-                            family: M3.fontFamily
+                            family: M3.clockFamily
                             pixelSize: Math.round(surf.height * 0.13)
                             weight: Font.Light
                         }

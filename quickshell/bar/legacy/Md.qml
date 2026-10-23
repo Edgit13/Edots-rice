@@ -50,23 +50,25 @@ Singleton {
     // Повні M3-токени — якщо colors.json згенеровано новим шаблоном (md3:true);
     // інакше fallback на евристику + WCAG-контраст нижче.
     readonly property bool hasMd3: md.data.md3 === true
-    readonly property color primary:          hasMd3 ? md.c("primary")          : Colors.accent
-    readonly property color onPrimary:        hasMd3 ? md.c("on_primary")        : Colors.bg0
-    readonly property color primaryContainer: hasMd3 ? md.c("primary_container") : mix(Colors.bg2, Colors.accent, 0.30)
-    readonly property color onPrimaryContainer: hasMd3 ? md.c("on_primary_container") : mix(Colors.accent, Colors.fg, 0.65)
-    readonly property color secondaryContainer: hasMd3 ? md.c("secondary_container") : mix(Colors.bg2, Colors.accent, 0.16)
-    readonly property color onSecondaryContainer: hasMd3 ? md.c("on_secondary_container") : mix(Colors.accent, Colors.fg, 0.65)
-    readonly property color tertiary:         hasMd3 ? md.c("tertiary")         : Colors.accent
-    readonly property color error:            hasMd3 ? md.c("error")            : Colors.red
-    readonly property color onError:          hasMd3 ? md.c("on_error")          : Colors.bg0
-    readonly property color errorContainer:   hasMd3 ? md.c("error_container")   : mix(Colors.bg2, Colors.red, 0.30)
-    readonly property color surface:                 hasMd3 ? md.c("surface")                  : Colors.bg0
-    readonly property color surfaceContainerLow:     hasMd3 ? md.c("surface_container_low")    : Colors.bg1
-    readonly property color surfaceContainer:        hasMd3 ? md.c("surface_container")        : Colors.bg2
-    readonly property color surfaceContainerHigh:    hasMd3 ? md.c("surface_container_high")   : Colors.bg3
-    readonly property color surfaceContainerHighest: hasMd3 ? md.c("surface_container_highest"): Colors.bg4
-    readonly property color outline:        hasMd3 ? md.c("outline")         : Colors.grey1
-    readonly property color outlineVariant: hasMd3 ? md.c("outline_variant") : mix(Colors.grey1, Colors.fg, 0.25)
+    readonly property bool nothing: Colors.nothing
+    function _n(d, l) { return Colors._dark ? d : l }
+    readonly property color primary:          nothing ? _n("#FFFFFF", "#0A0A0A") : hasMd3 ? md.c("primary")          : Colors.accent
+    readonly property color onPrimary:        nothing ? _n("#000000", "#FFFFFF") : hasMd3 ? md.c("on_primary")        : Colors.bg0
+    readonly property color primaryContainer: nothing ? _n("#262626", "#E3E3E3") : hasMd3 ? md.c("primary_container") : mix(Colors.bg2, Colors.accent, 0.30)
+    readonly property color onPrimaryContainer: nothing ? _n("#FFFFFF", "#0A0A0A") : hasMd3 ? md.c("on_primary_container") : mix(Colors.accent, Colors.fg, 0.65)
+    readonly property color secondaryContainer: nothing ? _n("#1A1A1A", "#ECECEC") : hasMd3 ? md.c("secondary_container") : mix(Colors.bg2, Colors.accent, 0.16)
+    readonly property color onSecondaryContainer: nothing ? _n("#E6E6E6", "#1A1A1A") : hasMd3 ? md.c("on_secondary_container") : mix(Colors.accent, Colors.fg, 0.65)
+    readonly property color tertiary:         nothing ? "#D71921" : hasMd3 ? md.c("tertiary")         : Colors.accent
+    readonly property color error:            nothing ? "#D71921" : hasMd3 ? md.c("error")            : Colors.red
+    readonly property color onError:          nothing ? "#FFFFFF" : hasMd3 ? md.c("on_error")          : Colors.bg0
+    readonly property color errorContainer:   nothing ? _n("#3A0D10", "#FFDADB") : hasMd3 ? md.c("error_container")   : mix(Colors.bg2, Colors.red, 0.30)
+    readonly property color surface:                 nothing ? _n("#000000", "#F2F2F2") : hasMd3 ? md.c("surface")                  : Colors.bg0
+    readonly property color surfaceContainerLow:     nothing ? _n("#0B0B0B", "#F8F8F8") : hasMd3 ? md.c("surface_container_low")    : Colors.bg1
+    readonly property color surfaceContainer:        nothing ? _n("#121212", "#EFEFEF") : hasMd3 ? md.c("surface_container")        : Colors.bg2
+    readonly property color surfaceContainerHigh:    nothing ? _n("#1A1A1A", "#E8E8E8") : hasMd3 ? md.c("surface_container_high")   : Colors.bg3
+    readonly property color surfaceContainerHighest: nothing ? _n("#242424", "#E0E0E0") : hasMd3 ? md.c("surface_container_highest"): Colors.bg4
+    readonly property color outline:        nothing ? _n("#5C5C5C", "#8A8A8A") : hasMd3 ? md.c("outline")         : Colors.grey1
+    readonly property color outlineVariant: nothing ? _n("#2B2B2B", "#CFCFCF") : hasMd3 ? md.c("outline_variant") : mix(Colors.grey1, Colors.fg, 0.25)
 
 
     // WCAG-контраст: якщо fg/grey2 контрастні з bg0 — читабельність гарантовано
@@ -78,19 +80,19 @@ Singleton {
     }
     // Статичний білий текст (без адаптації — за рішенням користувача).
     // Через парсер-QML (onSurface: "x" трактується як signal handler) — через функції.
-    function _textMain() { return "#e8eae6" }
-    function _textDim() { return "#aab3ab" }
+    function _textMain() { return nothing ? _n("#FFFFFF", "#0A0A0A") : "#e8eae6" }
+    function _textDim() { return nothing ? _n("#A3A3A3", "#5E5E5E") : "#aab3ab" }
     readonly property color onSurface: _textMain()
     readonly property color onSurfaceVariant: _textDim()
     readonly property color m3OnSurface: _textMain()
     readonly property color m3OnSurfaceVariant: _textDim()
     readonly property color m3OnPrimary: onPrimary
-    readonly property color tertiaryContainer: hasMd3 ? md.c("tertiary_container") : mix(Colors.bg2, Colors.accent, 0.22)
+    readonly property color tertiaryContainer: nothing ? _n("#3A0D10", "#FFDADB") : hasMd3 ? md.c("tertiary_container") : mix(Colors.bg2, Colors.accent, 0.22)
 
-    readonly property real rS: 8
-    readonly property real rM: 12
+    readonly property real rS: nothing ? 6 : 8
+    readonly property real rM: nothing ? 10 : 12
     readonly property real rL: 16
-    readonly property real rXL: 28
+    readonly property real rXL: nothing ? 30 : 28
     readonly property real rFull: 999
     readonly property int durFast: 120
     readonly property int durMed: 200

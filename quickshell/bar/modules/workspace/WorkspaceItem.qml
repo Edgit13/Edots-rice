@@ -37,7 +37,7 @@ Item {
         height: root.dot + (parent.height - root.dot) * root.fill
         radius: root.active ? Theme.shape.radius("md", Math.min(width, height)) : Math.min(width, height) / 2
         scale: ma.pressed ? 0.9 : 1
-        color: root.urgent ? Theme.color.errorContainer
+        color: root.urgent ? (Theme.settings.nothing ? Theme.color.error : Theme.color.errorContainer)
              : root.active ? Theme.color.primary
              : root.occupied ? Theme.color.secondaryContainer
              : Theme.color.outline
