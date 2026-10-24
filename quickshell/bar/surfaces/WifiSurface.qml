@@ -1,4 +1,4 @@
-import "root:/legacy"
+import "root:/theme"
 import "root:/services"
 import "root:/widgets"
 import Quickshell

@@ -13,7 +13,7 @@ import Quickshell
 //   scan — те саме, але лінією-сканером зверху вниз
 //
 // Потік для dots/scan:  request(fn) → begin (оверлей покриває екран кольором старої теми)
-//   → через ~90 мс fn() (справжнє перемикання, сховане під покриттям) → applied → оверлей відкриває нову тему.
+//   → через ~30 мс fn() (справжнє перемикання, сховане під покриттям) → applied → оверлей відкриває нову тему.
 // Без анімацій / reduce motion / ігровий режим / запуск shell → fn() викликається одразу.
 Singleton {
     id: root
@@ -30,11 +30,11 @@ Singleton {
     signal applied()
 
     Timer { interval: 2500; running: true; onTriggered: root.armed = true }
-    Timer { id: guard; interval: 4000; running: root.busy; onTriggered: root.busy = false }   // страховка
+    Timer { id: guard; interval: 1800; running: root.busy; onTriggered: root.busy = false }   // страховка
 
     Timer {
         id: applyTimer
-        interval: 90
+        interval: 30
         onTriggered: {
             const f = root._pending
             root._pending = null

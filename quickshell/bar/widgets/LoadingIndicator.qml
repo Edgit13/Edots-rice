@@ -1,5 +1,5 @@
 pragma ComponentBehavior: Bound
-import "root:/legacy"
+import "root:/theme"
 import Quickshell
 import QtQuick
 

@@ -1,4 +1,4 @@
-import "root:/legacy"
+import "root:/theme"
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -116,7 +116,7 @@ Item {
                         width: 32
                         height: 32
                         radius: 6
-                        color: appRow.current ? Colors.bg0 : Colors.bg2
+                        color: appRow.current ? Colors.onAccent : Colors.bg2
                         Image {
                             anchors.fill: parent
                             anchors.margins: 4
@@ -131,7 +131,7 @@ Item {
                         spacing: 1
                         Text {
                             text: modelData.name
-                            color: appRow.current ? Colors.bg0 : Colors.fg
+                            color: appRow.current ? Colors.onAccent : Colors.fg
                             font { family: Colors.uiFont; pixelSize: 12; weight: 500 }
                             Layout.fillWidth: true
                             elide: Text.ElideRight
@@ -139,7 +139,7 @@ Item {
                         Text {
                             visible: (modelData.genericName || "") !== ""
                             text: modelData.genericName
-                            color: appRow.current ? Colors.bg0 : Colors.grey2
+                            color: appRow.current ? Colors.onAccent : Colors.grey2
                             opacity: appRow.current ? 0.85 : 1.0
                             elide: Text.ElideRight
                             Layout.fillWidth: true

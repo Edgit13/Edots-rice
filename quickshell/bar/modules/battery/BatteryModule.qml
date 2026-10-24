@@ -1,16 +1,12 @@
 import "root:/theme"
-import "root:/media"
 import "root:/modules/common"
 import Quickshell
 import Quickshell.Services.UPower
 import QtQuick
 
 // BatteryModule — кільце заряду з іконкою всередині + відсоток (як у end-4). Ховається без батареї.
-Item {
+BarModule {
     id: root
-
-    property bool vertical: false
-    property int cross: Theme.components.islandCompact
 
     property var battery: UPower.displayDevice
     readonly property bool isPresent: battery !== null && battery.isPresent && (battery.type === UPowerDeviceType.Battery || battery.percentage > 0)
@@ -32,53 +28,25 @@ Item {
         return Theme.color.primary
     }
 
-    visible: isPresent
-    implicitWidth: isPresent ? (vertical ? cross : (row.implicitWidth + Theme.space.md * 2)) : 0
-    implicitHeight: isPresent ? (vertical ? (col.implicitHeight + Theme.space.xs * 2) : cross) : 0
+    shown: isPresent
+    contentW: stat.implicitWidth + Theme.space.md * 2
+    contentH: stat.implicitHeight + Theme.space.xs * 2
 
     BarButton {
         anchors.fill: parent
 
-        Row {
-            id: row
-            visible: !root.vertical
+        BarRingStat {
+            id: stat
             anchors.centerIn: parent
-            spacing: Theme.space.xs
-            MediaRing {
-                anchors.verticalCenter: parent.verticalCenter
-                width: root.ringSize; height: root.ringSize
-                value: root.level / 100
-                icon: root.iconGlyph
-                ringColor: root.stateColor
-                iconColor: root.stateColor
-            }
-            ThemedText {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.level + "%"
-                style: Theme.type.labelMedium
-                color: root.level <= 15 && !root.charging ? Theme.color.error : Theme.color.fgSurface
-            }
-        }
-
-        Column {
-            id: col
-            visible: root.vertical
-            anchors.centerIn: parent
-            spacing: 2
-            MediaRing {
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: root.ringSize; height: root.ringSize
-                value: root.level / 100
-                icon: root.iconGlyph
-                ringColor: root.stateColor
-                iconColor: root.stateColor
-            }
-            ThemedText {
-                anchors.horizontalCenter: parent.horizontalCenter
-                text: String(root.level)
-                style: Theme.type.labelSmall
-                color: Theme.color.fgSurfaceVariant
-            }
+            vertical: root.vertical
+            ringSize: root.ringSize
+            value: root.level / 100
+            glyph: root.iconGlyph
+            ringColor: root.stateColor
+            iconColor: root.stateColor
+            text: root.level + "%"
+            textColor: root.level <= 15 && !root.charging ? Theme.color.error : Theme.color.fgSurface
+            verticalText: String(root.level)
         }
     }
 }

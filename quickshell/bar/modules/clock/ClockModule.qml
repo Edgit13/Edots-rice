@@ -7,11 +7,9 @@ import QtQuick
 
 // ClockModule — час жирним + дата світліше (як у end-4), плоский, у BarGroup.
 // Клік відкриває Dashboard.
-Item {
+BarModule {
     id: root
 
-    property bool vertical: false
-    property int cross: Theme.components.islandCompact
     signal clicked()
 
     SystemClock {
@@ -30,8 +28,8 @@ Item {
     readonly property string timeStrVertical: Qt.formatDateTime(shown, ClockSettings.hour12 ? "h\nmm" : "HH\nmm")
     readonly property string dateStr: Qt.formatDateTime(shown, ClockSettings.dateFormat)
 
-    implicitWidth: vertical ? cross : (contentRow.implicitWidth + Theme.space.md * 2)
-    implicitHeight: vertical ? (contentCol.implicitHeight + Theme.space.xs * 2) : cross
+    contentW: contentRow.implicitWidth + Theme.space.md * 2
+    contentH: contentCol.implicitHeight + Theme.space.xs * 2
 
     BarButton {
         anchors.fill: parent

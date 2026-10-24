@@ -1,15 +1,11 @@
 import "root:/theme"
 import "root:/services"
-import "root:/media"
 import "root:/modules/common"
 import QtQuick
 
 // ResourcesModule — кільця CPU / RAM з відсотками (як Resources в end-4). Вмикається: Settings → Бар → Модулі.
-Item {
+BarModule {
     id: root
-
-    property bool vertical: false
-    property int cross: Theme.components.islandCompact
 
     signal resourcesRequested()
 
@@ -27,73 +23,37 @@ Item {
     Component.onCompleted: _syncSub()
     Component.onDestruction: if (_sub) PerformanceService.unsubscribe()
 
-    implicitWidth: vertical ? cross : (row.implicitWidth + Theme.space.md * 2)
-    implicitHeight: vertical ? (col.implicitHeight + Theme.space.xs * 2) : cross
+    contentW: grid.implicitWidth + Theme.space.md * 2
+    contentH: grid.implicitHeight + Theme.space.xs * 2
 
     BarButton {
         anchors.fill: parent
         onClicked: root.resourcesRequested()          // відкриває/закриває BarWindow (onResourcesRequested) — тут не дублюємо
 
-        Row {
-            id: row
-            visible: !root.vertical
+        Grid {
+            id: grid
             anchors.centerIn: parent
-            spacing: Theme.space.md
+            columns: root.vertical ? 1 : 2
+            spacing: root.vertical ? Theme.space.xs : Theme.space.md
+            verticalItemAlignment: Grid.AlignVCenter
 
-            Row {
-                spacing: Theme.space.xs
-                anchors.verticalCenter: parent.verticalCenter
-                MediaRing {
-                    width: root.ringSize; height: root.ringSize
-                    value: root.cpu / 100
-                    icon: "\ue322"
-                    ringColor: root.cpu > 85 ? Theme.color.error : Theme.color.primary
-                    iconColor: Theme.color.fgSurfaceVariant
-                }
-                ThemedText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Math.round(root.cpu) + "%"
-                    style: Theme.type.labelMedium
-                    color: Theme.color.fgSurface
-                }
-            }
-            Row {
-                spacing: Theme.space.xs
-                anchors.verticalCenter: parent.verticalCenter
-                MediaRing {
-                    width: root.ringSize; height: root.ringSize
-                    value: root.ram / 100
-                    icon: "\ue1db"
-                    ringColor: root.ram > 85 ? Theme.color.error : Theme.color.tertiary
-                    iconColor: Theme.color.fgSurfaceVariant
-                }
-                ThemedText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: Math.round(root.ram) + "%"
-                    style: Theme.type.labelMedium
-                    color: Theme.color.fgSurface
-                }
-            }
-        }
-
-        Column {
-            id: col
-            visible: root.vertical
-            anchors.centerIn: parent
-            spacing: Theme.space.xs
-            MediaRing {
-                width: root.ringSize; height: root.ringSize
+            BarRingStat {
+                vertical: root.vertical
+                ringSize: root.ringSize
                 value: root.cpu / 100
-                icon: "\ue322"
+                glyph: "\ue322"
                 ringColor: root.cpu > 85 ? Theme.color.error : Theme.color.primary
                 iconColor: Theme.color.fgSurfaceVariant
+                text: Math.round(root.cpu) + "%"
             }
-            MediaRing {
-                width: root.ringSize; height: root.ringSize
+            BarRingStat {
+                vertical: root.vertical
+                ringSize: root.ringSize
                 value: root.ram / 100
-                icon: "\ue1db"
+                glyph: "\ue1db"
                 ringColor: root.ram > 85 ? Theme.color.error : Theme.color.tertiary
                 iconColor: Theme.color.fgSurfaceVariant
+                text: Math.round(root.ram) + "%"
             }
         }
     }

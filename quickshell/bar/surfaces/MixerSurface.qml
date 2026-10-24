@@ -1,5 +1,5 @@
 pragma ComponentBehavior: Bound
-import "root:/legacy"
+import "root:/theme"
 import "root:/widgets"
 import Quickshell
 import Quickshell.Io

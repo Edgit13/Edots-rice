@@ -60,6 +60,71 @@ Singleton {
 
     property var focusedClient: ({ id: null, title: "", appid: "", monitor: "", fullscreen: false, floating: false })
 
+    // ---------- монітор у фокусі ----------
+    // Раніше «активний монітор» брався з focusedClient.monitor. Але якщо на сфокусованому моніторі
+    // немає жодного вікна, focusing-client або порожній, або лишається від вікна на ІНШОМУ моніторі —
+    // тому все (лаунчер, дашборд, OSD, сповіщення) з'являлось лише там, де є вікна (eDP-1).
+    // Тепер: 1) монітор з `mmsg get/watch all-monitors` (selmon), 2) останній монітор, де змінились
+    // теги/фокус, 3) монітор сфокусованого вікна, 4) головний/перший екран.
+    property string _selMon: ""          // з all-monitors
+    property string _eventMon: ""        // монітор останньої зміни тегів (перемкнули тег → ми там)
+    function _screenExists(n) {
+        if (!n) return false
+        for (let i = 0; i < Quickshell.screens.length; i++) if (Quickshell.screens[i].name === n) return true
+        return false
+    }
+    readonly property string focusedMonitor: {
+        if (_screenExists(_selMon)) return _selMon
+        if (_screenExists(_eventMon)) return _eventMon
+        const c = focusedClient ? focusedClient.monitor : ""
+        if (_screenExists(c)) return c
+        return Quickshell.screens.length > 0 ? Quickshell.screens[0].name : ""
+    }
+
+    // all-monitors: схема JSON не задокументована, тож парсер толерантний до назв полів
+    readonly property var _selKeys: ["is_selmon", "selmon", "is_selected", "selected", "is_focused", "focused", "is_current", "current", "is_active", "active"]
+    readonly property var _nameKeys: ["name", "monitor", "output", "connector", "id"]
+    function _monName(o) {
+        for (let i = 0; i < _nameKeys.length; i++) {
+            const v = o[_nameKeys[i]]
+            if (typeof v === "string" && v.length > 0) return v
+        }
+        return ""
+    }
+    function _collectMonitors(obj, out) {
+        if (!obj || typeof obj !== "object") return
+        if (Array.isArray(obj)) { for (let i = 0; i < obj.length; i++) _collectMonitors(obj[i], out); return }
+        const n = _monName(obj)
+        if (n && _screenExists(n)) { out.push(obj); return }
+        for (const k in obj) _collectMonitors(obj[k], out)
+    }
+    function _applyMonitors(obj) {
+        const list = []
+        _collectMonitors(obj, list)
+        for (let i = 0; i < list.length; i++) {
+            for (let k = 0; k < _selKeys.length; k++) {
+                if (list[i][_selKeys[k]] === true || list[i][_selKeys[k]] === 1) {
+                    const n = _monName(list[i])
+                    if (n !== _selMon) { _selMon = n; if (debug) console.log("[Mango] focused monitor =", n) }
+                    return
+                }
+            }
+        }
+    }
+    property string _monBuf: ""
+    function _monitorsLine(line) {
+        _monBuf += line + "\n"
+        let obj
+        try { obj = JSON.parse(_monBuf) } catch (e) { if (_monBuf.length > 200000) _monBuf = ""; return }
+        _monBuf = ""
+        _applyMonitors(obj)
+    }
+    // legacy: рядок `<mon> selmon 1`
+    function _legacySel(line) {
+        const t = String(line).trim().split(/\s+/)
+        if (t.length >= 3 && t[1] === "selmon" && t[2] === "1") _selMon = t[0]
+    }
+
     // ---------- внутрішній стан ----------
     property var _work: ({})
     property bool _dirty: false
@@ -76,6 +141,7 @@ Singleton {
 
     // legacy: `<mon> tag N state clients focused`  |  `<mon> tags occ sel urg` (decimal; binary-варіант ігноруємо)
     function _legacyLine(line) {
+        _legacySel(line)
         const t = String(line).trim().split(/\s+/)
         if (t.length < 5) return
         const mon = t[0]
@@ -127,6 +193,8 @@ Singleton {
     }
 
     function _applyMonitorTags(monName, tagList) {
+        // зміна тегів на моніторі = користувач щойно там (перемкнув тег / відкрив вікно)
+        if (_snapshotDone && _tagsChanged(monName, tagList)) _eventMon = monName
         const m = _ensure(monName)
         m.count = tagList.length
         m.tags = []
@@ -144,11 +212,24 @@ Singleton {
         _touch()
     }
 
+    property bool _snapshotDone: false
+    Timer { interval: 1500; running: root.backend === "json" || root.backend === "legacy"; onTriggered: root._snapshotDone = true }
+    function _tagsChanged(monName, tagList) {
+        const m = _work[monName]
+        if (!m) return false
+        for (let i = 0; i < tagList.length; i++) {
+            const old = m.tags[i], t = tagList[i]
+            if (!old || old.active !== !!t.is_active) return true
+        }
+        return false
+    }
+
     function _applyClient(line) {
         if (!line || !line.trim()) return
         try {
             const obj = JSON.parse(line)
             if (obj && typeof obj === "object") {
+                if (obj.monitor && _screenExists(obj.monitor) && _snapshotDone) _eventMon = obj.monitor
                 focusedClient = {
                     id: (obj.id !== undefined && obj.id !== null) ? obj.id : null,
                     title: obj.title || "",
@@ -229,6 +310,16 @@ Singleton {
         command: ["mmsg", "watch", "all-tags"]
         running: root.backend === "json"
         stdout: SplitParser { onRead: function (line) { root._jsonLine(line) } }
+    }
+    Process {
+        command: ["mmsg", "get", "all-monitors"]
+        running: root.backend === "json"
+        stdout: SplitParser { onRead: function (line) { root._monitorsLine(line) } }
+    }
+    Process {
+        command: ["mmsg", "watch", "all-monitors"]
+        running: root.backend === "json"
+        stdout: SplitParser { onRead: function (line) { root._monitorsLine(line) } }
     }
     Process {
         command: ["mmsg", "get", "focusing-client"]

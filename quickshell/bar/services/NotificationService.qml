@@ -56,10 +56,7 @@ Singleton {
     property string popupMonitor: ""
     property string centerMonitor: ""
     function _focusedMonitor() {
-        const m = MangoService.focusedClient ? MangoService.focusedClient.monitor : ""
-        for (let i = 0; i < Quickshell.screens.length; i++)
-            if (Quickshell.screens[i].name === m) return m
-        return Quickshell.screens.length > 0 ? Quickshell.screens[0].name : ""
+        return MangoService.focusedMonitor
     }
     function isPopupTarget(scr) { return scr.name === (popupMonitor || _focusedMonitor()) }
     function isCenterTarget(scr) { return scr.name === (centerMonitor || _focusedMonitor()) }

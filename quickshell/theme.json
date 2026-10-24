@@ -12,10 +12,10 @@
   "mode": "dark",
   "dynamicColor": true,
   "accent": "#74e7c8",
-  "uiScale": 1,
+  "uiScale": 0.9500000000000001,
   "cornerStyle": "expressive",
   "expressiveMotion": true,
   "reduceMotion": false,
   "design": "nothing",
-  "transition": "fade"
+  "transition": "dots"
 }

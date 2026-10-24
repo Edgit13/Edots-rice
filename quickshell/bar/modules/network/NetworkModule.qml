@@ -5,11 +5,9 @@ import Quickshell.Networking
 import QtQuick
 
 // NetworkModule — іконка з'єднання; назва мережі виїжджає при hover. Клік: Wi-Fi.
-Item {
+BarRevealButton {
     id: root
 
-    property bool vertical: false
-    property int cross: Theme.components.islandCompact
     signal wifiRequested()
 
     readonly property var wifiDevice: {
@@ -31,54 +29,15 @@ Item {
     readonly property bool isWifi: wifiDevice !== null && Networking.wifiEnabled === true
     readonly property string ssid: wifiConnected ? activeNetwork.name : (isOnline ? "Online" : "Offline")
 
-    readonly property string iconGlyph: {
+    readonly property string iconGlyphValue: {
         if (!isOnline) return "\ue1da"
         if (isWifi) return "\ue63e"
         return "\ue0be"
     }
-    readonly property real iconBox: Theme.type.iconS
-    readonly property real fullW: (cross + iconBox) / 2 + Theme.space.xs + label.implicitWidth + Theme.space.md
+    glyph: iconGlyphValue
+    glyphColor: isOnline ? Theme.color.fgSurface : Theme.color.outline
+    label: ssid
+    labelColor: isOnline ? Theme.color.fgSurface : Theme.color.outline
 
-    implicitWidth: vertical ? cross : (btn.hovered ? fullW : cross)
-    implicitHeight: cross
-    Behavior on implicitWidth { MotionAnimation { role: "morph" } }
-
-    BarButton {
-        id: btn
-        anchors.fill: parent
-        onClicked: root.wifiRequested()
-
-        Row {
-            visible: !root.vertical
-            anchors.verticalCenter: parent.verticalCenter
-            x: (btn.height - root.iconBox) / 2
-            spacing: Theme.space.xs
-            Text {
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.iconGlyph
-                font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-                color: root.isOnline ? Theme.color.fgSurface : Theme.color.outline
-                Behavior on color { MotionColorAnimation { role: "hover" } }
-            }
-            ThemedText {
-                id: label
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.ssid
-                style: Theme.type.labelMedium
-                color: root.isOnline ? Theme.color.fgSurface : Theme.color.outline
-                elide: Text.ElideRight
-                width: Math.min(implicitWidth, Theme.components.dp(140))
-                opacity: btn.hovered ? 1 : 0
-                Behavior on opacity { MotionAnimation { role: "hover" } }
-            }
-        }
-
-        Text {
-            visible: root.vertical
-            anchors.centerIn: parent
-            text: root.iconGlyph
-            font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
-            color: root.isOnline ? Theme.color.fgSurface : Theme.color.outline
-        }
-    }
+    onClicked: root.wifiRequested()
 }

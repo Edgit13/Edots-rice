@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse
 import configparser
 import colorsys
 import json
@@ -16,6 +17,9 @@ CONFIG = HOME / ".config"
 
 MANGO_DIR = CONFIG / "mango"
 MANGO_COLORS_JSON = MANGO_DIR / "colors.json"
+WALLPAPER_PALETTE_JSON = MANGO_DIR / "colors-wallpaper.json"
+NOTHING_PALETTE_JSON = MANGO_DIR / "colors-nothing.json"
+WALLCOLORS_MODE_FILE = MANGO_DIR / "wallcolors-mode"
 MANGO_SWAYLOCK_COLORS = MANGO_DIR / "swaylock" / "colors.conf"
 SWAYLOCK_TARGET_WALLPAPER = CONFIG / "swaylock" / "current-wallpaper"
 KITTY_COLORS_CONF = CONFIG / "kitty" / "kitty-colors.conf"
@@ -514,14 +518,52 @@ shadeSortColumn=true
     write(KDE_COLOR_SCHEME, content)
 
 
-def main():
-    if len(sys.argv) != 2:
-        raise SystemExit("Usage: wallcolors.py /path/to/wallpaper")
-    wallpaper = os.path.abspath(os.path.expanduser(sys.argv[1]))
-    color, matugen_colors, role_hex = get_matugen_colors(wallpaper)
-    palette = build_palette(color)
-    palette.update(md3_tokens(role_hex))
+def nothing_palette() -> dict:
+    """Fixed Nothing-inspired palette, independent of the current wallpaper."""
+    p = {
+        "bg0": "#000000", "bg1": "#0A0A0A", "bg2": "#121212",
+        "bg3": "#1C1C1C", "bg4": "#2B2B2B", "fg": "#FFFFFF",
+        "accent": "#D71921", "red": "#D71921", "orange": "#F07858",
+        "yellow": "#F2B84B", "green": "#8FD694", "aqua": "#C4C4C4",
+        "blue": "#A3A3A3", "purple": "#D6D6D6", "grey0": "#333333",
+        "grey1": "#777777", "grey2": "#BDBDBD", "theme": "nothing",
+        # Material 3 roles, in the snake_case format consumed by ThemeColors.qml.
+        "primary": "#FFFFFF", "on_primary": "#000000",
+        "primary_container": "#262626", "on_primary_container": "#FFFFFF",
+        "secondary": "#C4C4C4", "on_secondary": "#000000",
+        "secondary_container": "#1A1A1A", "on_secondary_container": "#E6E6E6",
+        "tertiary": "#D71921", "on_tertiary": "#FFFFFF",
+        "tertiary_container": "#3A0D10", "on_tertiary_container": "#FFB3B6",
+        "error": "#D71921", "on_error": "#FFFFFF",
+        "error_container": "#3A0D10", "on_error_container": "#FFB3B6",
+        "success": "#8FD694", "on_success": "#000000",
+        "success_container": "#14301A", "on_success_container": "#C6F0C9",
+        "warning": "#F2B84B", "on_warning": "#000000",
+        "warning_container": "#3A2B08", "on_warning_container": "#FFE2A8",
+        "surface": "#000000", "on_surface": "#FFFFFF",
+        "surface_variant": "#1C1C1C", "on_surface_variant": "#A3A3A3",
+        "surface_dim": "#000000", "surface_bright": "#2A2A2A",
+        "surface_container_lowest": "#000000", "surface_container_low": "#0B0B0B",
+        "surface_container": "#121212", "surface_container_high": "#1A1A1A",
+        "surface_container_highest": "#242424", "outline": "#5C5C5C",
+        "outline_variant": "#2B2B2B", "inverse_surface": "#FFFFFF",
+        "inverse_on_surface": "#000000", "inverse_primary": "#000000",
+        "surface_tint": "#FFFFFF", "shadow": "#000000", "scrim": "#000000",
+        "md3": True,
+    }
+    return p
 
+
+def read_palette(path: Path):
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else None
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def apply_palette(palette: dict, wallpaper: str, mode: str, reload_apps: bool = True, restart_shell: bool = True):
+    """Write the active palette to all supported generated config files."""
     write_quickshell_colors(palette, wallpaper)
     write_dock_colors(palette)
     write_kitty_colors(palette)
@@ -532,23 +574,80 @@ def main():
     write_fish_colors(palette)
     write_firefox_colors(palette)
     write_swaylock_colors(palette, wallpaper)
-    copy_swaylock_wallpaper(wallpaper)
-
+    if wallpaper and Path(wallpaper).is_file():
+        copy_swaylock_wallpaper(wallpaper)
     write_kde_color_scheme(palette)
     write_kdeglobals(palette)
+    write(WALLCOLORS_MODE_FILE, mode + "\n")
+    logging.info("Applied %s palette%s", mode, f" (wallpaper: {wallpaper})" if wallpaper else "")
 
-    logging.info("Updated MangoWM color pipeline for wallpaper: %s", wallpaper)
-
+    if not reload_apps:
+        return
     time.sleep(0.25)
-
     reload_gtk()
-
     try:
-        subprocess.run(["plasma-apply-colorscheme", "Edots-Wallpaper"], capture_output=True)
-    except FileNotFoundError:
+        subprocess.run(["plasma-apply-colorscheme", "Edots-Wallpaper"], capture_output=True, timeout=5)
+    except (FileNotFoundError, subprocess.TimeoutExpired):
         pass
+    # Do not restart Quickshell when invoked from the shell itself.
+    if restart_shell:
+        subprocess.run("killall quickshell; quickshell &", shell=True, capture_output=True)
 
-    subprocess.run("killall quickshell; quickshell &", shell=True)
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Generate wallpaper-driven colors or switch the desktop to a Nothing-inspired palette."
+    )
+    parser.add_argument("wallpaper", nargs="?", help="wallpaper image (required for default/dynamic mode)")
+    parser.add_argument("--nothing", action="store_true", help="apply the fixed Nothing palette")
+    parser.add_argument("--wallpaper", dest="wallpaper_mode", action="store_true",
+                        help="restore wallpaper-derived colors from the saved palette")
+    parser.add_argument("--no-reload", action="store_true", help="write config files without reloading apps")
+    parser.add_argument("--no-shell-restart", action="store_true", help="reload GTK/KDE colors but do not kill/restart Quickshell (safe when called from Quickshell)")
+    args = parser.parse_args()
+
+    if args.nothing and args.wallpaper_mode:
+        parser.error("choose either --nothing or --wallpaper, not both")
+
+    # Use the last selected wallpaper when switching modes without passing a path.
+    remembered_wallpaper = ""
+    try:
+        remembered_wallpaper = QUICKSHELL_WALLPAPER_FILE.read_text(encoding="utf-8").strip()
+    except OSError:
+        pass
+    wallpaper = os.path.abspath(os.path.expanduser(args.wallpaper)) if args.wallpaper else remembered_wallpaper
+
+    if args.nothing:
+        # Preserve the dynamic palette and wallpaper path; Nothing mode must not run Matugen.
+        palette = nothing_palette()
+        apply_palette(palette, wallpaper, "nothing", reload_apps=not args.no_reload, restart_shell=not args.no_shell_restart)
+        return
+
+    if args.wallpaper_mode:
+        if args.wallpaper:
+            # Explicit image means regenerate the dynamic palette from that wallpaper.
+            color, _, role_hex = get_matugen_colors(wallpaper)
+            palette = build_palette(color)
+            palette.update(md3_tokens(role_hex))
+            write_json(WALLPAPER_PALETTE_JSON, palette)
+        else:
+            palette = read_palette(WALLPAPER_PALETTE_JSON)
+            if palette is None:
+                parser.error(f"No saved wallpaper palette at {WALLPAPER_PALETTE_JSON}; pass an image path")
+        if not wallpaper or not Path(wallpaper).is_file():
+            parser.error("the remembered wallpaper is missing; pass a valid wallpaper image")
+        apply_palette(palette, wallpaper, "wallpaper", reload_apps=not args.no_reload, restart_shell=not args.no_shell_restart)
+        return
+
+    if not args.wallpaper:
+        parser.error("pass a wallpaper image, or use --nothing / --wallpaper")
+    if not Path(wallpaper).is_file():
+        parser.error(f"wallpaper image does not exist: {wallpaper}")
+    color, _, role_hex = get_matugen_colors(wallpaper)
+    palette = build_palette(color)
+    palette.update(md3_tokens(role_hex))
+    write_json(WALLPAPER_PALETTE_JSON, palette)
+    apply_palette(palette, wallpaper, "wallpaper", reload_apps=not args.no_reload, restart_shell=not args.no_shell_restart)
 
 
 if __name__ == "__main__":

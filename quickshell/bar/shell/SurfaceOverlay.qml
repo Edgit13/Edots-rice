@@ -23,11 +23,9 @@ PanelWindow {
 
     readonly property string monitorName: modelData.name
     readonly property bool isCurrentMonitor: {
-        const focusedMon = MangoService.focusedClient.monitor
-        if (focusedMon && focusedMon.length > 0) return focusedMon === monitorName
-        const names = Quickshell.screens.map(function (s) { return s.name })
-        const main = names.indexOf(BarConfig.mainMonitor) >= 0 ? BarConfig.mainMonitor : names[0]
-        return names.length > 0 && main === monitorName
+        if (ShellState.activeMonitor && ShellState.activeMonitor.length > 0)
+            return ShellState.activeMonitor === monitorName
+        return MangoService.focusedMonitor === monitorName
     }
 
     readonly property var overlaySurfaces: ["launcher", "wallpaper", "clipboard", "mixer", "wifi", "media", "power", "binds", "resources"]

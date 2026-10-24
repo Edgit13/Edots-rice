@@ -3,7 +3,7 @@ import Quickshell
 import Quickshell.Services.UPower
 import QtQuick
 import QtQuick.Layouts
-import "root:/legacy"
+import "root:/theme"
 
 RowLayout {
     id: root

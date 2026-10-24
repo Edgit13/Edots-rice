@@ -6,20 +6,15 @@ import QtQuick
 
 // RecordModule — у барі лише під час запису: червона крапка, що пульсує, і таймер 00:12.
 // При наведенні крапка стає квадратом «стоп»; клік зупиняє запис.
-Item {
+BarModule {
     id: root
-
-    property bool vertical: false
-    property int cross: Theme.components.islandCompact
 
     readonly property bool active: RecordService.recording
 
-    visible: implicitWidth > 0
-    implicitWidth: active ? (vertical ? cross : row.implicitWidth + Theme.space.md * 2) : 0
-    implicitHeight: active ? (vertical ? col.implicitHeight + Theme.space.sm * 2 : cross) : 0
-    Behavior on implicitWidth { MotionAnimation { role: root.active ? "expand" : "collapse" } }
-    opacity: active ? 1 : 0
-    Behavior on opacity { MotionAnimation { role: "fade" } }
+    shown: active
+    animate: true
+    contentW: row.implicitWidth + Theme.space.md * 2
+    contentH: col.implicitHeight + Theme.space.sm * 2
 
     component RecDot: Rectangle {
         id: dot

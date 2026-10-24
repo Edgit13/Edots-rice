@@ -1,4 +1,4 @@
-import "root:/legacy"
+import "root:/theme"
 import Quickshell
 import Quickshell.Io
 import QtQuick

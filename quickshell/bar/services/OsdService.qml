@@ -46,11 +46,7 @@ Singleton {
 
     // ---- на якому екрані показувати: де сфокусоване вікно, інакше перший ----
     function isTarget(scr) {
-        const m = MangoService.focusedClient ? MangoService.focusedClient.monitor : ""
-        let found = false
-        for (let i = 0; i < Quickshell.screens.length; i++)
-            if (Quickshell.screens[i].name === m) found = true
-        return found ? scr.name === m : scr === Quickshell.screens[0]
+        return scr.name === MangoService.focusedMonitor
     }
 
     // не показуємо OSD на старті і одразу після зміни пристрою

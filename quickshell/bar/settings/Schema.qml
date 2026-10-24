@@ -190,6 +190,7 @@ Singleton {
         { name: "page.record",     icon: "videocam",        cats: ["record"] },
         { name: "page.lockscreen", icon: "lock",            cats: ["lockscreen"] },
         { name: "page.clock",      icon: "schedule",        cats: ["clock"] },
+        { name: "page.wallpapers", icon: "wallpaper",       cats: [] },
         { name: "page.about",      icon: "info",            cats: [] }
     ]
 }

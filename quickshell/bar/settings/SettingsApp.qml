@@ -314,6 +314,14 @@ Item {
                         }
                     }
 
+                    // ───────── Wallpapers color categorization ─────────
+                    Item {
+                        Layout.fillWidth: true
+                        implicitHeight: visible ? Math.max(520, flick.height - Theme.space.xl * 2) : 0
+                        visible: app.currentIndex === Schema.pages.length - 2
+                        PageWallpapers { anchors.fill: parent }
+                    }
+
                     // ───────── About ─────────
                     ColumnLayout {
                         id: aboutPage

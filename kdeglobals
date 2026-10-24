@@ -21,8 +21,8 @@ IntensityAmount=
 IntensityEffect=
 
 [Colors:Button]
-BackgroundAlternate=21,55,44
-BackgroundNormal=10,26,20
+BackgroundAlternate=55,21,23
+BackgroundNormal=26,10,11
 DecorationFocus=119,231,192
 DecorationHover=119,231,192
 ForegroundActive=119,231,192
@@ -30,13 +30,13 @@ ForegroundInactive=49,129,102
 ForegroundLink[$d]
 ForegroundNegative[$d]
 ForegroundNeutral[$d]
-ForegroundNormal=218,231,226
+ForegroundNormal=231,218,219
 ForegroundPositive[$d]
 ForegroundVisited[$d]
 
 [Colors:Complementary]
-BackgroundAlternate=15,41,32
-BackgroundNormal=6,15,12
+BackgroundAlternate=41,15,17
+BackgroundNormal=15,6,6
 DecorationFocus[$d]
 DecorationHover[$d]
 ForegroundActive=119,231,192
@@ -44,27 +44,27 @@ ForegroundInactive=49,129,102
 ForegroundLink[$d]
 ForegroundNegative[$d]
 ForegroundNeutral[$d]
-ForegroundNormal=218,231,226
+ForegroundNormal=231,218,219
 ForegroundPositive[$d]
 ForegroundVisited[$d]
 
 [Colors:Header]
-BackgroundAlternate=21,55,44
-BackgroundNormal=10,26,20
+BackgroundAlternate=55,21,23
+BackgroundNormal=26,10,11
 DecorationFocus[$d]
 DecorationHover[$d]
-ForegroundActive=119,231,192
+ForegroundActive=255,178,183
 ForegroundInactive=49,129,102
 ForegroundLink[$d]
 ForegroundNegative[$d]
 ForegroundNeutral[$d]
-ForegroundNormal=218,231,226
+ForegroundNormal=231,218,219
 ForegroundPositive[$d]
 ForegroundVisited[$d]
 
 [Colors:Header][Inactive]
-BackgroundAlternate=21,55,44
-BackgroundNormal=10,26,20
+BackgroundAlternate=55,21,23
+BackgroundNormal=26,10,11
 DecorationFocus[$d]
 DecorationHover[$d]
 ForegroundActive=119,231,192
@@ -72,13 +72,13 @@ ForegroundInactive=49,129,102
 ForegroundLink=210,121,125
 ForegroundNegative=121,210,153
 ForegroundNeutral=140,174,217
-ForegroundNormal=218,231,226
+ForegroundNormal=231,218,219
 ForegroundPositive=188,121,210
 ForegroundVisited=213,223,159
 
 [Colors:Selection]
 BackgroundAlternate=119,231,192
-BackgroundNormal=119,231,192
+BackgroundNormal=255,178,183
 DecorationFocus[$d]
 DecorationHover[$d]
 ForegroundActive=6,15,12
@@ -86,13 +86,13 @@ ForegroundInactive=6,15,12
 ForegroundLink[$d]
 ForegroundNegative[$d]
 ForegroundNeutral[$d]
-ForegroundNormal=6,15,12
+ForegroundNormal=15,6,6
 ForegroundPositive[$d]
 ForegroundVisited[$d]
 
 [Colors:Tooltip]
-BackgroundAlternate=21,55,44
-BackgroundNormal=15,41,32
+BackgroundAlternate=55,21,23
+BackgroundNormal=41,15,17
 DecorationFocus[$d]
 DecorationHover[$d]
 ForegroundActive=119,231,192
@@ -100,13 +100,13 @@ ForegroundInactive=49,129,102
 ForegroundLink[$d]
 ForegroundNegative[$d]
 ForegroundNeutral[$d]
-ForegroundNormal=218,231,226
+ForegroundNormal=231,218,219
 ForegroundPositive[$d]
 ForegroundVisited[$d]
 
 [Colors:View]
 BackgroundAlternate=21,55,44
-BackgroundNormal=10,26,20
+BackgroundNormal=26,10,11
 DecorationFocus=119,231,192
 DecorationHover=119,231,192
 ForegroundActive=119,231,192
@@ -114,13 +114,13 @@ ForegroundInactive=49,129,102
 ForegroundLink=210,121,125
 ForegroundNegative[$d]
 ForegroundNeutral[$d]
-ForegroundNormal=218,231,226
+ForegroundNormal=231,218,219
 ForegroundPositive[$d]
 ForegroundVisited=213,223,159
 
 [Colors:Window]
-BackgroundAlternate=15,41,32
-BackgroundNormal=6,15,12
+BackgroundAlternate=41,15,17
+BackgroundNormal=15,6,6
 DecorationFocus[$d]
 DecorationHover[$d]
 ForegroundActive=119,231,192
@@ -128,7 +128,7 @@ ForegroundInactive=49,129,102
 ForegroundLink=210,121,125
 ForegroundNegative=121,210,153
 ForegroundNeutral=140,174,217
-ForegroundNormal=218,231,226
+ForegroundNormal=231,218,219
 ForegroundPositive=188,121,210
 ForegroundVisited=213,223,159
 
@@ -174,11 +174,11 @@ View Style=DetailTree
 Theme=freedesktop
 
 [WM]
-activeBackground=15,41,32
-activeBlend=119,231,192
+activeBackground=41,15,17
+activeBlend=255,178,183
 activeFont=Google Sans Flex,10,-1,5,500,0,0,0,0,0,0,0,0,0,0,1,Medium
-activeForeground=218,231,226
-inactiveBackground=10,26,20
-inactiveBlend=10,26,20
-inactiveForeground=49,129,102
+activeForeground=231,218,219
+inactiveBackground=26,10,11
+inactiveBlend=26,10,11
+inactiveForeground=129,49,54
 

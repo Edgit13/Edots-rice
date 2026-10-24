@@ -5,20 +5,14 @@ import "root:/modules/common"
 import QtQuick
 
 // GameModeModule — з'являється в барі лише в ігровому режимі: пігулка з геймпадом; клік вимикає режим.
-Item {
+BarModule {
     id: root
-
-    property bool vertical: false
-    property int cross: Theme.components.islandCompact
 
     readonly property bool active: GameModeState.active
 
-    visible: implicitWidth > 0
-    implicitWidth: active ? (vertical ? cross : row.implicitWidth + Theme.space.md * 2) : 0
-    implicitHeight: active ? cross : 0
-    Behavior on implicitWidth { MotionAnimation { role: root.active ? "expand" : "collapse" } }
-    opacity: active ? 1 : 0
-    Behavior on opacity { MotionAnimation { role: "fade" } }
+    shown: active
+    animate: true
+    contentW: row.implicitWidth + Theme.space.md * 2
 
     BarButton {
         anchors.fill: parent
@@ -31,10 +25,9 @@ Item {
             id: row
             anchors.centerIn: parent
             spacing: Theme.space.xs
-            Text {
+            BarIcon {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "\uea28"                                   // sports_esports
-                font { family: Theme.type.icons; pixelSize: Theme.type.iconS }
                 color: Theme.color.fgTertiaryContainer
             }
             ThemedText {

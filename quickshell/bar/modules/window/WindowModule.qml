@@ -5,15 +5,13 @@ import QtQuick
 
 // WindowModule — як у end-4: клас застосунку дрібно зверху, заголовок під ним; без власної плашки.
 // ЛКМ: floating · СКМ: закрити вікно.
-Item {
+BarModule {
     id: root
 
     property string monitor: ""
-    property bool vertical: false
-    property int cross: Theme.components.islandCompact
 
     readonly property var client: MangoService.focusedClient
-    readonly property bool activeOnThisScreen: client && client.title && (client.monitor === monitor || monitor === "")
+    readonly property bool activeOnThisScreen: !!(client && client.title && (client.monitor === monitor || monitor === ""))
     readonly property string displayTitle: activeOnThisScreen ? client.title : ""
     readonly property string appName: {
         if (!activeOnThisScreen || !client.appid) return ""
@@ -21,14 +19,10 @@ Item {
         return id.charAt(0).toUpperCase() + id.slice(1)
     }
 
-    visible: opacity > 0.01
-    opacity: activeOnThisScreen ? 1 : 0
-    implicitWidth: activeOnThisScreen ? (vertical ? cross : Math.min(Theme.components.dp(280), col.implicitWidth + Theme.space.md * 2)) : 0
-    implicitHeight: activeOnThisScreen ? (vertical ? Math.min(Theme.components.dp(100), vcol.implicitHeight + Theme.space.sm * 2) : cross) : 0
-
-    Behavior on opacity { MotionAnimation { role: "stateChange" } }
-    Behavior on implicitWidth { MotionAnimation { role: "morph" } }
-    Behavior on implicitHeight { MotionAnimation { role: "morph" } }
+    shown: activeOnThisScreen
+    animate: true
+    contentW: Math.min(Theme.components.dp(280), col.implicitWidth + Theme.space.md * 2)
+    contentH: Math.min(Theme.components.dp(100), vcol.implicitHeight + Theme.space.sm * 2)
 
     BarButton {
         anchors.fill: parent

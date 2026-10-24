@@ -13,18 +13,20 @@
   "mode": "expanded",
   "elevation": 1,
   "position": "top",
-  "mainMonitor": "",
+  "mainMonitor": "HDMI-A-1",
   "modules": {
     "workspaces": true
   },
   "osd": {
     "position": "bottom-left",
-    "margin": 36,
+    "margin": 44,
     "size": 1,
     "duration": 2.3000000000000003
   },
   "notif": {
-    "dnd": false
+    "dnd": false,
+    "position": "right",
+    "margin": 20
   },
   "layout": {
     "active": "dwindle"
@@ -33,6 +35,7 @@
     "motion": false
   },
   "record": {
-    "fps": 30
+    "fps": 30,
+    "audio": "none"
   }
 }

@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import "root:/services"
 
 // ShellState — єдиний стан оболочки (поверхні, панелі, діалоги).
 // Доступний з будь-якого компонента через: import "root:/shell" -> ShellState.*
@@ -22,8 +23,11 @@ Singleton {
     signal toggleTasksRequested()
     signal closeTasksRequested()
 
+    // монітор, на якому відкривати: явний (клік по бару) → інакше той, що у фокусі (хоткей/IPC)
+    function resolveMonitor(monitor) { return monitor || MangoService.focusedMonitor }
+
     function openSurface(surface, monitor) {
-        activeMonitor = monitor || ""
+        activeMonitor = resolveMonitor(monitor)
         activeSurface = surface
     }
 
@@ -41,8 +45,8 @@ Singleton {
         activeMonitor = ""
     }
 
-    function openDashboard(monitor) { openDashboardRequested(monitor || "") }
-    function toggleDashboard(monitor) { toggleDashboardRequested(monitor || "") }
+    function openDashboard(monitor) { openDashboardRequested(resolveMonitor(monitor)) }
+    function toggleDashboard(monitor) { toggleDashboardRequested(resolveMonitor(monitor)) }
     function closeDashboard() { closeDashboardRequested() }
 
     function openSettings() { openSettingsRequested() }

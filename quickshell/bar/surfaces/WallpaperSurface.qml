@@ -1,4 +1,5 @@
-import "root:/legacy"
+import "root:/theme"
+import "root:/settings"
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
@@ -16,6 +17,46 @@ Item {
     id: root
 
     property string wallpaperDir: Quickshell.env("HOME") + "/Pictures/Wallpapers"
+    property string selectedCategory: "All"
+    property var colorIndex: ({})
+    property var availableCategories: ["All", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green", "Cyan", "Monochrome", "Other"]
+
+    function refreshVisibleFiles() {
+        visibleFiles.clear()
+        for (let i = 0; i < staticModel.count; i++) {
+            // FolderListModel.get(index, roleName) returns ONE role value, not an object.
+            const pathValue = staticModel.get(i, "filePath") || ""
+            if (!pathValue) continue
+            const nameValue = staticModel.get(i, "fileName") || pathValue.split("/").pop()
+            const category = colorIndex[pathValue] || colorIndex[decodeURIComponentSafe(pathValue)] || "Other"
+            if (root.selectedCategory !== "All" && category !== root.selectedCategory) continue
+            visibleFiles.append({ filePath: pathValue, fileName: nameValue, category: category })
+        }
+    }
+
+    function decodeURIComponentSafe(value) {
+        try { return decodeURIComponent(value) } catch (e) { return value }
+    }
+
+    ListModel { id: visibleFiles }
+
+    FileView {
+        id: colorIndexFile
+        path: Quickshell.env("HOME") + "/.cache/quickshell/wallpaper-colors.json"
+        watchChanges: true
+        printErrors: false
+        onTextChanged: {
+            try {
+                const data = JSON.parse(text())
+                root.colorIndex = data.items || ({})
+            } catch (e) {
+                console.warn("Wallpaper picker: cannot read color index:", e)
+                root.colorIndex = ({})
+            }
+            root.refreshVisibleFiles()
+        }
+        Component.onCompleted: reload()
+    }
 
     Process {
         id: applyProc
@@ -39,6 +80,8 @@ Item {
         nameFilters: ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.PNG", "*.JPG", "*.JPEG", "*.WEBP"]
         showDirs: false
         sortField: FolderListModel.Name
+        onCountChanged: root.refreshVisibleFiles()
+        onStatusChanged: root.refreshVisibleFiles()
     }
 
     FolderListModel {
@@ -52,7 +95,15 @@ Item {
     Text {
         anchors.centerIn: parent
         visible: staticModel.count === 0 && animatedModel.count === 0
-        text: "Нема шпалер у " + root.wallpaperDir
+        text: Lang.t("wall.empty").replace("{dir}", root.wallpaperDir)
+        color: Colors.grey1
+        font { family: Colors.uiFont; pixelSize: 11 }
+    }
+
+    Text {
+        anchors.centerIn: parent
+        visible: staticModel.count > 0 && visibleFiles.count === 0 && root.selectedCategory !== "All"
+        text: Lang.t("wall.emptyFilter")
         color: Colors.grey1
         font { family: Colors.uiFont; pixelSize: 11 }
     }
@@ -103,9 +154,43 @@ Item {
         }
     }
 
+    Component.onCompleted: refreshVisibleFiles()
+
     ColumnLayout {
         anchors.fill: parent
         spacing: 6
+
+        Flow {
+            id: categoryFlow
+            Layout.fillWidth: true
+            Layout.preferredHeight: implicitHeight
+            spacing: 4
+            Repeater {
+                model: root.availableCategories
+                Rectangle {
+                    required property string modelData
+                    readonly property bool active: root.selectedCategory === modelData
+                    width: categoryLabel.implicitWidth + 22
+                    height: 28
+                    radius: 14
+                    color: active ? Colors.accent : Colors.bg2
+                    border.width: active ? 0 : 1
+                    border.color: Colors.bg4
+                    Text {
+                        id: categoryLabel
+                        anchors.centerIn: parent
+                        text: Lang.t("wall.cat." + modelData)
+                        color: parent.active ? Colors.onAccent : Colors.fg
+                        font { family: Colors.uiFont; pixelSize: 10 }
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: { root.selectedCategory = modelData; root.refreshVisibleFiles() }
+                    }
+                }
+            }
+        }
 
         GridView {
             id: staticGrid
@@ -114,7 +199,7 @@ Item {
             clip: true
             cellWidth: width / 4
             cellHeight: cellWidth * 0.62
-            model: staticModel
+            model: visibleFiles
             delegate: wallpaperGridDelegate
         }
 
@@ -122,14 +207,14 @@ Item {
             Layout.fillWidth: true
             height: 1
             color: Colors.bg4
-            visible: animatedModel.count > 0
+            visible: animatedModel.count > 0 && root.selectedCategory === "All"
         }
 
         GridView {
             id: animatedGrid
             Layout.fillWidth: true
-            Layout.preferredHeight: animatedModel.count > 0 ? (parent.height * 0.32) : 0
-            visible: animatedModel.count > 0
+            Layout.preferredHeight: (animatedModel.count > 0 && root.selectedCategory === "All") ? (parent.height * 0.32) : 0
+            visible: animatedModel.count > 0 && root.selectedCategory === "All"
             clip: true
             cellWidth: width / 4
             cellHeight: cellWidth * 0.62

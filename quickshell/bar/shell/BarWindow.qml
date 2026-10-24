@@ -135,8 +135,8 @@ PanelWindow {
                 LauncherModule {
                     vertical: win.vertical
                     cross: win.cross
-                    visible: Config.get("modules", "launcher") !== false
-                    onActivated: ShellState.toggleSurface("launcher")
+                    enabledByConfig: Config.get("modules", "launcher") !== false
+                    onActivated: ShellState.toggleSurface("launcher", win.monitorName)
                 },
                 WindowModule {
                     monitor: win.monitorName
@@ -148,8 +148,8 @@ PanelWindow {
                     MediaModule {
                         vertical: win.vertical
                         cross: win.inner
-                        visible: Config.get("modules", "media") !== false
-                        onMediaRequested: ShellState.toggleSurface("media")
+                        enabledByConfig: Config.get("modules", "media") !== false
+                        onMediaRequested: ShellState.toggleSurface("media", win.monitorName)
                     }
                 }
             ]
@@ -160,8 +160,8 @@ PanelWindow {
                     ResourcesModule {
                         vertical: win.vertical
                         cross: win.inner
-                        visible: Config.get("modules", "resources") !== false
-                        onResourcesRequested: ShellState.toggleSurface("resources")
+                        enabledByConfig: Config.get("modules", "resources") !== false
+                        onResourcesRequested: ShellState.toggleSurface("resources", win.monitorName)
                     }
                 },
                 BarGroup {
@@ -179,7 +179,7 @@ PanelWindow {
                         id: clockModule
                         vertical: win.vertical
                         cross: win.inner
-                        visible: Config.get("modules", "clock") !== false
+                        enabledByConfig: Config.get("modules", "clock") !== false
                         onClicked: ShellState.toggleDashboard(win.monitorName)
                     }
                 }
@@ -199,14 +199,14 @@ PanelWindow {
                     VolumeModule {
                         vertical: win.vertical
                         cross: win.inner
-                        visible: Config.get("modules", "mixer") !== false
-                        onMixerRequested: ShellState.toggleSurface("mixer")
+                        enabledByConfig: Config.get("modules", "mixer") !== false
+                        onMixerRequested: ShellState.toggleSurface("mixer", win.monitorName)
                     }
                     NetworkModule {
                         vertical: win.vertical
                         cross: win.inner
-                        visible: Config.get("modules", "wifi") !== false
-                        onWifiRequested: ShellState.toggleSurface("wifi")
+                        enabledByConfig: Config.get("modules", "wifi") !== false
+                        onWifiRequested: ShellState.toggleSurface("wifi", win.monitorName)
                     }
                     BatteryModule {
                         vertical: win.vertical
@@ -215,14 +215,14 @@ PanelWindow {
                     NotificationModule {
                         vertical: win.vertical
                         cross: win.inner
-                        visible: Config.get("modules", "notifications") !== false
+                        enabledByConfig: Config.get("modules", "notifications") !== false
                     }
                 },
                 PowerModule {
                     vertical: win.vertical
                     cross: win.cross
-                    visible: Config.get("modules", "power") !== false
-                    onPowerRequested: ShellState.toggleSurface("power")
+                    enabledByConfig: Config.get("modules", "power") !== false
+                    onPowerRequested: ShellState.toggleSurface("power", win.monitorName)
                     onSettingsRequested: ShellState.toggleSettings()
                 }
             ]
