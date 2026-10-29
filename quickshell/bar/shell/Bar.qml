@@ -15,6 +15,8 @@ Scope {
 
         function setPosition(position: string): void { BarConfig.set("position", position) }
         function setMode(mode: string): void { BarConfig.set("mode", mode) }
+        function setStyle(style: string): void { BarConfig.set("style", style) }   // full | pill
+        function setOpenMode(mode: string): void { BarConfig.set("openMode", mode) }   // morph | window | spotlight | drawer
         function setElevation(level: int): void { BarConfig.set("elevation", level) }
         // monitor = імена з monitors(); position = top|bottom|left|right, "" → скинути override
         function setMonitorPosition(monitor: string, position: string): void { BarConfig.setMonitor(monitor, "position", position) }

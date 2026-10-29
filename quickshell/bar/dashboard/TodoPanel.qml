@@ -14,9 +14,12 @@ DashCard {
     property string selectedDay: ""                // вибраний у календарі день (фільтр + дата за замовчуванням)
     property string filter: "active"               // active | all | done
     property string newDue: ""
+    property string newTime: ""                    // "HH:MM" — разом із датою створює нагадування (utimer)
     signal dayCleared()
 
     readonly property var items: TodoService.list(filter, selectedDay)
+    // нагадування (utimer): вибраного дня або найближчі; ті, що належать справам, не дублюємо
+    readonly property var reminders: TimerService.listFor(selectedDay, 3).filter(t => !TodoService.timerIds[t.id])
     readonly property var filters: ["active", "all", "done"]
 
     onSelectedDayChanged: newDue = selectedDay
@@ -28,10 +31,12 @@ DashCard {
         const p = due.split("-")
         return p[2] + "." + p[1]
     }
+    readonly property bool timeValid: /^([01]?\d|2[0-3]):[0-5]\d$/.test(newTime)
     function addNow() {
         if (input.text.trim().length === 0) return
-        TodoService.add(input.text, newDue)
+        TodoService.add(input.text, newDue, (newDue && timeValid) ? newTime : "")
         input.text = ""
+        newTime = ""
     }
 
     component TodoCheck: Rectangle {
@@ -73,16 +78,20 @@ DashCard {
                 implicitWidth: cnt.implicitWidth + Theme.space.lg
                 implicitHeight: Theme.components.dp(22)
                 radius: height / 2
-                color: Theme.color.primaryContainer
-                ThemedText { id: cnt; anchors.centerIn: parent; text: TodoService.activeCount; style: Theme.type.labelSmall; emphasized: true; color: Theme.color.fgPrimaryContainer }
+                color: Theme.settings.nothing ? "transparent" : Theme.color.primaryContainer
+                border.width: Theme.settings.nothing ? 1 : 0
+                border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.4)
+                ThemedText { id: cnt; anchors.centerIn: parent; text: TodoService.activeCount; style: Theme.type.labelSmall; emphasized: true; color: Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgPrimaryContainer }
             }
             Rectangle {
                 visible: TodoService.overdueCount > 0
                 implicitWidth: od.implicitWidth + Theme.space.lg
                 implicitHeight: Theme.components.dp(22)
                 radius: height / 2
-                color: Theme.color.errorContainer
-                ThemedText { id: od; anchors.centerIn: parent; text: Lang.t("ui.todo.overdue") + " " + TodoService.overdueCount; style: Theme.type.labelSmall; emphasized: true; color: Theme.color.fgErrorContainer }
+                color: Theme.settings.nothing ? "transparent" : Theme.color.errorContainer
+                border.width: Theme.settings.nothing ? 1 : 0
+                border.color: Qt.rgba(ThemeNothing.red.r, ThemeNothing.red.g, ThemeNothing.red.b, 0.7)
+                ThemedText { id: od; anchors.centerIn: parent; text: Lang.t("ui.todo.overdue") + " " + TodoService.overdueCount; style: Theme.type.labelSmall; emphasized: true; color: Theme.settings.nothing ? ThemeNothing.red : Theme.color.fgErrorContainer }
             }
             Item { Layout.fillWidth: true }
             MaterialButton {
@@ -99,9 +108,9 @@ DashCard {
             Layout.fillWidth: true
             implicitHeight: Theme.components.dp(48)
             radius: Theme.shape.radius("full", height)
-            color: Theme.color.surfaceContainerHighest
-            border.width: input.activeFocus ? Theme.components.dp(2) : 0
-            border.color: Theme.color.primary
+            color: Theme.settings.nothing ? "transparent" : Theme.color.surfaceContainerHighest
+            border.width: Theme.settings.nothing ? 1 : (input.activeFocus ? Theme.components.dp(2) : 0)
+            border.color: Theme.settings.nothing ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, input.activeFocus ? 0.75 : 0.25) : Theme.color.primary
             Behavior on border.color { MotionColorAnimation { role: "hover" } }
 
             RowLayout {
@@ -134,9 +143,9 @@ DashCard {
                     implicitHeight: Theme.components.dp(30)
                     implicitWidth: dueTxt.implicitWidth + Theme.space.lg + Theme.type.iconXS
                     radius: dueMa.pressed ? Theme.shape.sm : height / 2
-                    color: root.newDue ? Theme.color.secondaryContainer : "transparent"
-                    border.width: root.newDue ? 0 : 1
-                    border.color: Theme.color.outlineVariant
+                    color: root.newDue && !Theme.settings.nothing ? Theme.color.secondaryContainer : "transparent"
+                    border.width: Theme.settings.nothing ? 1 : (root.newDue ? 0 : 1)
+                    border.color: Theme.settings.nothing ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, root.newDue ? 0.7 : 0.25) : Theme.color.outlineVariant
                     Behavior on radius { MotionAnimation { role: "morph" } }
                     Behavior on color { MotionColorAnimation { role: "stateChange" } }
                     Row {
@@ -166,6 +175,54 @@ DashCard {
                             else if (root.newDue === t) root.newDue = m
                             else if (root.newDue === m && root.selectedDay && root.selectedDay !== m && root.selectedDay !== t) root.newDue = root.selectedDay
                             else root.newDue = ""
+                        }
+                    }
+                }
+
+                // час нагадування (лише коли обрано дату): 13:00
+                Rectangle {
+                    visible: !!root.newDue
+                    implicitHeight: Theme.components.dp(30)
+                    implicitWidth: Theme.components.dp(64)
+                    radius: height / 2
+                    color: Theme.settings.nothing ? "transparent"
+                         : root.timeValid ? Theme.color.secondaryContainer : "transparent"
+                    border.width: Theme.settings.nothing ? 1 : (root.timeValid ? 0 : 1)
+                    border.color: Theme.settings.nothing
+                        ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, root.timeValid ? 0.7 : 0.25)
+                        : Theme.color.outlineVariant
+                    Text {
+                        id: clockIco
+                        anchors.left: parent.left
+                        anchors.leftMargin: Theme.space.sm
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "\ue855"                                                    // alarm
+                        font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                        color: root.timeValid && !Theme.settings.nothing ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
+                    }
+                    TextInput {
+                        id: timeInput
+                        anchors.left: clockIco.right
+                        anchors.leftMargin: 4
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.space.sm
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.newTime
+                        onTextChanged: root.newTime = text
+                        color: Theme.color.fgSurface
+                        font.family: Theme.type.mono
+                        font.pixelSize: Theme.type.labelMedium.size
+                        maximumLength: 5
+                        selectByMouse: true
+                        validator: RegularExpressionValidator { regularExpression: /^[0-9:]{0,5}$/ }
+                        onAccepted: root.addNow()
+                        ThemedText {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: timeInput.text.length === 0
+                            text: "13:00"
+                            style: Theme.type.labelMedium
+                            color: Theme.color.fgSurfaceVariant
+                            opacity: 0.6
                         }
                     }
                 }
@@ -203,6 +260,73 @@ DashCard {
                 style: Theme.type.labelMedium
                 color: Theme.color.primary
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: root.dayCleared() }
+            }
+        }
+
+        // ---- нагадування (utimer): вибраного дня або найближчі ----
+        ColumnLayout {
+            Layout.fillWidth: true
+            visible: root.reminders.length > 0
+            spacing: Theme.space.xs
+
+            Repeater {
+                model: root.reminders
+                delegate: Rectangle {
+                    id: rem
+                    required property var modelData
+                    Layout.fillWidth: true
+                    implicitHeight: Theme.components.dp(36)
+                    radius: Theme.shape.md
+                    color: Theme.settings.nothing ? "transparent" : Theme.color.tertiaryContainer
+                    border.width: Theme.settings.nothing ? 1 : 0
+                    border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.2)
+                    readonly property color fg: Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgTertiaryContainer
+
+                    RowLayout {
+                        anchors.fill: parent
+                        anchors.leftMargin: Theme.space.md
+                        anchors.rightMargin: Theme.space.xs
+                        spacing: Theme.space.sm
+                        Text {
+                            text: "\ue855"                                                // alarm
+                            font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                            color: rem.modelData.state === "ringing" ? Theme.color.error : rem.fg
+                        }
+                        ThemedText {
+                            text: (root.selectedDay ? TimerService.hm(rem.modelData.at) : TimerService.short(rem.modelData.at))
+                            style: Theme.type.labelMedium
+                            emphasized: true
+                            color: rem.fg
+                        }
+                        ThemedText {
+                            Layout.fillWidth: true
+                            text: rem.modelData.message
+                            style: Theme.type.bodySmall
+                            color: rem.fg
+                            elide: Text.ElideRight
+                            maximumLineCount: 1
+                        }
+                        Rectangle {
+                            Layout.preferredWidth: Theme.components.dp(26)
+                            Layout.preferredHeight: Theme.components.dp(26)
+                            radius: height / 2
+                            color: remX.containsMouse ? Qt.rgba(rem.fg.r, rem.fg.g, rem.fg.b, 0.14) : "transparent"
+                            Text {
+                                anchors.centerIn: parent
+                                text: "\ue5cd"                                            // close
+                                font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
+                                color: rem.fg
+                            }
+                            MouseArea {
+                                id: remX
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: TimerService.cancel(rem.modelData.id)
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -307,13 +431,17 @@ DashCard {
                             implicitHeight: Theme.components.dp(22)
                             implicitWidth: dl.implicitWidth + Theme.space.md
                             radius: height / 2
-                            color: row.overdue ? Theme.color.errorContainer
+                            color: Theme.settings.nothing ? "transparent"
+                                 : row.overdue ? Theme.color.errorContainer
                                  : row.modelData.due === TodoService.today() ? Theme.color.primaryContainer
                                  : Theme.color.surfaceContainerHighest
+                            border.width: Theme.settings.nothing ? 1 : 0
+                            border.color: row.overdue ? Qt.rgba(ThemeNothing.red.r, ThemeNothing.red.g, ThemeNothing.red.b, 0.7)
+                                                      : Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, row.modelData.due === TodoService.today() ? 0.6 : 0.2)
                             ThemedText {
                                 id: dl
                                 anchors.centerIn: parent
-                                text: root.dueLabel(row.modelData.due)
+                                text: root.dueLabel(row.modelData.due) + (row.modelData.time ? "  \u23F0 " + row.modelData.time : "")
                                 style: Theme.type.labelSmall
                                 color: row.overdue ? Theme.color.fgErrorContainer
                                      : row.modelData.due === TodoService.today() ? Theme.color.fgPrimaryContainer
@@ -353,7 +481,9 @@ DashCard {
                     implicitWidth: Theme.components.dp(64)
                     implicitHeight: implicitWidth
                     radius: Theme.shape.radius("lg", height)
-                    color: Theme.color.secondaryContainer
+                    color: Theme.settings.nothing ? "transparent" : Theme.color.secondaryContainer
+                    border.width: Theme.settings.nothing ? 1 : 0
+                    border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.22)
                     Text {
                         anchors.centerIn: parent
                         text: "\ue86c"                                                          // task_alt

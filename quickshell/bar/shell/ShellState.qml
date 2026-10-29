@@ -45,9 +45,17 @@ Singleton {
         activeMonitor = ""
     }
 
-    function openDashboard(monitor) { openDashboardRequested(resolveMonitor(monitor)) }
-    function toggleDashboard(monitor) { toggleDashboardRequested(resolveMonitor(monitor)) }
-    function closeDashboard() { closeDashboardRequested() }
+    // morph — дашборд морфиться з бару/пілла (сигнали); інші режими — звичайна поверхня SurfaceOverlay
+    readonly property bool _morph: BarConfig.openMode === "morph"
+    function openDashboard(monitor) {
+        if (_morph) openDashboardRequested(resolveMonitor(monitor)); else openSurface("dashboard", monitor)
+    }
+    function toggleDashboard(monitor) {
+        if (_morph) toggleDashboardRequested(resolveMonitor(monitor)); else toggleSurface("dashboard", monitor)
+    }
+    function closeDashboard() {
+        if (_morph) closeDashboardRequested(); else if (activeSurface === "dashboard") closeSurfaces()
+    }
 
     function openSettings() { openSettingsRequested() }
     function toggleSettings() { toggleSettingsRequested() }

@@ -22,9 +22,11 @@ Item {
         implicitHeight: Theme.components.chipHeight
         implicitWidth: chipText.implicitWidth + Theme.space.xl + Theme.space.xs
         radius: selected ? height / 2 : Theme.shape.chip           // форма морфиться при виборі
-        color: selected ? Theme.color.secondaryContainer : "transparent"
-        border.width: selected ? 0 : 1
-        border.color: Theme.color.outlineVariant
+        color: selected && !Theme.settings.nothing ? Theme.color.secondaryContainer : "transparent"
+        border.width: Theme.settings.nothing ? 1 : (selected ? 0 : 1)
+        border.color: Theme.settings.nothing
+            ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, selected ? 0.75 : 0.22)
+            : Theme.color.outlineVariant
         Behavior on radius { MotionAnimation { role: "morph" } }
         Behavior on color { MotionColorAnimation { role: "hover" } }
 
@@ -33,7 +35,7 @@ Item {
             anchors.centerIn: parent
             text: chip.label
             style: Theme.type.labelLarge
-            color: chip.selected ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
+            color: chip.selected ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer) : Theme.color.fgSurfaceVariant
         }
         MouseArea {
             anchors.fill: parent

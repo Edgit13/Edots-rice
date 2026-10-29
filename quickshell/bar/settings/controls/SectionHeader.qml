@@ -12,6 +12,6 @@ ThemedText {
     text: label.toUpperCase()
     style: Theme.type.labelMedium
     emphasized: true
-    color: Theme.color.primary
-    font.letterSpacing: 1.2 * Theme.space.k
+    color: Theme.settings.nothing ? Theme.color.fgSurfaceVariant : Theme.color.primary
+    font.letterSpacing: (Theme.settings.nothing ? 2.5 : 1.2) * Theme.space.k
 }

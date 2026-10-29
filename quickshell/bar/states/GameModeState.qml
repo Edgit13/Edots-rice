@@ -25,6 +25,16 @@ Singleton {
     readonly property bool optDnd:     Settings.get("gamemode", "dnd") !== false
     readonly property bool optMotion:  Settings.get("gamemode", "motion") !== false
     readonly property bool optNotify:  Settings.get("gamemode", "notify") !== false
+    // лише shell: плоский бар і оверлей продуктивності
+    readonly property bool optFlatBar: Settings.get("gamemode", "flatBar") !== false
+    readonly property bool optOverlay: Settings.get("gamemode", "overlay") !== false
+    readonly property bool optOverlayFps:   Settings.get("gamemode", "overlayFps") !== false
+    readonly property bool optOverlayCpu:   Settings.get("gamemode", "overlayCpu") !== false
+    readonly property bool optOverlayGpu:   Settings.get("gamemode", "overlayGpu") !== false
+    readonly property bool optOverlayTemps: Settings.get("gamemode", "overlayTemps") === true
+    readonly property string optOverlayPos: Settings.get("gamemode", "overlayPos") || "top-left"
+    readonly property real optOverlayScale:   Math.max(0.6, Math.min(2.5, Number(Settings.get("gamemode", "overlayScale") ?? 1)))
+    readonly property real optOverlayOpacity: Math.max(0.2, Math.min(1, Number(Settings.get("gamemode", "overlayOpacity") ?? 0.85)))
 
     function toggle()  { run("toggle") }
     function enable()  { run("on") }

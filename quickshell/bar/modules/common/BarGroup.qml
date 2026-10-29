@@ -2,8 +2,6 @@ import "root:/theme"
 import QtQuick
 import QtQuick.Layouts
 
-// BarGroup — «група» як у end-4: заокруглена плитка (surfaceContainerHigh) із плоскими модулями всередині.
-// Ховається, якщо всередині немає видимих елементів.
 Rectangle {
     id: root
 
@@ -25,8 +23,8 @@ Rectangle {
         x: root.pad
         y: root.pad
         flow: root.vertical ? GridLayout.TopToBottom : GridLayout.LeftToRight
-        columns: root.vertical ? 1 : 64
-        rows: root.vertical ? 64 : 1
+        columns: root.vertical ? 1 : 999
+        rows: root.vertical ? 999 : 1
         rowSpacing: Theme.space.xxs
         columnSpacing: Theme.space.xxs
     }

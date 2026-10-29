@@ -83,9 +83,21 @@ Item {
                             width: parent.width
                             height: app.navItemH
                             radius: Theme.shape.navItem
-                            color: Theme.color.secondaryContainer
+                            // Nothing: контурний індикатор з легкою заливкою + червона крапка зліва
+                            color: Theme.settings.nothing ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.07)
+                                                          : Theme.color.secondaryContainer
+                            border.width: Theme.settings.nothing ? 1 : 0
+                            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
                             y: app.currentIndex * (app.navItemH + app.navGap)
                             Behavior on y { MotionAnimation { role: "move" } }
+
+                            Rectangle {
+                                visible: Theme.settings.nothing
+                                x: 8
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: 5; height: 5; radius: 2.5
+                                color: ThemeNothing.red
+                            }
                         }
 
                         ColumnLayout {
@@ -120,7 +132,7 @@ Item {
                                         spacing: Theme.space.md
                                         Text {
                                             text: navItem.modelData.icon
-                                            color: navItem.active ? Theme.color.fgSecondaryContainer : Theme.color.fgSurfaceVariant
+                                            color: navItem.active ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer) : Theme.color.fgSurfaceVariant
                                             font { family: Theme.type.icons; pixelSize: Theme.type.iconM }
                                             Behavior on color { MotionColorAnimation { role: "stateChange" } }
                                         }
@@ -129,7 +141,7 @@ Item {
                                             text: Lang.t(navItem.modelData.name)
                                             style: Theme.type.labelLarge
                                             emphasized: navItem.active
-                                            color: navItem.active ? Theme.color.fgSecondaryContainer : Theme.color.fgSurface
+                                            color: navItem.active ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer) : Theme.color.fgSurface
                                             Behavior on color { MotionColorAnimation { role: "stateChange" } }
                                         }
                                     }

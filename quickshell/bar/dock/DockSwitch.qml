@@ -30,10 +30,11 @@ Switch {
         implicitHeight: 32
         radius: 16
         color: control.checked ? DockTheme.primary
-                               : DockTheme.surface_container_high
+                               : (DockTheme.nothing ? "transparent" : DockTheme.surface_container_high)
         border.color: control.checked ? DockTheme.primary
-                                      : DockTheme.outline_variant
-        border.width: 2
+                                      : (DockTheme.nothing ? Qt.rgba(DockTheme.on_surface.r, DockTheme.on_surface.g, DockTheme.on_surface.b, 0.40)
+                                                           : DockTheme.outline_variant)
+        border.width: DockTheme.nothing ? 1 : 2
 
         Behavior on color {
             ColorAnimation { duration: 150; easing.type: Easing.OutQuint }
@@ -42,11 +43,20 @@ Switch {
         Rectangle {
             x: control.checked ? parent.width - width - 4 : 4
             y: (parent.height - height) / 2
-            implicitWidth: 24
-            implicitHeight: 24
-            radius: 12
+            implicitWidth: DockTheme.nothing ? 18 : 24
+            implicitHeight: implicitWidth
+            radius: width / 2
             color: control.checked ? DockTheme.on_primary
                                    : DockTheme.on_surface_variant
+
+            Rectangle {                                    // Nothing: червона крапка в повзунку
+                visible: DockTheme.nothing
+                anchors.centerIn: parent
+                width: 7; height: 7; radius: 3.5
+                color: DockTheme.red
+                opacity: control.checked ? 1 : 0
+                Behavior on opacity { NumberAnimation { duration: 150 } }
+            }
 
             Behavior on x {
                 NumberAnimation { duration: 150; easing.type: Easing.OutQuint }

@@ -34,7 +34,9 @@ Item {
 
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                color: sel ? Theme.color.primary : Theme.color.surfaceContainerHighest
+                color: sel ? Theme.color.primary : (Theme.settings.nothing ? "transparent" : Theme.color.surfaceContainerHighest)
+                border.width: Theme.settings.nothing && !sel ? 1 : 0
+                border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.22)
 
                 topLeftRadius: (sel || isFirst) ? big : small
                 bottomLeftRadius: (sel || isFirst) ? big : small

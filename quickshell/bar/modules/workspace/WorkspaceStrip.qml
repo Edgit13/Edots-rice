@@ -2,29 +2,24 @@ import "root:/theme"
 import "root:/services"
 import QtQuick
 
-// WorkspaceStrip — M3 Expressive теги (MangoWM), у дусі end-4:
-//  • сусідні зайняті теги зливаються в одну «connected» групу (заокруглені лише зовнішні краї)
-//  • активний тег — primary-індикатор, що еластично розтягується між осередками
-//  • порожній тег — крапка (при hover перетворюється на номер), urgent — слот просто перефарбовується в червоний
-// Колесо миші — попередній/наступний тег.
-//   WorkspaceStrip { monitor: win.monitorName; vertical: win.vertical; itemSize: win.cross - Theme.space.sm }
 Item {
     id: root
 
     property string monitor: ""
     property bool vertical: false
     property real itemSize: 24
+    property bool compact: false
 
     readonly property int count: MangoService.tagCount(monitor)
-    readonly property int activeIdx: MangoService.activeIndex(monitor)   // 1-based, 0 = невідомо
+    readonly property int activeIdx: MangoService.activeIndex(monitor)
     readonly property real cell: itemSize
     readonly property real gap: Theme.space.xxs
 
-    // urgent: слот просто перефарбовується в червоний (errorContainer) — жодних додаткових фігур поверх
     readonly property color urgentBg: Theme.settings.nothing ? Theme.color.error : Theme.color.errorContainer
 
-    implicitWidth: vertical ? cell : cell * count
-    implicitHeight: vertical ? cell * count : cell
+    // Жорстко фіксуємо висоту/ширину в компактному режимі, щоб центрування працювало
+    implicitWidth: compact ? (vertical ? cell : compactRow.implicitWidth) : (vertical ? cell : cell * count)
+    implicitHeight: compact ? (vertical ? compactCol.implicitHeight : cell) : (vertical ? cell * count : cell)
 
     function filled(i) {
         if (i < 1 || i > count) return false
@@ -32,7 +27,68 @@ Item {
         return t.occupied || t.urgent || t.active
     }
 
-    // ---- еластичний індикатор ----
+    // ---- COMPACT MODE (Pill Style) ----
+    Row {
+        id: compactRow
+        visible: root.compact && !root.vertical
+        anchors.centerIn: parent
+        spacing: Theme.space.xs
+
+        Repeater {
+            model: root.count
+            Rectangle {
+                required property int index
+                readonly property bool isActive: root.activeIdx === index + 1
+                readonly property bool isFilled: root.filled(index + 1)
+                
+                width: isActive ? 14 : 6
+                height: 6
+                radius: 3
+                color: Theme.color.fgSurface
+                opacity: isActive ? 1 : (isFilled ? 0.7 : 0.2)
+                Behavior on width { MotionAnimation { role: "morph" } }
+                Behavior on opacity { MotionAnimation { role: "stateChange" } }
+
+                MouseArea {
+                    anchors.fill: parent; anchors.margins: -4
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: MangoService.switchTag(root.monitor, index + 1)
+                }
+            }
+        }
+    }
+
+    Column {
+        id: compactCol
+        visible: root.compact && root.vertical
+        anchors.centerIn: parent
+        spacing: Theme.space.xs
+
+        Repeater {
+            model: root.count
+            Rectangle {
+                required property int index
+                readonly property bool isActive: root.activeIdx === index + 1
+                readonly property bool isFilled: root.filled(index + 1)
+                
+                width: 6
+                height: isActive ? 14 : 6
+                radius: 3
+                color: Theme.color.fgSurface
+                opacity: isActive ? 1 : (isFilled ? 0.7 : 0.2)
+                Behavior on height { MotionAnimation { role: "morph" } }
+                Behavior on opacity { MotionAnimation { role: "stateChange" } }
+
+                MouseArea {
+                    anchors.fill: parent; anchors.margins: -4
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: MangoService.switchTag(root.monitor, index + 1)
+                }
+            }
+        }
+    }
+
+    // ---- FULL MODE (M3) ----
     property real indStart: 0
     property real indEnd: 0
     property bool forward: true
@@ -50,7 +106,7 @@ Item {
         if (activeIdx <= 0) return
         if (!hadActive) { snap(); return }
         const e = activeIdx * cell
-        forward = e > indEnd              // ведучий край рухається швидше
+        forward = e > indEnd
         indStart = (activeIdx - 1) * cell
         indEnd = e
     }
@@ -60,7 +116,6 @@ Item {
     Behavior on indStart { enabled: root.animate; MotionAnimation { role: root.forward ? "morph" : "move" } }
     Behavior on indEnd   { enabled: root.animate; MotionAnimation { role: root.forward ? "move" : "morph" } }
 
-    // ---- шар 1: фон зайнятих тегів (connected group) ----
     Repeater {
         model: root.count
         Rectangle {
@@ -86,7 +141,7 @@ Item {
             color: bg.urgent ? root.urgentBg : Theme.color.secondaryContainer
             opacity: isOn ? 1 : 0
             Behavior on color { MotionColorAnimation { role: "stateChange" } }
-            visible: opacity > 0.01
+            visible: !root.compact && opacity > 0.01
 
             topLeftRadius: rStart
             bottomLeftRadius: root.vertical ? rEnd : rStart
@@ -101,10 +156,9 @@ Item {
         }
     }
 
-    // ---- шар 2: індикатор активного тега ----
     Rectangle {
         id: indicator
-        visible: root.activeIdx > 0
+        visible: !root.compact && root.activeIdx > 0
         color: Theme.color.primary
         readonly property real len: Math.max(0, root.indEnd - root.indStart - root.gap)
         x: root.vertical ? root.gap / 2 : root.indStart + root.gap / 2
@@ -112,7 +166,6 @@ Item {
         width: root.vertical ? root.cell - root.gap : len
         height: root.vertical ? len : root.cell - root.gap
 
-        // форма як у сусідніх сегментів: круглі лише зовнішні краї групи, до сусідів — малі радіуси
         readonly property real big: (root.cell - root.gap) / 2
         readonly property real small: Theme.shape.xs
         readonly property real rStart: root.filled(root.activeIdx - 1) ? small : big
@@ -127,7 +180,6 @@ Item {
         Behavior on bottomRightRadius { MotionAnimation { role: "morph" } }
     }
 
-    // ---- шар 3: підписи, hover, натискання ----
     Repeater {
         model: root.count
         Item {
@@ -141,6 +193,7 @@ Item {
             readonly property bool isFilled: isActive || urgent || occupied
             readonly property bool hovered: ma.containsMouse
 
+            visible: !root.compact
             x: root.vertical ? 0 : index * root.cell
             y: root.vertical ? index * root.cell : 0
             width: root.cell
@@ -148,7 +201,6 @@ Item {
             scale: ma.pressed ? 0.88 : 1
             Behavior on scale { MotionAnimation { role: "press" } }
 
-            // hover state layer (для порожніх)
             Rectangle {
                 anchors.centerIn: parent
                 width: root.cell - root.gap * 2
@@ -158,7 +210,6 @@ Item {
                 opacity: lab.hovered && !lab.isFilled ? Theme.components.stateHover : 0
                 Behavior on opacity { MotionAnimation { role: "hover" } }
             }
-            // крапка (порожній тег)
             Rectangle {
                 anchors.centerIn: parent
                 width: Math.max(4, root.cell * 0.2)
@@ -168,7 +219,6 @@ Item {
                 opacity: (!lab.isFilled && !lab.hovered) ? 0.7 : 0
                 Behavior on opacity { MotionAnimation { role: "hover" } }
             }
-            // номер
             ThemedText {
                 anchors.centerIn: parent
                 text: lab.n

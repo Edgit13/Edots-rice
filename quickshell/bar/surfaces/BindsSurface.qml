@@ -38,9 +38,11 @@ Item {
             Layout.fillWidth: true
             implicitHeight: Theme.components.dp(48)
             radius: Theme.shape.radius("full", height)
-            color: Theme.color.surfaceContainerHighest
-            border.width: search.activeFocus ? Theme.components.dp(2) : 0
-            border.color: Theme.color.primary
+            color: Theme.settings.nothing ? "transparent" : Theme.color.surfaceContainerHighest
+            border.width: Theme.settings.nothing ? 1 : (search.activeFocus ? Theme.components.dp(2) : 0)
+            border.color: Theme.settings.nothing
+                ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, search.activeFocus ? 0.75 : 0.22)
+                : Theme.color.primary
             Behavior on border.color { MotionColorAnimation { role: "hover" } }
 
             RowLayout {
@@ -63,6 +65,8 @@ Item {
                     font.pixelSize: Theme.type.bodyLarge.size
                     selectByMouse: true
                     clip: true
+                    selectionColor: Theme.settings.nothing ? ThemeNothing.red : Theme.color.primary
+                    selectedTextColor: Theme.settings.nothing ? "#FFFFFF" : Theme.color.fgPrimary
                     onTextChanged: root.query = text
                     ThemedText {
                         anchors.fill: parent

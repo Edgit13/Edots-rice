@@ -14,6 +14,9 @@ Singleton {
     id: root
 
     readonly property string fontFamily: Theme.type.sans
+    readonly property string monoFamily: Theme.type.mono
+    readonly property bool nothing: Theme.settings.nothing
+    readonly property color red: ThemeNothing.red
 
     readonly property color background:             Theme.color.background
     readonly property color on_primary:             Theme.color.fgPrimary

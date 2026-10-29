@@ -140,7 +140,9 @@ Item {
     readonly property real _opacity: _st === "closed" ? 0 : 1
     readonly property real _scale: (th.pressed && _st !== "dialog") ? 0.97 : (_st === "closed" ? 0.9 : 1)
     readonly property real _scrim: _st === "dialog" ? Theme.color.scrimOpacity : 0
-    readonly property string _sizeRole: _closing ? "collapse" : "expand"
+    readonly property string _sizeRole: _closing ? "morphOut" : "morphIn"
+    // зсув осей у часі: при розгортанні ширина веде, висота слідує; при згортанні — навпаки
+    readonly property int _stagger: Math.round(ThemeMotion.duration(_sizeRole) * 0.12)
 
     function _centerDialog() {
         if (!dialogParent) { _dx = 0; _dy = 0; return }
@@ -181,8 +183,18 @@ Item {
         transformOrigin: Item.Center
         enabled: root._st !== "closed"
 
-        Behavior on width   { MotionAnimation { role: root._sizeRole } }
-        Behavior on height  { MotionAnimation { role: root._sizeRole } }
+        Behavior on width {
+            SequentialAnimation {
+                PauseAnimation { duration: root._closing ? root._stagger : 0 }
+                MotionAnimation { role: root._sizeRole }
+            }
+        }
+        Behavior on height {
+            SequentialAnimation {
+                PauseAnimation { duration: root._closing ? 0 : root._stagger }
+                MotionAnimation { role: root._sizeRole }
+            }
+        }
         Behavior on opacity { MotionAnimation { role: root._st === "closed" ? "exit" : "enter" } }
         Behavior on scale   { MotionAnimation { role: "press" } }
 
@@ -202,33 +214,49 @@ Item {
             color: body.bodyColor
         }
 
-        MorphSlot {
-            id: compactSlot
-            host: body
-            shown: (root._st === "compact" && !root._hoverPill) || root._st === "closed"
-            slotWidth: root._cw - root.padding * 2
-            slotHeight: root._ch - Theme.space.sm * 2
-        }
-        MorphSlot {
-            id: hoverSlot
-            host: body
-            shown: root._hoverPill
-            slotWidth: root._hw - root.padding * 2
-            slotHeight: root._hh - Theme.space.sm * 2
-        }
-        MorphSlot {
-            id: expandedSlot
-            host: body
-            shown: root._st === "expanded"
-            slotWidth: root._ew - root.padding * 2
-            slotHeight: root._eh - root.padding * 2
-        }
-        MorphSlot {
-            id: dialogSlot
-            host: body
-            shown: root._st === "dialog"
-            slotWidth: root._dw - root.dialogPadding * 2
-            slotHeight: root._dh - root.dialogPadding * 2
+        // Шар обрізання: вміст фіксованого розміру не виступає за тіло, поки воно росте/стискається
+        // (раніше «сітка» вилазила за межі пілла, а компактний рядок лишався видимим по центру).
+        Item {
+            id: clipLayer
+            anchors.fill: parent
+            clip: true
+
+            MorphSlot {
+                id: compactSlot
+                host: clipLayer
+                originX: root.originX; originY: root.originY
+                padX: root.padding
+                shown: (root._st === "compact" && !root._hoverPill) || root._st === "closed"
+                slotWidth: root._cw - root.padding * 2
+                slotHeight: root._ch
+            }
+            MorphSlot {
+                id: hoverSlot
+                host: clipLayer
+                originX: root.originX; originY: root.originY
+                padX: root.padding
+                shown: root._hoverPill
+                slotWidth: root._hw - root.padding * 2
+                slotHeight: root._hh
+            }
+            MorphSlot {
+                id: expandedSlot
+                host: clipLayer
+                originX: root.originX; originY: root.originY
+                padX: root.padding; padY: root.padding
+                shown: root._st === "expanded"
+                slotWidth: root._ew - root.padding * 2
+                slotHeight: root._eh - root.padding * 2
+            }
+            MorphSlot {
+                id: dialogSlot
+                host: clipLayer
+                originX: root.originX; originY: root.originY
+                padX: root.dialogPadding; padY: root.dialogPadding
+                shown: root._st === "dialog"
+                slotWidth: root._dw - root.dialogPadding * 2
+                slotHeight: root._dh - root.dialogPadding * 2
+            }
         }
 
         // Handlers у body: hit-area = поточна (анімована) форма, тож hover-pill не «відпускає» курсор.

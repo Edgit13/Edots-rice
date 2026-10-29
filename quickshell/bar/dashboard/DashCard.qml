@@ -25,11 +25,23 @@ Item {
         anchors.margins: Theme.space.lg
         spacing: Theme.space.sm
 
-        ThemedText {
+        Row {
             visible: root.title.length > 0
-            text: root.title
-            style: Theme.type.titleSmall
-            color: Theme.color.fgSurfaceVariant
+            spacing: Theme.space.xs
+            // Nothing: червона крапка + моно-капс заголовок; Material: звичайний titleSmall
+            Rectangle {
+                visible: Theme.settings.nothing
+                width: 5; height: 5; radius: 2.5
+                anchors.verticalCenter: parent.verticalCenter
+                color: ThemeNothing.red
+            }
+            ThemedText {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Theme.settings.nothing ? root.title.toUpperCase() : root.title
+                style: Theme.settings.nothing ? Theme.type.labelMedium : Theme.type.titleSmall
+                color: Theme.color.fgSurfaceVariant
+                font.letterSpacing: Theme.settings.nothing ? 2 : style.tracking
+            }
         }
 
         Item {

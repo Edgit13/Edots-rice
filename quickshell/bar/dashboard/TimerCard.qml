@@ -1,4 +1,5 @@
 import "root:/theme"
+import "root:/services"
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -6,7 +7,11 @@ import QtQuick.Layouts
 
 DashCard {
     id: root
-    title: "Таймер"
+    // «Таймер · 10.26 13:00 Call mom» — найближче заплановане нагадування (utimer), якщо є
+    title: TimerService.next
+        ? ("Таймер · " + TimerService.short(TimerService.next.at)
+           + (TimerService.next.message ? "  " + TimerService.next.message.slice(0, 16) : ""))
+        : "Таймер"
 
     property int totalSeconds: 5 * 60
     property int remaining: totalSeconds
@@ -61,10 +66,15 @@ DashCard {
         implicitWidth: 40
         implicitHeight: 40
         radius: 20
+        readonly property bool nothing: Theme.settings.nothing
         color: emphasized ? Theme.color.primary
+             : nothing ? (bma.pressed ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.16)
+                          : bma.containsMouse ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.08) : "transparent")
              : bma.pressed ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.statePressed)
              : bma.containsMouse ? Theme.stateLayer(Theme.color.surfaceContainerHighest, Theme.color.fgSurface, Theme.components.stateHover)
              : Theme.color.surfaceContainerHighest
+        border.width: nothing && !emphasized ? 1 : 0
+        border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
         Behavior on color { MotionColorAnimation { role: "hover" } }
         Text {
             anchors.centerIn: parent

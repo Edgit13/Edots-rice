@@ -18,6 +18,7 @@ Item {
     property string hostMonitor: ""
     property real maxHeight: 100000
     property bool occupies: false
+    property bool listenShell: true          // false — коли поверхнею керує хост (pill)
     property string revealDirection: "top"   // top|bottom|left|right
 
     readonly property real desiredHeight: 760
@@ -37,12 +38,12 @@ Item {
     Connections {
         target: ShellState
         function onOpenDashboardRequested(monitor) {
-            if (monitor === "" || monitor === root.hostMonitor) root.occupies = true
+            if (root.listenShell && (monitor === "" || monitor === root.hostMonitor)) root.occupies = true
         }
         function onToggleDashboardRequested(monitor) {
-            if (monitor === "" || monitor === root.hostMonitor) root.occupies = !root.occupies
+            if (root.listenShell && (monitor === "" || monitor === root.hostMonitor)) root.occupies = !root.occupies
         }
-        function onCloseDashboardRequested() { root.occupies = false }
+        function onCloseDashboardRequested() { if (root.listenShell) root.occupies = false }
     }
 
     property int currentTab: 0

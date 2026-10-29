@@ -69,12 +69,15 @@ ColumnLayout {
                 id: tile
                 required property string modelData
                 readonly property bool sel: r.value === modelData
-                readonly property color fg: sel ? Theme.color.fgPrimaryContainer : Theme.color.fgSurfaceVariant
+                readonly property color fg: sel ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgPrimaryContainer) : Theme.color.fgSurfaceVariant
 
                 width: Theme.components.dp(96)
                 height: Theme.components.dp(80)
                 radius: ma.pressed ? Theme.shape.sm : (sel ? Theme.shape.radius("lg", height) : Theme.shape.md)
-                color: sel ? Theme.color.primaryContainer : Theme.color.surfaceContainerHighest
+                color: Theme.settings.nothing ? "transparent" : (sel ? Theme.color.primaryContainer : Theme.color.surfaceContainerHighest)
+                // Nothing: контурні плитки; вибрана — яскравіший контур
+                border.width: Theme.settings.nothing ? 1 : 0
+                border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, sel ? 0.75 : 0.22)
                 Behavior on radius { MotionAnimation { role: "morph" } }
                 Behavior on color { MotionColorAnimation { role: "stateChange" } }
 

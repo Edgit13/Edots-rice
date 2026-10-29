@@ -29,7 +29,9 @@ DashCard {
                 Layout.preferredWidth: Theme.components.dp(64)
                 Layout.preferredHeight: Theme.components.dp(64)
                 radius: Theme.shape.radius("lg", height)
-                color: Theme.color.primaryContainer
+                color: Theme.settings.nothing ? "transparent" : Theme.color.primaryContainer
+                border.width: Theme.settings.nothing ? 1 : 0
+                border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
                 Text {
                     anchors.centerIn: parent
                     text: WeatherService.iconGlyph
@@ -108,7 +110,9 @@ DashCard {
                     implicitHeight: Theme.components.dp(26)
                     implicitWidth: chipRow.implicitWidth + Theme.space.md
                     radius: Theme.shape.chip
-                    color: Theme.color.surfaceContainerHighest
+                    color: Theme.settings.nothing ? "transparent" : Theme.color.surfaceContainerHighest
+                    border.width: Theme.settings.nothing ? 1 : 0
+                    border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.2)
                     visible: chip.modelData.ok
                     Row {
                         id: chipRow
@@ -145,7 +149,9 @@ DashCard {
                     Layout.fillWidth: true
                     Layout.preferredHeight: Theme.components.dp(64)
                     radius: Theme.shape.md
-                    color: index === 0 ? Theme.color.secondaryContainer : Theme.color.surfaceContainerHighest
+                    color: Theme.settings.nothing ? "transparent" : (index === 0 ? Theme.color.secondaryContainer : Theme.color.surfaceContainerHighest)
+                    border.width: Theme.settings.nothing ? 1 : 0
+                    border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, index === 0 ? 0.6 : 0.18)
                     Column {
                         anchors.centerIn: parent
                         spacing: 2

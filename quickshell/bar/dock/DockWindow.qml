@@ -346,6 +346,7 @@ PanelWindow {
 
         // M3 elevation: tonal shadow under the container (level 3).
         RectangularShadow {
+            visible: !DockTheme.nothing
             anchors.fill: pillBg
             radius: pillBg.radius
             blur: 6
@@ -362,6 +363,9 @@ PanelWindow {
             radius: root.settings.pill.radius
             opacity: root.settings.opacity.normal
             color: DockTheme.surface_container_high
+            // Nothing: плоска панель з тонким контуром замість тіні
+            border.width: DockTheme.nothing ? 1 : 0
+            border.color: Qt.rgba(DockTheme.on_surface.r, DockTheme.on_surface.g, DockTheme.on_surface.b, 0.16)
         }
 
         RowLayout {

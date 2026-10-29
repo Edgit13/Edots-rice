@@ -89,7 +89,9 @@ DashCard {
                     required property var modelData
                     readonly property bool isToday: modelData.ymd === root.todayStr
                     readonly property bool isSel: modelData.ymd === root.selectedDay
-                    readonly property int due: TodoService.dueMap[modelData.ymd] || 0
+                    readonly property int todoCount: TodoService.dueMap[modelData.ymd] || 0
+                    readonly property int timerCount: TimerService.dayMap[modelData.ymd] || 0
+                    readonly property int due: todoCount + timerCount
                     readonly property bool overdue: due > 0 && modelData.ymd < root.todayStr
 
                     Layout.fillWidth: true
@@ -102,8 +104,11 @@ DashCard {
                         height: width
                         radius: ma.pressed ? Theme.shape.radius("md", height) : height / 2
                         color: cell.isToday ? Theme.color.primary
-                             : cell.isSel ? Theme.color.secondaryContainer
+                             : cell.isSel && !Theme.settings.nothing ? Theme.color.secondaryContainer
                              : "transparent"
+                        // Nothing: вибраний день — контурне кільце
+                        border.width: cell.isSel && !cell.isToday && Theme.settings.nothing ? 1 : 0
+                        border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.75)
                         Behavior on radius { MotionAnimation { role: "morph" } }
                         Behavior on color { MotionColorAnimation { role: "stateChange" } }
 
@@ -122,7 +127,7 @@ DashCard {
                         style: Theme.type.labelMedium
                         emphasized: cell.isToday || cell.isSel
                         color: cell.isToday ? Theme.color.fgPrimary
-                             : cell.isSel ? Theme.color.fgSecondaryContainer
+                             : cell.isSel ? (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer)
                              : cell.modelData.inMonth ? Theme.color.fgSurface : Theme.color.outline
                     }
                     Rectangle {                                    // крапка «є справи»
@@ -131,7 +136,10 @@ DashCard {
                         anchors.verticalCenter: parent.verticalCenter
                         anchors.verticalCenterOffset: Math.min(parent.width, parent.height) * 0.3
                         width: 4; height: 4; radius: 2
-                        color: cell.overdue ? Theme.color.error : (cell.isToday ? Theme.color.fgPrimary : Theme.color.primary)
+                        color: cell.overdue ? Theme.color.error
+                             : cell.isToday ? Theme.color.fgPrimary
+                             : (cell.timerCount > 0 && cell.todoCount === 0) ? Theme.color.tertiary     // лише нагадування
+                             : Theme.color.primary
                     }
                     MouseArea {
                         id: ma

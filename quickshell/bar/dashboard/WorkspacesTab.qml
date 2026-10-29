@@ -34,15 +34,21 @@ Item {
         property bool toggled: false
         signal clicked()
 
-        readonly property color fg: tone === "error" ? Theme.color.fgErrorContainer
+        readonly property color fg: tone === "error" ? (Theme.settings.nothing ? ThemeNothing.red : Theme.color.fgErrorContainer)
                                   : (tone === "toggle" && !toggled) ? Theme.color.fgSurfaceVariant
-                                  : Theme.color.fgSecondaryContainer
+                                  : (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer)
 
         implicitHeight: Theme.components.buttonS
         implicitWidth: row.implicitWidth + Theme.space.xl
-        color: tone === "error" ? Theme.color.errorContainer
+        readonly property bool nothing: Theme.settings.nothing
+        color: nothing ? "transparent"
+             : tone === "error" ? Theme.color.errorContainer
              : (tone === "toggle" && !toggled) ? Theme.color.surfaceContainerHighest
              : Theme.color.secondaryContainer
+        // Nothing: контурні кнопки; error — червоний контур, toggled — яскравіший
+        border.width: nothing ? 1 : 0
+        border.color: tone === "error" ? Qt.rgba(ThemeNothing.red.r, ThemeNothing.red.g, ThemeNothing.red.b, 0.7)
+                    : Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, toggled ? 0.75 : 0.26)
         radius: bma.pressed ? Theme.shape.radius("md", height)
               : toggled ? Theme.shape.radius("lg", height)
               : height / 2
@@ -92,13 +98,17 @@ Item {
         implicitHeight: Theme.components.chipHeight
         implicitWidth: chipText.implicitWidth + Theme.space.xl
         radius: Theme.shape.chip
-        color: accent ? Theme.color.primaryContainer : Theme.color.surfaceContainerHighest
+        color: Theme.settings.nothing ? "transparent"
+             : accent ? Theme.color.primaryContainer : Theme.color.surfaceContainerHighest
+        border.width: Theme.settings.nothing ? 1 : 0
+        border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, chip.accent ? 0.65 : 0.22)
         ThemedText {
             id: chipText
             anchors.centerIn: parent
             text: chip.text
             style: Theme.type.labelLarge
-            color: chip.accent ? Theme.color.fgPrimaryContainer : Theme.color.fgSurfaceVariant
+            color: Theme.settings.nothing ? (chip.accent ? Theme.color.fgSurface : Theme.color.fgSurfaceVariant)
+                 : chip.accent ? Theme.color.fgPrimaryContainer : Theme.color.fgSurfaceVariant
         }
     }
 

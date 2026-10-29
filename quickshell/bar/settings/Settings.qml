@@ -22,6 +22,8 @@ Singleton {
                onFileChanged: reload(); onTextChanged: root._onFile("bar.json", text()) }
     FileView { path: root.base + "clock.json";      watchChanges: true; printErrors: false
                onFileChanged: reload(); onTextChanged: root._onFile("clock.json", text()) }
+    FileView { path: root.base + "widgets.json";    watchChanges: true; printErrors: false
+               onFileChanged: reload(); onTextChanged: root._onFile("widgets.json", text()) }
     FileView { path: root.base + "lockscreen.json"; watchChanges: true; printErrors: false
                onFileChanged: reload(); onTextChanged: root._onFile("lockscreen.json", text()) }
     FileView { path: root.base + "colors.json";     watchChanges: true; printErrors: false
@@ -31,6 +33,7 @@ Singleton {
     FileView { id: wTheme;  path: root.base + "theme.json";      atomicWrites: true; printErrors: false }
     FileView { id: wBar;    path: root.base + "bar.json";        atomicWrites: true; printErrors: false }
     FileView { id: wClock;  path: root.base + "clock.json";      atomicWrites: true; printErrors: false }
+    FileView { id: wWidgets; path: root.base + "widgets.json";   atomicWrites: true; printErrors: false }
     FileView { id: wLock;   path: root.base + "lockscreen.json"; atomicWrites: true; printErrors: false }
     FileView { id: wColors; path: root.base + "colors.json";     atomicWrites: true; printErrors: false }
 
@@ -40,6 +43,7 @@ Singleton {
         case "theme.json":      return wTheme
         case "bar.json":        return wBar
         case "clock.json":      return wClock
+        case "widgets.json":    return wWidgets
         case "lockscreen.json": return wLock
         case "colors.json":     return wColors
         }
@@ -190,6 +194,34 @@ Singleton {
         var w = _writer(file)
         if (w) w.setText(JSON.stringify(fileData, null, 2))
         changed(cat, key, v)
+        return true
+    }
+
+    // Кілька ключів однієї категорії за один запис файлу (пресети, перетягування)
+    function setMany(cat, values) {
+        var s = Schema.schema[cat]
+        if (!s || !s.fields) return false
+        var file = s.file
+        var raw = Object.assign({}, root._raw)
+        var fileData = Object.assign({}, raw[file] || {})
+        var catObj = Object.assign({}, (root.data[cat] || {}))
+        var applied = []
+        for (var key in values) {
+            var f = s.fields[key]
+            if (!f) continue
+            var v = _clamp(f, values[key])
+            _setPath(fileData, f.path || key, v)
+            catObj[key] = v
+            applied.push([key, v])
+        }
+        raw[file] = fileData
+        root._raw = raw
+        var merged = Object.assign({}, root.data)
+        merged[cat] = catObj
+        root.data = merged
+        var w = _writer(file)
+        if (w) w.setText(JSON.stringify(fileData, null, 2))
+        for (var i = 0; i < applied.length; i++) changed(cat, applied[i][0], applied[i][1])
         return true
     }
 

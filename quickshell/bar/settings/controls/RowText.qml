@@ -30,9 +30,9 @@ ColumnLayout {
         Layout.fillWidth: true
         implicitHeight: Theme.components.dp(48)
         radius: Theme.shape.field
-        color: Theme.color.surfaceContainerHighest
-        border.width: input.activeFocus ? Theme.components.dp(2) : 0
-        border.color: Theme.color.primary
+        color: Theme.settings.nothing ? "transparent" : Theme.color.surfaceContainerHighest
+        border.width: Theme.settings.nothing ? 1 : (input.activeFocus ? Theme.components.dp(2) : 0)
+        border.color: Theme.settings.nothing ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, input.activeFocus ? 0.75 : 0.25) : Theme.color.primary
         Behavior on border.color { MotionColorAnimation { role: "hover" } }
 
         TextInput {
@@ -46,6 +46,8 @@ ColumnLayout {
             font.pixelSize: Theme.type.bodyLarge.size
             selectByMouse: true
             clip: true
+            selectionColor: Theme.settings.nothing ? ThemeNothing.red : Theme.color.primary
+            selectedTextColor: Theme.settings.nothing ? "#FFFFFF" : Theme.color.fgPrimary
             text: String(Settings.get(r.cat, r.key) ?? "")
             onEditingFinished: Settings.set(r.cat, r.key, text)
             Keys.onReturnPressed: { Settings.set(r.cat, r.key, text); focus = false }

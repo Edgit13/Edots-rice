@@ -1,4 +1,5 @@
 import "root:/theme"
+import "root:/settings"
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -13,6 +14,7 @@ import QtQuick.Layouts
 Item {
     id: root
 
+    readonly property bool nothing: Theme.settings.nothing
     property var entries: []
     property bool confirmingWipe: false
 
@@ -92,9 +94,14 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: "Буфер обміну"
-                color: Colors.accent
-                font { family: Colors.uiFont; pixelSize: 12; weight: 600 }
+                text: root.nothing ? Lang.t("clip.title").toUpperCase() : Lang.t("clip.title")
+                color: root.nothing ? Colors.grey1 : Colors.accent
+                font {
+                    family: root.nothing ? Theme.type.mono : Colors.uiFont
+                    pixelSize: root.nothing ? 10 : 12
+                    weight: root.nothing ? 400 : 600
+                    letterSpacing: root.nothing ? 2.5 : 0
+                }
             }
 
             Text {
@@ -121,12 +128,12 @@ Item {
 
             Text {
                 Layout.fillWidth: true
-                text: "Очистити всю історію?"
+                text: Lang.t("clip.wipeAsk")
                 color: Colors.red
                 font { family: Colors.uiFont; pixelSize: 11 }
             }
             Text {
-                text: "Так"
+                text: Lang.t("clip.yes")
                 color: Colors.red
                 font { family: Colors.uiFont; pixelSize: 11; underline: true }
                 MouseArea {
@@ -136,7 +143,7 @@ Item {
                 }
             }
             Text {
-                text: "Скасувати"
+                text: Lang.t("clip.cancel")
                 color: Colors.grey2
                 font { family: Colors.uiFont; pixelSize: 11; underline: true }
                 MouseArea {
@@ -152,9 +159,13 @@ Item {
             Layout.fillWidth: true
             Layout.alignment: Qt.AlignHCenter
             Layout.topMargin: 20
-            text: "Історія порожня"
+            text: root.nothing ? Lang.t("clip.empty").toUpperCase() : Lang.t("clip.empty")
             color: Colors.grey1
-            font { family: Colors.uiFont; pixelSize: 11 }
+            font {
+                family: root.nothing ? Theme.type.mono : Colors.uiFont
+                pixelSize: root.nothing ? 10 : 11
+                letterSpacing: root.nothing ? 2.5 : 0
+            }
         }
 
         Flickable {
@@ -176,9 +187,28 @@ Item {
                         id: row
                         required property var modelData
                         Layout.fillWidth: true
-                        implicitHeight: 32
-                        radius: 8
-                        color: rowHover.hovered ? Colors.bg3 : Colors.bg2
+                        implicitHeight: root.nothing ? 36 : 32
+                        radius: root.nothing ? ThemeNothing.corners.sm : 8
+                        // Nothing: прозорий рядок; hover — легка заливка, контур і червона крапка
+                        color: root.nothing
+                            ? (rowHover.hovered ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.06) : "transparent")
+                            : (rowHover.hovered ? Colors.bg3 : Colors.bg2)
+                        border.width: root.nothing ? 1 : 0
+                        border.color: rowHover.hovered ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.28)
+                                                       : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.10)
+                        Behavior on border.color { ColorAnimation { duration: 140 } }
+
+                        Rectangle {
+                            visible: root.nothing
+                            x: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 5; height: 5; radius: 2.5
+                            color: ThemeNothing.red
+                            opacity: rowHover.hovered ? 1 : 0
+                            scale: rowHover.hovered ? 1 : 0.2
+                            Behavior on opacity { NumberAnimation { duration: 120 } }
+                            Behavior on scale   { NumberAnimation { duration: 200; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
+                        }
 
                         Behavior on color {
                             ColorAnimation { duration: 120 }
@@ -186,7 +216,7 @@ Item {
 
                         RowLayout {
                             anchors.fill: parent
-                            anchors.leftMargin: 10
+                            anchors.leftMargin: root.nothing ? 20 : 10
                             anchors.rightMargin: 6
                             spacing: 8
 
@@ -195,7 +225,7 @@ Item {
                                 text: row.modelData.preview
                                 color: Colors.fg
                                 elide: Text.ElideRight
-                                font { family: Colors.uiFont; pixelSize: 11 }
+                                font { family: root.nothing ? Theme.type.mono : Colors.uiFont; pixelSize: 11 }
                             }
 
                             Text {

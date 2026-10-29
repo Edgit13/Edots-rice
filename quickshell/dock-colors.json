@@ -1,14 +1,14 @@
 {
-  "background": "#1a1112",
-  "on_primary": "#561d24",
-  "on_surface": "#f0dede",
-  "on_surface_variant": "#d7c1c2",
-  "outline_variant": "#524344",
-  "primary": "#ffb2b7",
+  "background": "#111318",
+  "on_primary": "#102f60",
+  "on_surface": "#e2e2e9",
+  "on_surface_variant": "#c4c6d0",
+  "outline_variant": "#44474f",
+  "primary": "#adc6ff",
   "shadow": "#000000",
-  "surface_container_high": "#312828",
-  "primary_container": "#723339",
-  "on_primary_container": "#ffdadb",
-  "secondary_container": "#5c3f41",
-  "on_secondary_container": "#ffdadb"
+  "surface_container_high": "#282a2f",
+  "primary_container": "#2b4678",
+  "on_primary_container": "#d8e2ff",
+  "secondary_container": "#3f4759",
+  "on_secondary_container": "#dbe2f9"
 }

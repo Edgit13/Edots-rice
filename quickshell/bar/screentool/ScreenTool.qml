@@ -165,10 +165,10 @@ Item {
                     visible: root.mode === "screen"
                     anchors.fill: parent
                     anchors.margins: 6
-                    radius: 28
+                    radius: M3.nothing ? 22 : 28
                     color: "transparent"
-                    border.color: M3.primary
-                    border.width: 3
+                    border.color: M3.nothing ? M3.fgSurface : M3.primary
+                    border.width: M3.nothing ? 1 : 3
                 }
 
                 MouseArea {
@@ -226,9 +226,9 @@ Item {
                     visible: win.showSel
                     x: win.sx; y: win.sy; width: win.sw; height: win.sh
                     color: "transparent"
-                    border.color: M3.primary
-                    border.width: 2
-                    radius: 4
+                    border.color: M3.nothing ? M3.fgSurface : M3.primary
+                    border.width: M3.nothing ? 1 : 2
+                    radius: M3.nothing ? 2 : 4
                 }
 
                 Rectangle {
@@ -236,7 +236,9 @@ Item {
                     height: 28
                     width: sizeText.implicitWidth + 24
                     radius: height / 2
-                    color: M3.secondaryContainer
+                    color: M3.nothing ? M3.surfaceContainerHigh : M3.secondaryContainer
+                    border.width: M3.nothing ? 1 : 0
+                    border.color: M3.outlineVariant
                     x: win.sx
                     y: win.sy > 40 ? win.sy - 36 : win.sy + 8
                     Text {
@@ -258,9 +260,9 @@ Item {
                         readonly property bool isBottom: index > 1
                         visible: win.showSel && !win.dragging
                         width: 16; height: 16; radius: 8
-                        color: M3.primary
-                        border.color: M3.fgPrimary
-                        border.width: 2
+                        color: M3.nothing ? M3.red : M3.primary
+                        border.color: M3.nothing ? M3.fgSurface : M3.fgPrimary
+                        border.width: M3.nothing ? 1 : 2
                         x: win.sx + (isRight ? win.sw : 0) - 8
                         y: win.sy + (isBottom ? win.sh : 0) - 8
 
@@ -287,13 +289,17 @@ Item {
                     y: 48
                     height: 44
                     width: hintText.implicitWidth + 32
-                    radius: 12
-                    color: M3.inverseSurface
+                    radius: M3.nothing ? 22 : 12
+                    color: M3.nothing ? M3.surfaceContainerHigh : M3.inverseSurface
+                    border.width: M3.nothing ? 1 : 0
+                    border.color: M3.outlineVariant
                     Text {
                         id: hintText
                         anchors.centerIn: parent
-                        color: M3.inverseOnSurface
-                        font.pixelSize: 14
+                        color: M3.nothing ? M3.fgSurface : M3.inverseOnSurface
+                        font.pixelSize: M3.nothing ? 11 : 14
+                        font.family: M3.nothing ? M3.monoFont : Qt.application.font.family
+                        font.letterSpacing: M3.nothing ? 1.5 : 0
                         text: root.mode === "screen"
                               ? "Entire screen  ·  Enter capture  ·  R record  ·  Esc cancel"
                               : "Drag to select  ·  Enter capture  ·  R record  ·  Esc cancel"

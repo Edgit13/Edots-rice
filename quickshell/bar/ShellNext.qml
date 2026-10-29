@@ -10,8 +10,10 @@ import "root:/notifications"
 import "root:/dock"
 import "root:/settings"
 import "root:/windows"
+import "root:/gameoverlay"
 import "root:/screentool"
 import "root:/lockscreen"
+import "root:/widgets/desktop"
 import Quickshell
 import Quickshell.Io
 import QtQuick
@@ -21,6 +23,7 @@ ShellRoot {
         LayoutService.ensure()
         GameModeState.ensure()
         RecordService.ensure()
+        TimerService.ensure()          // перечитати таймери utimer і заново запустити очікування після входу
     }
 
     id: root
@@ -155,6 +158,27 @@ ShellRoot {
         function setMode(mode: string): void { Theme.set("mode", mode) }
         function toggleMode(): void { Theme.set("mode", ThemeSettings.wantedMode === "light" ? "dark" : "light") }
         function setTransition(style: string): void { Theme.set("transition", style) }
+    }
+
+    // віджети робочого столу (Settings → Віджети); qs ipc call widgets toggle
+    Variants {
+        model: Quickshell.screens
+        DesktopWidgetsWindow {}
+    }
+    IpcHandler {
+        target: "widgets"
+        function toggle(): void { Settings.set("widgets", "enabled", !WidgetsConfig.enabled) }
+        function show(): void   { Settings.set("widgets", "enabled", true) }
+        function hide(): void   { Settings.set("widgets", "enabled", false) }
+        function edit(): void   { if (WidgetsConfig.editing) WidgetsConfig.setEditing(false); else WidgetsConfig.startEdit() }
+        function preset(name: string): void { WidgetsConfig.applyPreset(name) }
+        function reset(): void  { WidgetsConfig.resetPlacement() }
+    }
+
+    // ігровий оверлей (FPS/CPU/GPU) — на шарі Overlay, видно навіть над повноекранними іграми
+    Variants {
+        model: Quickshell.screens
+        GameOverlay {}
     }
 
     Bar {}

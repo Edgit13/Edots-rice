@@ -24,15 +24,37 @@ Item {
         }
         Rectangle {
             Layout.fillWidth: true
-            implicitHeight: 8
+            implicitHeight: Theme.settings.nothing ? 14 : 8
             radius: 4
-            color: Theme.color.surfaceContainerHighest
+            color: Theme.settings.nothing ? "transparent" : Theme.color.surfaceContainerHighest
             Rectangle {
+                visible: !Theme.settings.nothing
                 width: parent.width * Math.max(0, Math.min(1, percent / 100))
                 height: parent.height
                 radius: 4
                 color: percent > 85 ? Theme.color.error : Theme.color.primary
                 Behavior on width { MotionAnimation { role: "stateChange" } }
+            }
+            // Nothing: сегментована шкала (ряд смужок)
+            Row {
+                id: segRow
+                visible: Theme.settings.nothing
+                anchors.fill: parent
+                spacing: 4
+                readonly property int cnt: Math.max(10, Math.floor((width + 4) / 9))
+                Repeater {
+                    model: Theme.settings.nothing ? segRow.cnt : 0
+                    delegate: Rectangle {
+                        required property int index
+                        readonly property bool lit: (index + 0.5) / segRow.cnt <= Math.max(0, Math.min(1, percent / 100))
+                        width: (segRow.width - (segRow.cnt - 1) * 4) / segRow.cnt
+                        height: parent.height
+                        radius: width / 2
+                        color: lit ? (percent > 85 ? ThemeNothing.red : Theme.color.primary) : Theme.color.fgSurface
+                        opacity: lit ? 1.0 : ThemeNothing.dotOpacityOff
+                        Behavior on opacity { NumberAnimation { duration: 90 } }
+                    }
+                }
             }
         }
         ThemedText {

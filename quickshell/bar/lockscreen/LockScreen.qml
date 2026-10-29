@@ -7,11 +7,15 @@ import Quickshell.Io
 
 // Shared Material 3 foundation (colors.json is watched inside M3.qml).
 import "material"
+import "root:/theme"
+import "root:/settings"
 
 Item {
     id: root
 
     readonly property string home: Quickshell.env("HOME")
+    // дизайн "Nothing" → окрема сцена (LockNothing.qml); інакше — M3 Expressive сцена нижче
+    readonly property bool nothing: Theme.settings.nothing
     property bool authenticating: false
     property bool showPassword: false
     property int errorCount: 0
@@ -43,22 +47,22 @@ Item {
         id: wallpaperFile
         path: Quickshell.shellPath("../current-wallpaper.txt")
         watchChanges: true
+        printErrors: false
+        // watchChanges only emits fileChanged — without reload() the text stays stale
+        onFileChanged: reload()
+        onLoaded: root.wallpaperPath = text().trim()
+        onTextChanged: root.wallpaperPath = text().trim()
     }
 
-    property string wallpaperPath: {
-        try {
-            var p = wallpaperFile.text().trim()
-            return p.length > 0 ? p : ""
-        } catch (e) { return "" }
-    }
+    property string wallpaperPath: ""
     property string wallpaperUrl: wallpaperPath.length > 0 ? "file://" + wallpaperPath : ""
 
     readonly property string greeting: {
         var h = new Date().getHours()
-        if (h < 5)  return "Good night"
-        if (h < 12) return "Good morning"
-        if (h < 18) return "Good afternoon"
-        return "Good evening"
+        if (h < 5)  return Lang.t("lock.greet.night")
+        if (h < 12) return Lang.t("lock.greet.morning")
+        if (h < 18) return Lang.t("lock.greet.afternoon")
+        return Lang.t("lock.greet.evening")
     }
     readonly property string greetingIcon: {
         var h = new Date().getHours()
@@ -117,7 +121,13 @@ Item {
             id: surf
             color: M3.surface
 
-            Component.onCompleted: passField.forceActiveFocus()
+            // ============ M3 EXPRESSIVE SCENE (лише коли дизайн ≠ Nothing) ============
+            Loader {
+                id: m3Loader
+                anchors.fill: parent
+                active: !root.nothing
+                sourceComponent: Component { Item {
+                    Component.onCompleted: passField.forceActiveFocus()
 
             // ============ BACKGROUND LAYER (Ken Burns + parallax) ============
             Item {
@@ -734,7 +744,7 @@ Item {
                             anchors.centerIn: parent
                             anchors.horizontalCenterOffset: -14
                             visible: root.passText.length === 0 && !passField.activeFocus
-                            text: "Enter password"
+                            text: Lang.t("lock.enter")
                             color: M3.m3OnSurfaceVariant
                             font {
                                 family: M3.fontFamily
@@ -818,9 +828,9 @@ Item {
                             }
                             Text {
                                 anchors.verticalCenter: parent.verticalCenter
-                                text: root.statusWorking ? "Authenticating…"
-                                    : root.statusError   ? "Wrong password · attempt " + root.errorCount
-                                    : "Locked"
+                                text: root.statusWorking ? Lang.t("lock.auth")
+                                    : root.statusError   ? Lang.t("lock.wrong").replace("{n}", root.errorCount)
+                                    : Lang.t("lock.locked")
                                 color: root.statusWorking ? M3.primary
                                      : root.statusError   ? M3.error
                                      : M3.m3OnSurfaceVariant
@@ -841,9 +851,9 @@ Item {
 
                         Repeater {
                             model: [
-                                { glyph: "bedtime",            label: "Sleep",  cmd: ["systemctl", "suspend"],  tint: "secondary" },
-                                { glyph: "restart_alt",        label: "Reboot", cmd: ["systemctl", "reboot"],   tint: "tertiary"  },
-                                { glyph: "power_settings_new", label: "Off",    cmd: ["systemctl", "poweroff"], tint: "error"     }
+                                { glyph: "bedtime",            label: Lang.t("lock.sleep"),  cmd: ["systemctl", "suspend"],  tint: "secondary" },
+                                { glyph: "restart_alt",        label: Lang.t("lock.reboot"), cmd: ["systemctl", "reboot"],   tint: "tertiary"  },
+                                { glyph: "power_settings_new", label: Lang.t("lock.off"),    cmd: ["systemctl", "poweroff"], tint: "error"     }
                             ]
                             delegate: Rectangle {
                                 id: powerBtn
@@ -901,11 +911,22 @@ Item {
                 }
             }
 
+                } }
+            }
+
+            // ============ NOTHING SCENE (дизайн Nothing) ============
+            Loader {
+                id: nothingLoader
+                anchors.fill: parent
+                active: root.nothing
+                sourceComponent: Component { LockNothing { ctl: root } }
+            }
+
             // ============ SUCCESS FLASH ============
             Rectangle {
                 id: successFlash
                 anchors.fill: parent
-                color: M3.primary
+                color: root.nothing ? M3.m3OnSurface : M3.primary
                 opacity: 0
                 z: 100
                 SequentialAnimation {
@@ -929,10 +950,10 @@ Item {
                     anchors.centerIn: parent
                     width: 400
                     height: col2.implicitHeight + M3.s24 * 2
-                    radius: 32
+                    radius: root.nothing ? ThemeNothing.corners.lg : 32
                     color: M3.surfaceContainerHigh
                     border.width: 1
-                    border.color: M3.outlineVariant
+                    border.color: root.nothing ? M3.outline : M3.outlineVariant
                     scale: confirmPower.visible ? 1.0 : 0.9
                     Behavior on scale {
                         NumberAnimation {
@@ -954,7 +975,9 @@ Item {
                             anchors.horizontalCenter: parent.horizontalCenter
                             width: 56; height: 56
                             radius: M3.rFull
-                            color: M3.errorContainer
+                            color: root.nothing ? "transparent" : M3.errorContainer
+                            border.width: root.nothing ? 1 : 0
+                            border.color: ThemeNothing.red
 
                             SequentialAnimation on scale {
                                 loops: Animation.Infinite
@@ -972,10 +995,16 @@ Item {
 
                         Text {
                             anchors.horizontalCenter: parent.horizontalCenter
-                            text: root.powerExec.length === 0 ? ""
-                                : "Really " + root.powerExec[root.powerExec.length - 1] + "?"
+                            text: {
+                                if (root.powerExec.length === 0) return ""
+                                const t = Lang.t("lock.confirm").replace("{cmd}", root.powerExec[root.powerExec.length - 1])
+                                return root.nothing ? t.toUpperCase() : t
+                            }
                             color: M3.m3OnSurface
-                            font: M3.titleLarge
+                            font: root.nothing
+                                  ? ({ family: M3.fontMono, pixelSize: 16, weight: Font.Medium, letterSpacing: 3 })
+                                  : M3.titleLarge
+
                         }
 
                         Row {
@@ -984,7 +1013,10 @@ Item {
 
                             Rectangle {
                                 width: 140; height: 44; radius: M3.rFull
-                                color: yesMa.pressed      ? M3.pressedOf(M3.errorContainer)
+                                color: root.nothing
+                                     ? (yesMa.pressed ? Qt.darker(ThemeNothing.red, 1.2)
+                                        : yesMa.containsMouse ? Qt.lighter(ThemeNothing.red, 1.15) : ThemeNothing.red)
+                                     : yesMa.pressed      ? M3.pressedOf(M3.errorContainer)
                                      : yesMa.containsMouse ? M3.hoverOf(M3.errorContainer)
                                      : M3.errorContainer
                                 Behavior on color { ColorAnimation { duration: M3.durFast } }
@@ -996,13 +1028,13 @@ Item {
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: "check"
-                                        color: M3.error
+                                        color: root.nothing ? "#FFFFFF" : M3.error
                                         font { family: "Material Symbols Rounded"; pixelSize: 16 }
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: "Yes"
-                                        color: M3.error
+                                        text: Lang.t("lock.yes")
+                                        color: root.nothing ? "#FFFFFF" : M3.error
                                         font: M3.labelLarge
                                     }
                                 }
@@ -1020,7 +1052,12 @@ Item {
 
                             Rectangle {
                                 width: 140; height: 44; radius: M3.rFull
-                                color: noMa.pressed      ? M3.pressedOf(M3.primary)
+                                border.width: root.nothing ? 1 : 0
+                                border.color: M3.outline
+                                color: root.nothing
+                                     ? (noMa.pressed ? Qt.rgba(M3.fg.r, M3.fg.g, M3.fg.b, 0.16)
+                                        : noMa.containsMouse ? Qt.rgba(M3.fg.r, M3.fg.g, M3.fg.b, 0.08) : "transparent")
+                                     : noMa.pressed      ? M3.pressedOf(M3.primary)
                                      : noMa.containsMouse ? M3.hoverOf(M3.primary)
                                      : M3.primary
                                 Behavior on color { ColorAnimation { duration: M3.durFast } }
@@ -1032,13 +1069,13 @@ Item {
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: "close"
-                                        color: M3.m3OnPrimary
+                                        color: root.nothing ? M3.m3OnSurface : M3.m3OnPrimary
                                         font { family: "Material Symbols Rounded"; pixelSize: 16 }
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: "Cancel"
-                                        color: M3.m3OnPrimary
+                                        text: Lang.t("lock.cancel")
+                                        color: root.nothing ? M3.m3OnSurface : M3.m3OnPrimary
                                         font: M3.labelLarge
                                     }
                                 }

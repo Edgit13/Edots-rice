@@ -57,6 +57,17 @@ Item {
             maskSource: mask
             maskThresholdMin: 0.5
             maskSpreadAtMin: 1.0
+            saturation: Theme.settings.nothing ? -0.85 : 0.0     // Nothing: майже монохромна обкладинка
         }
+    }
+
+    // тонкий контур у Nothing
+    Rectangle {
+        anchors.fill: parent
+        visible: Theme.settings.nothing
+        radius: root.shapeRadius
+        color: "transparent"
+        border.width: 1
+        border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.22)
     }
 }

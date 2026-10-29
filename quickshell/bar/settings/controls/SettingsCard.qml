@@ -14,7 +14,9 @@ Rectangle {
     Layout.fillWidth: true
     implicitHeight: col.implicitHeight + Theme.space.lg * 2
     radius: Theme.shape.cardLarge
-    color: Theme.color.surfaceContainer
+    color: Theme.settings.nothing ? "transparent" : Theme.color.surfaceContainer
+    border.width: Theme.settings.nothing ? 1 : 0
+    border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.16)
 
     ColumnLayout {
         id: col

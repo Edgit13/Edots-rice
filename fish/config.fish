@@ -78,3 +78,5 @@ set -gx PATH ~/.npm-global/bin $PATH
 
 # opencode
 fish_add_path /home/eduard/.opencode/bin
+
+fish_add_path /home/eduard/.spicetify

@@ -15,7 +15,10 @@ Rectangle {
     property real rRight: Theme.shape.listInner
 
     implicitHeight: Theme.components.dp(76)
-    color: Theme.color.surfaceContainer
+    // Nothing: прозора плитка з тонким контуром замість тональної заливки
+    color: Theme.settings.nothing ? "transparent" : Theme.color.surfaceContainer
+    border.width: Theme.settings.nothing ? 1 : 0
+    border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.16)
     topLeftRadius: rLeft
     bottomLeftRadius: rLeft
     topRightRadius: rRight

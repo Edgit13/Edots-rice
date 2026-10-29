@@ -99,8 +99,13 @@ PanelWindow {
                 Layout.fillWidth: true
                 implicitHeight: Theme.components.dp(64)
                 radius: Theme.shape.cardLarge
-                color: NotificationService.dnd ? Theme.color.primaryContainer : Theme.color.surfaceContainerHigh
+                color: Theme.settings.nothing ? "transparent"
+                     : NotificationService.dnd ? Theme.color.primaryContainer : Theme.color.surfaceContainerHigh
+                // Nothing: контурна картка; увімкнений DND — яскравіший контур
+                border.width: Theme.settings.nothing ? 1 : 0
+                border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, NotificationService.dnd ? 0.75 : 0.18)
                 Behavior on color { MotionColorAnimation { role: "stateChange" } }
+                Behavior on border.color { ColorAnimation { duration: 160 } }
 
                 RowLayout {
                     anchors.fill: parent
@@ -171,7 +176,9 @@ PanelWindow {
                         implicitWidth: Theme.components.dp(72)
                         implicitHeight: implicitWidth
                         radius: Theme.shape.radius("lg", height)
-                        color: Theme.color.secondaryContainer
+                        color: Theme.settings.nothing ? "transparent" : Theme.color.secondaryContainer
+                        border.width: Theme.settings.nothing ? 1 : 0
+                        border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.22)
                         Text {
                             anchors.centerIn: parent
                             text: "\ue7f4"

@@ -32,6 +32,8 @@ Item {
         implicitHeight: col.implicitHeight + Theme.space.xl * 2
         radius: Theme.shape.dialog
         color: Theme.color.surfaceContainerHigh
+        border.width: Theme.settings.nothing ? 1 : 0
+        border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.22)
         scale: dlg.open ? 1 : 0.9
         opacity: dlg.open ? 1 : 0
         Behavior on scale { MotionAnimation { role: "expand" } }
@@ -50,8 +52,9 @@ Item {
             ThemedText {
                 visible: dlg.title.length > 0
                 Layout.fillWidth: true
-                text: dlg.title
-                style: Theme.type.headlineSmall
+                text: Theme.settings.nothing ? dlg.title.toUpperCase() : dlg.title
+                style: Theme.settings.nothing ? Theme.type.titleSmall : Theme.type.headlineSmall
+                font.letterSpacing: Theme.settings.nothing ? 2 : style.tracking
                 wrapMode: Text.Wrap
             }
             ThemedText {

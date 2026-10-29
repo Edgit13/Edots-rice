@@ -30,6 +30,10 @@ Singleton {
     readonly property color green:  ThemeColors.success
     readonly property color orange: ThemeColors.warning
 
+    // ---- дизайн ----
+    readonly property bool nothing: ThemeSettings.nothing
+    readonly property color nothingRed: ThemeNothing.red
+
     // ---- шрифти ----
     readonly property string uiFont:   ThemeTypography.sans
     readonly property string monoFont: ThemeTypography.mono

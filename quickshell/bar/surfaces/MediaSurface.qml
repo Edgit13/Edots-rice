@@ -56,7 +56,9 @@ Item {
                 implicitHeight: Theme.components.tooltipHeight
                 implicitWidth: Math.min(parent.width, chipRow.implicitWidth + Theme.space.xl)
                 radius: chipMa.pressed ? Theme.shape.xs : height / 2
-                color: Theme.color.secondaryContainer
+                color: Theme.settings.nothing ? "transparent" : Theme.color.secondaryContainer
+                border.width: Theme.settings.nothing ? 1 : 0
+                border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.25)
                 Behavior on radius { MotionAnimation { role: "morph" } }
 
                 Row {
@@ -67,13 +69,13 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "\ue405"
                         font { family: Theme.type.icons; pixelSize: Theme.type.iconXS }
-                        color: Theme.color.fgSecondaryContainer
+                        color: Theme.settings.nothing ? Theme.color.fgSurfaceVariant : Theme.color.fgSecondaryContainer
                     }
                     ThemedText {
                         anchors.verticalCenter: parent.verticalCenter
                         text: MediaService.identity || Lang.t("ui.media.player")
                         style: Theme.type.labelSmall
-                        color: Theme.color.fgSecondaryContainer
+                        color: Theme.settings.nothing ? Theme.color.fgSurfaceVariant : Theme.color.fgSecondaryContainer
                         elide: Text.ElideRight
                         width: Math.min(implicitWidth, chip.parent.width - Theme.space.xxxl - Theme.space.sm)
                     }

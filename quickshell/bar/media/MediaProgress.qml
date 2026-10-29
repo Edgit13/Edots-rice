@@ -21,6 +21,12 @@ Item {
     readonly property real shown: ma.active ? ma.frac : value
     signal seeked(real fraction)
 
+    // ---- Nothing: шкала з точок; пройдена частина світла, «голова» — червона й пульсує, поки грає ----
+    readonly property bool nothing: Theme.settings.nothing
+    readonly property real seg: Theme.components.dp(4)
+    readonly property real pitch: seg * 2
+    readonly property int segCount: Math.max(1, Math.floor((width + seg) / pitch))
+
     implicitHeight: Theme.components.sliderS
     implicitWidth: 200
 
@@ -45,8 +51,34 @@ Item {
         onTriggered: MediaService.poll()
     }
 
+    Repeater {
+        model: root.nothing ? root.segCount : 0
+        delegate: Rectangle {
+            id: dotSeg
+            required property int index
+            readonly property bool lit: (index + 0.5) / root.segCount <= root.shown
+            readonly property bool head: lit && (index + 1.5) / root.segCount > root.shown
+            property real pulse: 1.0
+            x: index * root.pitch + (root.width - (root.segCount * root.pitch - root.seg)) / 2
+            anchors.verticalCenter: parent.verticalCenter
+            width: root.seg; height: root.seg; radius: width / 2
+            color: head ? ThemeNothing.red : Theme.color.fgSurface
+            opacity: lit ? 1.0 : ThemeNothing.dotOpacityOff
+            scale: head ? pulse : (ma.pressed && lit ? 1.25 : 1.0)
+            Behavior on opacity { NumberAnimation { duration: 120 } }
+            Behavior on scale   { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+            SequentialAnimation on pulse {
+                running: dotSeg.head && root.playing && root.visible
+                loops: Animation.Infinite
+                NumberAnimation { to: 1.7; duration: 600; easing.type: Easing.InOutSine }
+                NumberAnimation { to: 1.0; duration: 600; easing.type: Easing.InOutSine }
+            }
+        }
+    }
+
     Canvas {
         id: canvas
+        visible: !root.nothing
         anchors.fill: parent
         onPaint: {
             const ctx = getContext("2d")
@@ -94,7 +126,7 @@ Item {
         color: root.activeColor
         x: Math.max(0, Math.min(root.width - width, root.width * root.shown - width / 2))
         y: (root.height - height) / 2
-        visible: root.seekable
+        visible: root.seekable && !root.nothing
         Behavior on width { MotionAnimation { role: "press" } }
         Behavior on height { MotionAnimation { role: "press" } }
     }

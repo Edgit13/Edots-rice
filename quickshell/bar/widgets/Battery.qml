@@ -33,6 +33,6 @@ RowLayout {
     Text {
         text: root.level + "%"
         color: Colors.fg
-        font { family: "SF Pro Display"; weight: 500 }
+        font { family: Theme.type.sans; weight: 500 }
     }
 }

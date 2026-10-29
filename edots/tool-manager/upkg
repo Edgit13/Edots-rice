@@ -1,89 +1,278 @@
 #!/usr/bin/env bash
+# upkg — єдина обгортка над пакетними менеджерами (pacman/AUR через yay + flatpak).
+#
+#   upkg [-q] update
+#   upkg [-q] install <pkg> [pkg…]       кілька пакетів за раз
+#   upkg [-q] remove  <pkg> [pkg…]
+#   upkg [-q] search  <pkg>
+#   upkg [-q] clean
+#
+#   -q, --quiet   без запитань і кольорів: джерело (repo/AUR чи flatpak) визначається автоматично,
+#                 yay/flatpak запускаються з --noconfirm / -y. Для запуску з інтерфейсу (Task Manager).
+#                 Префікс вибирає джерело явно:  flatpak:org.mozilla.firefox  aur:pkg  pacman:pkg
+#
+# Коди виходу: 0 — ок · 1 — помилка/частково · 2 — неправильний виклик · 3 — потрібен пароль sudo (немає askpass)
 
-# Terminal Colors for readability
-BLUE='\033[1;34m'
-GREEN='\033[1;32m'
-RED='\033[1;31m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+set -u
 
-COMMAND=$1
-PACKAGE=$2
+QUIET=0
+COMMAND=""
+PKGS=()
+
+for arg in "$@"; do
+  case "$arg" in
+    -q|--quiet|-y|--yes) QUIET=1 ;;
+    -h|--help)           [ -z "$COMMAND" ] && COMMAND=help ;;
+    *)
+      if [ -z "$COMMAND" ]; then COMMAND="$arg"
+      else
+        # дозволяємо "a,b,c" та "a b c"
+        IFS=',' read -r -a _parts <<<"$arg"
+        for _p in "${_parts[@]}"; do [ -n "$_p" ] && PKGS+=("$_p"); done
+      fi ;;
+  esac
+done
+
+if (( QUIET )) || [ ! -t 1 ]; then BLUE=''; GREEN=''; RED=''; YELLOW=''; NC=''
+else BLUE='\033[1;34m'; GREEN='\033[1;32m'; RED='\033[1;31m'; YELLOW='\033[1;33m'; NC='\033[0m'; fi
+
+say()  { echo -e "${GREEN}==> $*${NC}"; }
+warn() { echo -e "${YELLOW}!! $*${NC}"; }
+err()  { echo -e "${RED}Error: $*${NC}" >&2; }
 
 show_help() {
-    echo -e "${BLUE}Universal Package Manager Wrapper (upkg)${NC}"
-    echo "Usage: upkg [command] [package]"
-    echo ""
-    echo "Commands:"
-    echo "  update            Update all packages (pacman, AUR, flatpak)"
-    echo "  install <pkg>     Install a package (prompts for source)"
-    echo "  remove  <pkg>     Remove a package (prompts for source)"
-    echo "  search  <pkg>     Search for a package across all managers"
-    echo "  clean             Clean package caches and unused runtimes"
-    echo "  help              Show this help message"
+  echo -e "${BLUE}Universal Package Manager Wrapper (upkg)${NC}"
+  echo "Usage: upkg [-q] <command> [packages...]"
+  echo ""
+  echo "Commands:"
+  echo "  update                 Update everything (pacman, AUR, flatpak)"
+  echo "  install <pkg...>       Install one or more packages"
+  echo "  remove  <pkg...>       Remove one or more packages"
+  echo "  search  <pkg>          Search across all managers"
+  echo "  clean                  Clean caches and unused runtimes"
+  echo "  help                   Show this help"
+  echo ""
+  echo "Options:"
+  echo "  -q, --quiet            Non-interactive: auto-detect source, no prompts, no colors (for scripts / the shell UI)"
+  echo ""
+  echo "Source prefixes (optional):  flatpak:<app-id>   aur:<pkg>   pacman:<pkg>"
+  echo "Examples:"
+  echo "  upkg -q update"
+  echo "  upkg -q install htop btop flatpak:org.mozilla.firefox"
+  echo "  upkg -q remove htop btop"
 }
 
-if [ -z "$COMMAND" ]; then
-    show_help
-    exit 1
-fi
+# ------------------------------------------------------------------ інструменти
+if   command -v yay  >/dev/null 2>&1; then AUR=(yay)
+elif command -v paru >/dev/null 2>&1; then AUR=(paru)
+else AUR=(); fi
+HAS_FLATPAK=0; command -v flatpak >/dev/null 2>&1 && HAS_FLATPAK=1
 
+# ------------------------------------------------------------------ sudo без терміналу (-q)
+SUDOFLAGS=()
+ensure_sudo() {
+  (( QUIET )) || return 0
+  sudo -n true 2>/dev/null && return 0                       # NOPASSWD або свіжий timestamp
+  local ask="${SUDO_ASKPASS:-}"
+  if [ -z "$ask" ] || [ ! -x "$ask" ]; then
+    ask="${XDG_RUNTIME_DIR:-/tmp}/upkg-askpass"
+    if   command -v rofi    >/dev/null 2>&1; then printf '#!/bin/sh\nexec rofi -dmenu -password -p "sudo password" -theme-str "listview { enabled: false; }"\n' >"$ask"
+    elif command -v zenity  >/dev/null 2>&1; then printf '#!/bin/sh\nexec zenity --password --title="sudo password"\n' >"$ask"
+    elif command -v kdialog >/dev/null 2>&1; then printf '#!/bin/sh\nexec kdialog --password "sudo password"\n' >"$ask"
+    else
+      err "sudo needs a password and no askpass helper is available (install rofi/zenity/kdialog, set SUDO_ASKPASS, or run upkg without -q in a terminal)."
+      echo "UPKG_NEEDS_SUDO"
+      exit 3
+    fi
+    chmod 700 "$ask"
+  fi
+  export SUDO_ASKPASS="$ask"
+  SUDOFLAGS=(--sudoflags "-A")
+  # заздалегідь питаємо пароль, щоб помилка була зрозумілою
+  if ! sudo -A -v 2>/dev/null; then err "sudo authentication failed or was cancelled."; echo "UPKG_NEEDS_SUDO"; exit 3; fi
+}
+
+aur_run() {   # запуск yay/paru з потрібними прапорами
+  if (( ${#AUR[@]} )); then
+    local extra=()
+    (( QUIET )) && extra+=(--noconfirm)
+    "${AUR[@]}" "${SUDOFLAGS[@]}" "${extra[@]}" "$@"
+  else
+    # без AUR-хелпера — голий pacman
+    if (( QUIET )); then sudo -A pacman --noconfirm "$@"; else sudo pacman "$@"; fi
+  fi
+}
+fp_run() { local y=(); (( QUIET )) && y=(-y); flatpak "$@" "${y[@]}"; }
+
+# ------------------------------------------------------------------ визначення джерела (-q)
+fp_match() {   # exact app-id / name (без регістру) серед flathub
+  (( HAS_FLATPAK )) || return 1
+  flatpak search --columns=application,name "$1" 2>/dev/null | awk -F'\t' -v q="${1,,}" '
+    { id=tolower($1); nm=tolower($2); n=split(id, a, ".")
+      if (id==q || a[n]==q || nm==q) { print $1; exit 0 } }'
+}
+fp_installed_match() {
+  (( HAS_FLATPAK )) || return 1
+  flatpak list --app --columns=application,name 2>/dev/null | awk -F'\t' -v q="${1,,}" '
+    { id=tolower($1); nm=tolower($2); n=split(id, a, ".")
+      if (id==q || a[n]==q || nm==q) { print $1; exit 0 } }'
+}
+
+FAILED=()
+OKED=()
+ARCH_PKGS=(); FP_PKGS=()
+
+classify_install() {   # заповнює ARCH_PKGS / FP_PKGS / FAILED
+  local p src name hit
+  for p in "${PKGS[@]}"; do
+    src=""; name="$p"
+    case "$p" in
+      flatpak:*) src=flatpak; name="${p#flatpak:}" ;;
+      aur:*|pacman:*|yay:*|arch:*) src=arch; name="${p#*:}" ;;
+    esac
+    if [ -z "$src" ]; then
+      if (( ${#AUR[@]} )) && "${AUR[0]}" -Si "$name" >/dev/null 2>&1; then src=arch
+      elif pacman -Si "$name" >/dev/null 2>&1; then src=arch
+      elif hit="$(fp_match "$name")" && [ -n "$hit" ]; then src=flatpak; name="$hit"
+      fi
+    fi
+    case "$src" in
+      arch)    ARCH_PKGS+=("$name") ;;
+      flatpak) FP_PKGS+=("$name") ;;
+      *)       warn "'$p' was not found in repos, AUR or Flathub."; FAILED+=("$p") ;;
+    esac
+  done
+}
+
+classify_remove() {
+  local p src name hit
+  for p in "${PKGS[@]}"; do
+    src=""; name="$p"
+    case "$p" in
+      flatpak:*) src=flatpak; name="${p#flatpak:}" ;;
+      aur:*|pacman:*|yay:*|arch:*) src=arch; name="${p#*:}" ;;
+    esac
+    if [ -z "$src" ]; then
+      if pacman -Qq "$name" >/dev/null 2>&1; then src=arch
+      elif hit="$(fp_installed_match "$name")" && [ -n "$hit" ]; then src=flatpak; name="$hit"
+      fi
+    fi
+    case "$src" in
+      arch)    ARCH_PKGS+=("$name") ;;
+      flatpak) FP_PKGS+=("$name") ;;
+      *)       warn "'$p' is not installed."; FAILED+=("$p") ;;
+    esac
+  done
+}
+
+# інтерактивний вибір джерела ОДИН раз для всього списку
+ask_source() {   # $1 = install|remove → ARCH_PKGS / FP_PKGS
+  local verb="$1" choice
+  echo -e "${YELLOW}Where do you want to $verb: ${PKGS[*]} ?${NC}"
+  echo "1) Arch Repos / AUR (yay)"
+  echo "2) Flathub (flatpak)"
+  echo "3) Cancel"
+  read -r -p "Select an option (1-3): " choice
+  case "$choice" in
+    1) ARCH_PKGS=("${PKGS[@]}") ;;
+    2) FP_PKGS=("${PKGS[@]}") ;;
+    *) echo "Cancelled."; exit 0 ;;
+  esac
+}
+
+finish() {
+  local rc=0
+  if (( ${#FAILED[@]} )); then
+    echo "[upkg] failed: ${FAILED[*]}"
+    rc=1
+  fi
+  if (( rc == 0 )); then echo "[upkg] done"; else echo "[upkg] finished with errors"; fi
+  exit "$rc"
+}
+
+run_step() {   # run_step <ім'я для звіту…> -- <команда…>
+  local label="$1"; shift
+  if "$@"; then OKED+=("$label"); else FAILED+=("$label"); fi
+}
+
+# ------------------------------------------------------------------ команди
 case "$COMMAND" in
-    update)
-        echo -e "${GREEN}==> Updating Arch Repos & AUR (yay)...${NC}"
-        yay -Syu
-        echo -e "${GREEN}==> Updating Flatpaks...${NC}"
-        flatpak update
-        echo -e "${BLUE}System is fully up to date!${NC}"
-        ;;
-        
-    install)
-        if [ -z "$PACKAGE" ]; then echo -e "${RED}Error: Specify a package to install.${NC}"; exit 1; fi
-        echo -e "${YELLOW}Where do you want to install '$PACKAGE' from?${NC}"
-        echo "1) Arch Repos / AUR (yay)"
-        echo "2) Flathub (flatpak)"
-        echo "3) Cancel"
-        read -p "Select an option (1-3): " choice
-        
-        case $choice in
-            1) yay -S "$PACKAGE" ;;
-            2) flatpak install "$PACKAGE" ;;
-            3) echo "Installation cancelled." ;;
-            *) echo -e "${RED}Invalid option.${NC}" ;;
-        esac
-        ;;
-        
-    remove)
-        if [ -z "$PACKAGE" ]; then echo -e "${RED}Error: Specify a package to remove.${NC}"; exit 1; fi
-        echo -e "${YELLOW}Where is '$PACKAGE' installed?${NC}"
-        echo "1) Arch Repos / AUR (yay)"
-        echo "2) Flathub (flatpak)"
-        read -p "Select an option (1-2): " choice
-        
-        case $choice in
-            1) yay -Rns "$PACKAGE" ;;
-            2) flatpak uninstall "$PACKAGE" ;;
-            *) echo -e "${RED}Invalid option.${NC}" ;;
-        esac
-        ;;
-        
-    search)
-        if [ -z "$PACKAGE" ]; then echo -e "${RED}Error: Specify a package to search.${NC}"; exit 1; fi
-        echo -e "${GREEN}==> Searching Arch Repos & AUR...${NC}"
-        yay -Ss "$PACKAGE"
-        echo ""
-        echo -e "${GREEN}==> Searching Flathub...${NC}"
-        flatpak search "$PACKAGE"
-        ;;
-        
-    clean)
-        echo -e "${GREEN}==> Cleaning yay/pacman cache...${NC}"
-        yay -Scc
-        echo -e "${GREEN}==> Removing unused Flatpak runtimes...${NC}"
-        flatpak uninstall --unused
-        ;;
-        
-    help|*)
-        show_help
-        ;;
+  update)
+    ensure_sudo
+    say "Updating Arch Repos & AUR..."
+    run_step "arch" aur_run -Syu
+    if (( HAS_FLATPAK )); then
+      say "Updating Flatpaks..."
+      run_step "flatpak" fp_run update
+    fi
+    (( ${#FAILED[@]} )) || echo -e "${BLUE}System is fully up to date!${NC}"
+    finish
+    ;;
+
+  install)
+    (( ${#PKGS[@]} )) || { err "Specify at least one package to install."; exit 2; }
+    if (( QUIET )); then classify_install; else ask_source install; fi
+    if (( ${#ARCH_PKGS[@]} )); then
+      ensure_sudo
+      say "Installing (repos/AUR): ${ARCH_PKGS[*]}"
+      run_step "${ARCH_PKGS[*]}" aur_run -S --needed "${ARCH_PKGS[@]}"
+    fi
+    if (( ${#FP_PKGS[@]} )); then
+      say "Installing (flatpak): ${FP_PKGS[*]}"
+      run_step "${FP_PKGS[*]}" fp_run install flathub "${FP_PKGS[@]}"
+    fi
+    (( ${#ARCH_PKGS[@]} + ${#FP_PKGS[@]} )) || FAILED+=("(nothing to install)")
+    finish
+    ;;
+
+  remove|uninstall)
+    (( ${#PKGS[@]} )) || { err "Specify at least one package to remove."; exit 2; }
+    if (( QUIET )); then classify_remove; else ask_source remove; fi
+    if (( ${#ARCH_PKGS[@]} )); then
+      ensure_sudo
+      say "Removing (repos/AUR): ${ARCH_PKGS[*]}"
+      run_step "${ARCH_PKGS[*]}" aur_run -Rns "${ARCH_PKGS[@]}"
+    fi
+    if (( ${#FP_PKGS[@]} )); then
+      say "Removing (flatpak): ${FP_PKGS[*]}"
+      run_step "${FP_PKGS[*]}" fp_run uninstall "${FP_PKGS[@]}"
+    fi
+    (( ${#ARCH_PKGS[@]} + ${#FP_PKGS[@]} )) || FAILED+=("(nothing to remove)")
+    finish
+    ;;
+
+  search)
+    (( ${#PKGS[@]} )) || { err "Specify a package to search."; exit 2; }
+    say "Searching Arch Repos & AUR..."
+    if (( ${#AUR[@]} )); then "${AUR[0]}" -Ss "${PKGS[@]}"; else pacman -Ss "${PKGS[@]}"; fi
+    if (( HAS_FLATPAK )); then
+      echo ""
+      say "Searching Flathub..."
+      flatpak search "${PKGS[@]}"
+    fi
+    exit 0
+    ;;
+
+  clean)
+    ensure_sudo
+    say "Cleaning package cache..."
+    if (( QUIET )); then run_step "cache" aur_run -Sc; else run_step "cache" aur_run -Scc; fi
+    if (( HAS_FLATPAK )); then
+      say "Removing unused Flatpak runtimes..."
+      run_step "flatpak" flatpak uninstall --unused $( ((QUIET)) && echo -y )
+    fi
+    finish
+    ;;
+
+  help|"")
+    show_help
+    [ -z "$COMMAND" ] && exit 2
+    exit 0
+    ;;
+
+  *)
+    err "Unknown command '$COMMAND'."
+    show_help
+    exit 2
+    ;;
 esac

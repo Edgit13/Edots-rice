@@ -17,6 +17,7 @@ Item {
     id: root
 
     property string wallpaperDir: Quickshell.env("HOME") + "/Pictures/Wallpapers"
+    readonly property bool nothing: Theme.settings.nothing
     property string selectedCategory: "All"
     property var colorIndex: ({})
     property var availableCategories: ["All", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green", "Cyan", "Monochrome", "Other"]
@@ -117,21 +118,22 @@ Item {
 
             width: GridView.view.cellWidth - 6
             height: GridView.view.cellHeight - 6
-            radius: 10
+            radius: root.nothing ? ThemeNothing.corners.md - 4 : 10
             color: Colors.bg2
 
             property bool hovered: gridHoverArea.containsMouse
 
-            border.width: hovered ? 2 : 0
-            border.color: Colors.accent
+            // Material: акцентна рамка 2px і пружинний zoom. Nothing: тонка світла рамка, спокійний zoom.
+            border.width: hovered ? (root.nothing ? 1 : 2) : 0
+            border.color: root.nothing ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.85) : Colors.accent
 
             Behavior on border.width {
                 NumberAnimation { duration: 120 }
             }
             Behavior on scale {
-                SpringAnimation { spring: 4; damping: 0.35 }
+                SpringAnimation { spring: root.nothing ? 6 : 4; damping: root.nothing ? 0.6 : 0.35 }
             }
-            scale: hovered ? 1.05 : 1.0
+            scale: hovered ? (root.nothing ? 1.03 : 1.05) : 1.0
 
             Image {
                 anchors.fill: parent
@@ -170,18 +172,43 @@ Item {
                 Rectangle {
                     required property string modelData
                     readonly property bool active: root.selectedCategory === modelData
-                    width: categoryLabel.implicitWidth + 22
+                    width: chipRow.implicitWidth + 22
                     height: 28
                     radius: 14
-                    color: active ? Colors.accent : Colors.bg2
-                    border.width: active ? 0 : 1
-                    border.color: Colors.bg4
-                    Text {
-                        id: categoryLabel
+                    // Material: активна — суцільний акцент. Nothing: контурна «пігулка» з червоною крапкою.
+                    color: root.nothing
+                        ? (active ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.10) : "transparent")
+                        : (active ? Colors.accent : Colors.bg2)
+                    border.width: root.nothing ? 1 : (active ? 0 : 1)
+                    border.color: root.nothing
+                        ? (active ? Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.70) : Qt.rgba(Colors.fg.r, Colors.fg.g, Colors.fg.b, 0.20))
+                        : Colors.bg4
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                    Behavior on border.color { ColorAnimation { duration: 140 } }
+                    Row {
+                        id: chipRow
                         anchors.centerIn: parent
-                        text: Lang.t("wall.cat." + modelData)
-                        color: parent.active ? Colors.onAccent : Colors.fg
-                        font { family: Colors.uiFont; pixelSize: 10 }
+                        spacing: 5
+                        Rectangle {
+                            visible: root.nothing
+                            width: parent.parent.active ? 4 : 0
+                            height: 4; radius: 2
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: ThemeNothing.red
+                            Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
+                        }
+                        Text {
+                            id: categoryLabel
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: root.nothing ? Lang.t("wall.cat." + modelData).toUpperCase() : Lang.t("wall.cat." + modelData)
+                            color: root.nothing ? (parent.parent.active ? Colors.fg : Colors.grey1)
+                                               : (parent.parent.active ? Colors.onAccent : Colors.fg)
+                            font {
+                                family: root.nothing ? Theme.type.mono : Colors.uiFont
+                                pixelSize: root.nothing ? 9 : 10
+                                letterSpacing: root.nothing ? 1.5 : 0
+                            }
+                        }
                     }
                     MouseArea {
                         anchors.fill: parent

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import ".."
 import "../material"
+import "root:/theme"
 import Quickshell
 import QtQuick
 import QtQuick.Layouts
@@ -84,7 +85,7 @@ RowLayout {
                 radius: M3.rS
                 color: M3.surfaceContainer
                 border.width: 1
-                border.color: hexField.activeFocus ? M3.primary : M3.outline
+                border.color: hexField.activeFocus ? (Theme.settings.nothing ? M3.m3OnSurface : M3.primary) : M3.outline
 
                 TextInput {
                     id: hexField

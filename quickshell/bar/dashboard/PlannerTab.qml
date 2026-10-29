@@ -19,11 +19,18 @@ Flickable {
         height: root.contentHeight
 
         RowLayout {
+            id: row
             anchors.fill: parent
             spacing: Theme.space.md
 
+            // ліва колонка має фіксовану ширину: min = max = preferred, щоб вона не могла
+            // «з'їсти» увесь рядок і витиснути список справ
+            readonly property real leftW: Math.round((width - spacing) * 0.46)
+
             ColumnLayout {
-                Layout.preferredWidth: Math.round(parent.width * 0.46)
+                Layout.preferredWidth: row.leftW
+                Layout.minimumWidth: row.leftW
+                Layout.maximumWidth: row.leftW
                 Layout.fillHeight: true
                 spacing: Theme.space.md
 
@@ -42,6 +49,7 @@ Flickable {
             TodoPanel {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                Layout.minimumWidth: Theme.components.dp(260)
                 selectedDay: root.selectedDay
                 onDayCleared: root.selectedDay = ""
             }

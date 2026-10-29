@@ -35,6 +35,7 @@ Item {
 
     // M3 elevation on the menu container.
     RectangularShadow {
+        visible: !DockTheme.nothing
         anchors.fill: menuBg
         radius: menuBg.radius
         blur: 12
@@ -44,8 +45,10 @@ Item {
     Rectangle {
         id: menuBg
         anchors.fill: parent
-        radius: 8
+        radius: DockTheme.nothing ? 14 : 8
         color: DockTheme.surface_container_high
+        border.width: DockTheme.nothing ? 1 : 0
+        border.color: Qt.rgba(DockTheme.on_surface.r, DockTheme.on_surface.g, DockTheme.on_surface.b, 0.20)
 
         Column {
             id: menuColumn

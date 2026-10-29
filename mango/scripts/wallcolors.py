@@ -55,6 +55,8 @@ def get_matugen_colors(image_path: str):
             timeout=15,
         )
         out = result.stdout.strip()
+        if result.returncode != 0 or not out:
+            logging.error("matugen rc=%s stderr=%s", result.returncode, result.stderr.strip())
         if out:
             try:
                 data = json.loads(out)
@@ -594,6 +596,12 @@ def apply_palette(palette: dict, wallpaper: str, mode: str, reload_apps: bool = 
         subprocess.run("killall quickshell; quickshell &", shell=True, capture_output=True)
 
 
+def remember_wallpaper(wallpaper: str):
+    """Record the chosen wallpaper immediately, so the lockscreen/shell see it even if matugen fails later."""
+    write(QUICKSHELL_WALLPAPER_FILE, wallpaper + "\n")
+    logging.info("current-wallpaper -> %s", wallpaper)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate wallpaper-driven colors or switch the desktop to a Nothing-inspired palette."
@@ -626,6 +634,8 @@ def main():
     if args.wallpaper_mode:
         if args.wallpaper:
             # Explicit image means regenerate the dynamic palette from that wallpaper.
+            if Path(wallpaper).is_file():
+                remember_wallpaper(wallpaper)
             color, _, role_hex = get_matugen_colors(wallpaper)
             palette = build_palette(color)
             palette.update(md3_tokens(role_hex))
@@ -643,6 +653,7 @@ def main():
         parser.error("pass a wallpaper image, or use --nothing / --wallpaper")
     if not Path(wallpaper).is_file():
         parser.error(f"wallpaper image does not exist: {wallpaper}")
+    remember_wallpaper(wallpaper)
     color, _, role_hex = get_matugen_colors(wallpaper)
     palette = build_palette(color)
     palette.update(md3_tokens(role_hex))

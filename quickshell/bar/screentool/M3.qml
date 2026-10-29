@@ -28,6 +28,10 @@ Singleton {
     readonly property color scrim:      Qt.rgba(Theme.color.scrim.r, Theme.color.scrim.g, Theme.color.scrim.b, 0.6)
     readonly property color scrimLight: Qt.rgba(Theme.color.scrim.r, Theme.color.scrim.g, Theme.color.scrim.b, 0.2)
 
+    readonly property bool nothing: Theme.settings.nothing
+    readonly property color red: ThemeNothing.red
+    readonly property string monoFont: Theme.type.mono
+
     readonly property string iconFont: Theme.type.icons
     readonly property bool hasIcons: {
         try { return Qt.fontFamilies().indexOf(Theme.type.icons) >= 0 }

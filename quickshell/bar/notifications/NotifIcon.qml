@@ -32,7 +32,11 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: root.shapeRadius
-        color: root.critical ? Theme.color.error : Theme.color.primaryContainer
+        color: root.critical ? (Theme.settings.nothing ? "transparent" : Theme.color.error)
+             : (Theme.settings.nothing ? "transparent" : Theme.color.primaryContainer)
+        // Nothing: контурна «плитка» іконки; критичне — червоний контур
+        border.width: Theme.settings.nothing ? 1 : 0
+        border.color: root.critical ? ThemeNothing.red : Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
         visible: !root.isPhoto
         Behavior on color { MotionColorAnimation { role: "stateChange" } }
         ThemedText {
@@ -41,7 +45,8 @@ Item {
             text: (root.notif.appName || "?").charAt(0).toUpperCase()
             style: Theme.type.titleMedium
             emphasized: true
-            color: root.critical ? Theme.color.fgError : Theme.color.fgPrimaryContainer
+            color: root.critical ? (Theme.settings.nothing ? ThemeNothing.red : Theme.color.fgError)
+                 : (Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgPrimaryContainer)
         }
     }
 

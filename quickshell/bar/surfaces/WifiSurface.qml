@@ -35,28 +35,67 @@ Item {
         property bool inUse: false
         signal clicked()
 
+        readonly property bool nothing: Theme.settings.nothing
+        readonly property color inkColor: Colors.fg
+
         Layout.fillWidth: true
-        Layout.preferredHeight: 40
-        radius: Md.rM
-        color: row.inUse ? Md.primaryContainer
-            : (rowMa.containsMouse ? Md.hoverOf(Md.surfaceContainerHigh) : Md.surfaceContainerHigh)
+        Layout.preferredHeight: nothing ? 44 : 40
+        radius: nothing ? ThemeNothing.corners.md - 2 : Md.rM
+        // Nothing: прозорий рядок; активна мережа — легка заливка + контур + червона крапка (як у лаунчері)
+        color: nothing
+            ? (row.inUse ? Qt.rgba(inkColor.r, inkColor.g, inkColor.b, 0.07)
+               : rowMa.containsMouse ? Qt.rgba(inkColor.r, inkColor.g, inkColor.b, 0.05) : "transparent")
+            : (row.inUse ? Md.primaryContainer
+               : (rowMa.containsMouse ? Md.hoverOf(Md.surfaceContainerHigh) : Md.surfaceContainerHigh))
+        border.width: nothing && row.inUse ? 1 : 0
+        border.color: Qt.rgba(inkColor.r, inkColor.g, inkColor.b, 0.30)
         Behavior on color { ColorAnimation { duration: Md.durFast } }
+
+        Rectangle {
+            visible: row.nothing
+            x: 9
+            anchors.verticalCenter: parent.verticalCenter
+            width: 6; height: 6; radius: 3
+            color: ThemeNothing.red
+            opacity: row.inUse ? 1 : 0
+            scale: row.inUse ? 1 : 0.2
+            Behavior on opacity { NumberAnimation { duration: 140 } }
+            Behavior on scale   { NumberAnimation { duration: 220; easing.type: Easing.OutBack; easing.overshoot: 2.5 } }
+        }
 
         RowLayout {
             anchors.fill: parent
-            anchors.leftMargin: 12
+            anchors.leftMargin: row.nothing ? 24 : 12
             anchors.rightMargin: 12
             spacing: 10
 
+            // Material: гліф сили сигналу. Nothing: 4 стовпчики, що «заповнюються» (як індикатор зв'язку Nothing)
             Text {
+                visible: !row.nothing
                 text: root.signalIcon(row.signalPct)
                 color: row.inUse ? Md.primary : Md.m3OnSurfaceVariant
                 font { family: "Material Symbols Rounded"; pixelSize: 16 }
             }
+            Row {
+                visible: row.nothing
+                spacing: 2
+                height: 13
+                Layout.alignment: Qt.AlignVCenter
+                Repeater {
+                    model: 4
+                    delegate: Rectangle {
+                        required property int index
+                        width: 3; height: 4 + index * 3; radius: 1.5
+                        y: 13 - height
+                        color: row.inkColor
+                        opacity: row.signalPct >= (index + 1) * 25 - 12 ? 1.0 : ThemeNothing.dotOpacityOff
+                    }
+                }
+            }
             Text {
                 Layout.fillWidth: true
                 text: row.ssid
-                color: row.inUse ? Md.m3OnPrimaryContainer : Md.m3OnSurface
+                color: row.nothing ? row.inkColor : (row.inUse ? Md.m3OnPrimaryContainer : Md.m3OnSurface)
                 font { family: Colors.uiFont; pixelSize: 12; weight: row.inUse ? 600 : 400 }
                 elide: Text.ElideRight
             }
@@ -69,8 +108,8 @@ Item {
             Text {
                 text: row.signalPct + "%"
                 color: Md.m3OnSurfaceVariant
-                font { family: Colors.monoFont; pixelSize: 11 }
-                Layout.preferredWidth: 32
+                font { family: Colors.monoFont; pixelSize: 11; letterSpacing: row.nothing ? 1 : 0 }
+                Layout.preferredWidth: 36
             }
         }
 

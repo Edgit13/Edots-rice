@@ -36,9 +36,12 @@ Item {
         id: header
         anchors.fill: parent
         radius: Theme.shape.field
-        color: Theme.color.surfaceContainerHighest
-        border.width: dd.open ? Theme.components.dp(2) : 0
-        border.color: Theme.color.primary
+        readonly property bool nothing: Theme.settings.nothing
+        color: nothing ? "transparent" : Theme.color.surfaceContainerHighest
+        border.width: nothing ? 1 : (dd.open ? Theme.components.dp(2) : 0)
+        border.color: nothing
+            ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, dd.open ? 0.75 : 0.25)
+            : Theme.color.primary
         Behavior on border.color { MotionColorAnimation { role: "hover" } }
 
         Rectangle {
@@ -105,7 +108,9 @@ Item {
             radius: Theme.shape.menu
             color: Theme.color.surfaceContainerHigh
             border.width: 1
-            border.color: Theme.color.outlineVariant
+            border.color: Theme.settings.nothing
+                ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.22)
+                : Theme.color.outlineVariant
         }
 
         contentItem: Flickable {
@@ -133,7 +138,10 @@ Item {
                         width: parent.width
                         height: Theme.components.dp(40)
                         radius: sel ? Theme.shape.radius("md", height) : Theme.shape.sm
-                        color: sel ? Theme.color.secondaryContainer : "transparent"
+                        color: sel ? (Theme.settings.nothing ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.07)
+                                                            : Theme.color.secondaryContainer) : "transparent"
+                        border.width: sel && Theme.settings.nothing ? 1 : 0
+                        border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
                         Behavior on radius { MotionAnimation { role: "morph" } }
                         Behavior on color { MotionColorAnimation { role: "hover" } }
 
@@ -152,13 +160,21 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             text: item.l
                             style: Theme.type.bodyLarge
-                            color: item.sel ? Theme.color.fgSecondaryContainer : Theme.color.fgSurface
+                            color: item.sel && !Theme.settings.nothing ? Theme.color.fgSecondaryContainer : Theme.color.fgSurface
+                        }
+                        Rectangle {                                  // Nothing: червона крапка замість галочки
+                            visible: item.sel && Theme.settings.nothing
+                            anchors.right: parent.right
+                            anchors.rightMargin: Theme.space.lg
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: 6; height: 6; radius: 3
+                            color: ThemeNothing.red
                         }
                         Text {
                             anchors.right: parent.right
                             anchors.rightMargin: Theme.space.lg
                             anchors.verticalCenter: parent.verticalCenter
-                            visible: item.sel
+                            visible: item.sel && !Theme.settings.nothing
                             text: "check"
                             color: Theme.color.fgSecondaryContainer
                             font { family: Theme.type.icons; pixelSize: Theme.type.iconS }

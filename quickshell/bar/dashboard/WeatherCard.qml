@@ -19,7 +19,9 @@ DashCard {
             Layout.preferredWidth: Theme.components.dp(64)
             Layout.preferredHeight: Theme.components.dp(64)
             radius: Theme.shape.radius("lg", height)
-            color: Theme.color.primaryContainer
+            color: Theme.settings.nothing ? "transparent" : Theme.color.primaryContainer
+            border.width: Theme.settings.nothing ? 1 : 0
+            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
             Text {
                 anchors.centerIn: parent
                 text: WeatherService.iconGlyph

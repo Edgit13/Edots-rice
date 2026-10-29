@@ -17,7 +17,9 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: size / 2
-        color: Theme.color.secondaryContainer
+        color: Theme.settings.nothing ? "transparent" : Theme.color.secondaryContainer
+        border.width: Theme.settings.nothing ? 1 : 0
+        border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.28)
         visible: !root.loaded
 
         Text {

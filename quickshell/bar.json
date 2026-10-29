@@ -32,10 +32,14 @@
     "active": "dwindle"
   },
   "gamemode": {
-    "motion": false
+    "motion": true,
+    "overlayTemps": true
   },
   "record": {
     "fps": 30,
     "audio": "none"
-  }
+  },
+  "style": "pill",
+  "pillEdgeGap": 3,
+  "openMode": "drawer"
 }

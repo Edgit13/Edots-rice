@@ -13,9 +13,11 @@ Rectangle {
 
     Layout.fillWidth: true
     radius: Theme.shape.cardLarge
-    color: card.outlined ? "transparent" : Theme.color.surfaceContainerLow
-    border.width: card.outlined ? 1 : 0
-    border.color: Theme.color.outlineVariant
+    color: (card.outlined || Theme.settings.nothing) ? "transparent" : Theme.color.surfaceContainerLow
+    border.width: (card.outlined || Theme.settings.nothing) ? 1 : 0
+    border.color: Theme.settings.nothing
+        ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.16)
+        : Theme.color.outlineVariant
     implicitHeight: body.implicitHeight + Theme.space.lg * 2
 
     ColumnLayout {

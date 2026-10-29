@@ -20,7 +20,7 @@ Rectangle {
 
     readonly property color _bg: {
         switch (style) {
-        case "tonal":    return Theme.color.secondaryContainer
+        case "tonal":    return Theme.settings.nothing ? "transparent" : Theme.color.secondaryContainer
         case "outlined": return "transparent"
         case "text":     return "transparent"
         default:         return Theme.color.primary
@@ -28,17 +28,19 @@ Rectangle {
     }
     readonly property color _fg: {
         switch (style) {
-        case "tonal":    return Theme.color.fgSecondaryContainer
-        case "outlined": return Theme.color.primary
-        case "text":     return Theme.color.primary
+        case "tonal":    return Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer
+        case "outlined": return Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.primary
+        case "text":     return Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.primary
         default:         return Theme.color.fgPrimary
         }
     }
 
     color: btn._bg
     radius: ma.pressed ? Theme.shape.buttonPressed : Theme.shape.radius("full", height)
-    border.width: style === "outlined" ? 1 : 0
-    border.color: Theme.color.outline
+    border.width: (style === "outlined" || (Theme.settings.nothing && style === "tonal")) ? 1 : 0
+    border.color: Theme.settings.nothing
+        ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.35)
+        : Theme.color.outline
 
     Behavior on color { MotionColorAnimation { role: "hover" } }
     Behavior on radius { MotionAnimation { role: "morph" } }

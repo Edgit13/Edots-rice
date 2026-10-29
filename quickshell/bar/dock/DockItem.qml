@@ -113,6 +113,7 @@ Item {
         width: item.iconSize + 24
         height: item.iconSize + 8
         radius: height / 2
+        visible: !DockTheme.nothing
         color: item.active ? DockTheme.primary_container
                            : DockTheme.secondary_container
         opacity: item.running ? (item.active ? 1 : 0.55) : 0
@@ -127,6 +128,22 @@ Item {
         Behavior on scale {
             NumberAnimation { duration: 300; easing.type: Easing.OutQuint }
         }
+    }
+
+    // --- Nothing: індикатор «запущено/активне» — крапка під іконкою (активне: червона пігулка) ---
+    Rectangle {
+        visible: DockTheme.nothing
+        anchors.horizontalCenter: iconImage.horizontalCenter
+        anchors.top: iconImage.bottom
+        anchors.topMargin: 5
+        height: 4
+        width: item.active ? 14 : 4
+        radius: 2
+        color: item.active ? DockTheme.red : DockTheme.on_surface
+        opacity: item.running ? (item.active ? 1 : 0.6) : 0
+        Behavior on width   { NumberAnimation { duration: 260; easing.type: Easing.OutBack; easing.overshoot: 1.8 } }
+        Behavior on opacity { NumberAnimation { duration: 220 } }
+        Behavior on color   { ColorAnimation { duration: 200 } }
     }
 
     // --- M3 STATE LAYER ---
@@ -239,10 +256,13 @@ Item {
             anchors.centerIn: parent
             implicitWidth: tooltipText.implicitWidth + 20
             implicitHeight: tooltipText.implicitHeight + 12
-            radius: 8
-            color: DockTheme.on_surface
+            radius: DockTheme.nothing ? 10 : 8
+            color: DockTheme.nothing ? DockTheme.surface_container_high : DockTheme.on_surface
+            border.width: DockTheme.nothing ? 1 : 0
+            border.color: Qt.rgba(DockTheme.on_surface.r, DockTheme.on_surface.g, DockTheme.on_surface.b, 0.25)
 
             RectangularShadow {
+                visible: !DockTheme.nothing
                 anchors.fill: parent
                 radius: parent.radius
                 blur: 8
@@ -252,12 +272,16 @@ Item {
             Text {
                 id: tooltipText
                 anchors.centerIn: parent
-                text: item.windows.length > 1
-                    ? item.appName + " (" + item.windows.length + ")"
-                    : item.appName
-                color: DockTheme.background
-                font.family: DockTheme.fontFamily
-                font.pixelSize: 14
+                text: {
+                    const t = item.windows.length > 1
+                        ? item.appName + " (" + item.windows.length + ")"
+                        : item.appName
+                    return DockTheme.nothing ? t.toUpperCase() : t
+                }
+                color: DockTheme.nothing ? DockTheme.on_surface : DockTheme.background
+                font.family: DockTheme.nothing ? DockTheme.monoFamily : DockTheme.fontFamily
+                font.pixelSize: DockTheme.nothing ? 11 : 14
+                font.letterSpacing: DockTheme.nothing ? 1.5 : 0
             }
         }
     }

@@ -28,11 +28,36 @@ Item {
     Behavior on shown { enabled: !sl._dragging; MotionAnimation { role: "move" } }
 
     readonly property real hx: width * Math.max(0, Math.min(1, shown))
+    readonly property bool nothing: Theme.settings.nothing
+    readonly property int segCount: Math.max(8, Math.floor((width + 5) / 10))
 
     function _fromMouse(mx) { return Math.max(0, Math.min(1, mx / width)) }
 
+    // ---- Nothing: сегментований слайдер ----
+    Row {
+        visible: sl.nothing
+        anchors.fill: parent
+        spacing: 5
+        Repeater {
+            model: sl.nothing ? sl.segCount : 0
+            delegate: Rectangle {
+                required property int index
+                readonly property bool lit: (index + 0.5) / sl.segCount <= sl.shown
+                width: (sl.width - (sl.segCount - 1) * 5) / sl.segCount
+                height: ma.pressed ? 22 : 16
+                anchors.verticalCenter: parent.verticalCenter
+                radius: width / 2
+                color: lit ? Theme.color.primary : Theme.color.fgSurface
+                opacity: lit ? 1.0 : ThemeNothing.dotOpacityOff
+                Behavior on height  { NumberAnimation { duration: 120 } }
+                Behavior on opacity { NumberAnimation { duration: 90 } }
+            }
+        }
+    }
+
     // активна частина
     Rectangle {
+        visible: !sl.nothing
         x: 0
         y: (sl.height - sl.trackH) / 2
         width: Math.max(0, sl.hx - sl.handleW / 2 - sl.gap)
@@ -46,6 +71,7 @@ Item {
 
     // неактивна частина
     Rectangle {
+        visible: !sl.nothing
         x: Math.min(sl.width, sl.hx + sl.handleW / 2 + sl.gap)
         y: (sl.height - sl.trackH) / 2
         width: Math.max(0, sl.width - x)
@@ -60,6 +86,7 @@ Item {
     // handle
     Rectangle {
         id: handle
+        visible: !sl.nothing
         width: sl.handleW
         height: sl.handleH
         radius: width / 2

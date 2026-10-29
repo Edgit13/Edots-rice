@@ -49,10 +49,11 @@ FloatingWindow {
                 Layout.fillWidth: true
 
                 Text {
-                    text: "Dock Settings"
+                    text: DockTheme.nothing ? "DOCK SETTINGS" : "Dock Settings"
                     color: DockTheme.on_surface
-                    font.family: DockTheme.fontFamily
-                    font.pixelSize: 22
+                    font.family: DockTheme.nothing ? DockTheme.monoFamily : DockTheme.fontFamily
+                    font.pixelSize: DockTheme.nothing ? 16 : 22
+                    font.letterSpacing: DockTheme.nothing ? 3 : 0
                 }
 
                 Item { Layout.fillWidth: true }

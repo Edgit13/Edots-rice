@@ -37,7 +37,9 @@ ColumnLayout {
             implicitWidth: cnt.implicitWidth + Theme.space.md
             implicitHeight: Theme.components.dp(20)
             radius: height / 2
-            color: Theme.color.secondaryContainer
+            color: Theme.settings.nothing ? "transparent" : Theme.color.secondaryContainer
+            border.width: Theme.settings.nothing ? 1 : 0
+            border.color: Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.35)
             ThemedText {
                 id: cnt
                 anchors.centerIn: parent

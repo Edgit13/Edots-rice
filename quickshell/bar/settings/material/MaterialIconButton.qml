@@ -25,8 +25,9 @@ Rectangle {
 
     readonly property color _bg: {
         switch (style) {
-        case "filled":   return ib.selected ? Theme.color.primary : Theme.color.surfaceContainerHighest
-        case "tonal":    return ib.selected ? Theme.color.secondaryContainer : Theme.color.surfaceContainerHighest
+        case "filled":   return ib.selected ? Theme.color.primary : (Theme.settings.nothing ? "transparent" : Theme.color.surfaceContainerHighest)
+        case "tonal":    return Theme.settings.nothing ? (ib.selected ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, 0.10) : "transparent")
+                                                      : (ib.selected ? Theme.color.secondaryContainer : Theme.color.surfaceContainerHighest)
         case "outlined": return ib.selected ? Theme.color.inverseSurface : "transparent"
         default:         return "transparent"
         }
@@ -34,15 +35,17 @@ Rectangle {
     readonly property color _fg: {
         switch (style) {
         case "filled":   return ib.selected ? Theme.color.fgPrimary : Theme.color.primary
-        case "tonal":    return Theme.color.fgSecondaryContainer
+        case "tonal":    return Theme.settings.nothing ? Theme.color.fgSurface : Theme.color.fgSecondaryContainer
         case "outlined": return ib.selected ? Theme.color.inverseOnSurface : Theme.color.fgSurfaceVariant
         default:         return ib.selected ? Theme.color.primary : Theme.color.fgSurfaceVariant
         }
     }
 
     color: ib._bg
-    border.width: style === "outlined" && !ib.selected ? 1 : 0
-    border.color: Theme.color.outline
+    border.width: (style === "outlined" && !ib.selected) || (Theme.settings.nothing && (style === "tonal" || (style === "filled" && !ib.selected))) ? 1 : 0
+    border.color: Theme.settings.nothing
+        ? Qt.rgba(Theme.color.fgSurface.r, Theme.color.fgSurface.g, Theme.color.fgSurface.b, ib.selected ? 0.7 : 0.28)
+        : Theme.color.outline
     Behavior on color { MotionColorAnimation { role: "hover" } }
 
     Rectangle {

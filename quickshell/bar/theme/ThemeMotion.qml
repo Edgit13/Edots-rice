@@ -44,6 +44,12 @@ Singleton {
         collapse:    { ms: 350, spatial: true,  curve: "standard" },
         morph:       { ms: 500, spatial: true,  curve: "spatialDefault" },
         move:        { ms: 350, spatial: true,  curve: "spatialFast" },
+        // морф поверхонь: БЕЗ overshoot (тіло не виходить за межі вікна — інакше композитор його обрізає)
+        morphIn:     { ms: 460, spatial: true,  curve: "emphasizedDecelerate" },
+        morphOut:    { ms: 300, spatial: true,  curve: "standard" },
+        // контент усередині морфу: з'являється м'яко, зникає майже миттєво
+        contentIn:   { ms: 320, spatial: false, curve: "emphasizedDecelerate" },
+        contentOut:  { ms: 110, spatial: false, curve: "standardAccelerate" },
         press:       { ms: 100, spatial: false, curve: "standard" },
         hover:       { ms: 150, spatial: false, curve: "effectsFast" },
         stateChange: { ms: 200, spatial: false, curve: "effectsDefault" },
