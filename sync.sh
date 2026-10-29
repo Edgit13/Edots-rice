@@ -109,7 +109,7 @@ cmd_install() {
 
   echo "── directory links ──"
   for pair in "${LINKS[@]}"; do
-    _link "${pair%%:*}" "${pair#*:}"
+    _link "$REPO_DIR/${pair%%:*}" "${pair#*:}"
   done
 
   echo
@@ -200,7 +200,7 @@ cmd_install() {
 }
 
 cmd_status() {
-  for pair in "${LINKS[@]}"; do _status "${pair%%:*}" "${pair#*:}"; done
+  for pair in "${LINKS[@]}"; do _status "$REPO_DIR/${pair%%:*}" "${pair#*:}"; done
   echo
   for pair in "${FILE_LINKS[@]}"; do _status "$REPO_DIR/${pair%%:*}" "${pair#*:}"; done
   echo
@@ -208,7 +208,7 @@ cmd_status() {
 }
 
 cmd_unlink() {
-  for pair in "${LINKS[@]}"; do _unlink "${pair%%:*}" "${pair#*:}"; done
+  for pair in "${LINKS[@]}"; do _unlink "$REPO_DIR/${pair%%:*}" "${pair#*:}"; done
   for pair in "${FILE_LINKS[@]}"; do _unlink "$REPO_DIR/${pair%%:*}" "${pair#*:}"; done
   for pair in "${BIN_LINKS[@]}"; do
     local src="$REPO_DIR/${pair%%:*}" dst="${pair#*:}"

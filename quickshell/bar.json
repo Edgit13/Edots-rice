@@ -19,7 +19,7 @@
   },
   "osd": {
     "position": "bottom-left",
-    "margin": 44,
+    "margin": 80,
     "size": 1,
     "duration": 2.3000000000000003
   },
@@ -33,13 +33,15 @@
   },
   "gamemode": {
     "motion": true,
-    "overlayTemps": true
+    "overlayTemps": true,
+    "overlayPos": "bottom-right"
   },
   "record": {
     "fps": 30,
     "audio": "none"
   },
-  "style": "pill",
+  "style": "full",
   "pillEdgeGap": 3,
-  "openMode": "drawer"
+  "openMode": "window",
+  "pillHover": false
 }

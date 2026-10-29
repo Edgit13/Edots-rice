@@ -6,13 +6,24 @@
 #   * NixOS                  -> validate nix/ flake, print integration steps,
 #                               optionally run the auto-installer.
 #   * Arch-based (Arch/EndeavourOS/Manjaro/CachyOS/...) -> pacman + yay + sync.sh.
+#   * Debian/Ubuntu, Fedora, openSUSE, Gentoo -> generic path: packages are installed ONE BY ONE,
+#     whatever is missing from the distro repos (quickshell, MangoWM, awww, matugen...) is listed
+#     at the end as "install manually" instead of aborting.
 #
 # Usage:
+#   curl -fsSL https://raw.githubusercontent.com/Edgit13/Edots-rice/master/install.sh | bash
+#   curl -fsSL .../install.sh | bash -s -- --quickstart
+#   # or:
 #   git clone https://github.com/Edgit13/Edots-rice.git ~/Dotfiles
 #   cd ~/Dotfiles && ./install.sh
 #
 # Flags:
-#   --auto              no questions
+#   --auto|--quickstart no questions (defaults everywhere)
+#   --yes               alias of --auto
+#   --minimal           skip optional apps (vlc, nautilus, dolphin, firefox, flatpak, ...)
+#   --no-deps           skip packages, only deploy configs (sync.sh) and finishing steps
+#   --dry-run           show what would happen, change nothing (not for NixOS)
+#   --restore           undo: remove our symlinks and put back the latest ~/.config-backup-*
 #   --disk=<dev>        target disk for NixOS auto-install
 #   --user=<name>       user to create (NixOS)
 #   --password=<pass>   initial password (NixOS)
@@ -24,20 +35,30 @@ REPO_DIR="${EDOTS_DIR:-$HOME/Dotfiles}"
 
 # ── Flags ──
 AUTO=0
+DRY=0; MINIMAL=0; NODEPS=0; RESTORE=0
 DISK_ARG=""
 USER_NAME="${USER:-user}"
 USER_PASS="edots"
 for a in "$@"; do
   case "$a" in
-    --auto)       AUTO=1 ;;
+    --auto|--quickstart|--yes|-y) AUTO=1 ;;
+    --dry-run)    DRY=1 ;;
+    --minimal)    MINIMAL=1 ;;
+    --no-deps)    NODEPS=1 ;;
+    --restore)    RESTORE=1 ;;
     --disk=*)     DISK_ARG="${a#--disk=}" ;;
     --user=*)     USER_NAME="${a#--user=}" ;;
     --password=*) USER_PASS="${a#--password=}" ;;
     -h|--help)
       cat <<EOF
-Usage: $0 [--auto] [--disk=nvme0n1] [--user=name] [--password=pass]
+Usage: $0 [--auto|--quickstart] [--minimal] [--no-deps] [--dry-run] [--restore]
+          [--disk=nvme0n1] [--user=name] [--password=pass]
 
-  --auto           skip every prompt
+  --auto           skip every prompt (alias: --quickstart, --yes)
+  --minimal        skip optional apps (vlc, nautilus, dolphin, firefox, flatpak, ...)
+  --no-deps        do not install packages, only deploy configs
+  --dry-run        print the plan, change nothing (not for NixOS)
+  --restore        remove our symlinks and restore the latest ~/.config-backup-*
   --disk=<dev>     target disk for the NixOS auto-installer
   --user=<name>    initial user name (NixOS)
   --password=<p>   initial password (NixOS)
@@ -61,12 +82,32 @@ c_ok()   { printf '\033[32m[✓]\033[0m %s\n' "$*"; }
 
 FAILED=()
 
+# ── read from the terminal even when the script itself comes through a pipe (curl | bash) ──
+rd() {  # rd "prompt" VAR
+  local _p="$1" _v="$2" _a=""
+  if [ -t 0 ]; then rd "$_p" _a || _a=""
+  elif [ -r /dev/tty ]; then rd "$_p" _a </dev/tty || _a=""
+  fi
+  printf -v "$_v" '%s' "$_a"
+}
+
+# ── dry-run: mutating commands become no-ops that only print what they would do ──
+c_dry() { printf '\033[2m  DRY: %s\033[0m\n' "$*"; }
+if [ "$DRY" = 1 ]; then
+  for _c in sudo yay paru git curl wget fc-cache systemctl npm makepkg cc mkdir mv rm cp ln chmod cargo; do
+    eval "$_c() { c_dry \"$_c \$*\"; return 0; }"
+  done
+  c_warn "dry-run: nothing will be changed"
+fi
+
+MANUAL=()   # пакети, яких нема в репозиторіях дистрибутива — користувач ставить вручну
+
 # ── Conflict resolution: [S]kip / [A]ppend / [O]verwrite ──
 ask_conflict() {
   local path="$1" default="${2:-skip}" a
   if [ "$AUTO" = "1" ]; then echo "$default"; return; fi
   while true; do
-    read -r -p "  '$path' exists — [S]kip / [A]ppend / [O]verwrite? [S/a/o]: " a
+    rd "  '$path' exists — [S]kip / [A]ppend / [O]verwrite? [S/a/o]: " a
     case "$a" in
       [Aa]*)  echo "append";    return ;;
       [Oo]*)  echo "overwrite"; return ;;
@@ -78,12 +119,18 @@ ask_conflict() {
 
 # ───────────────────── OS detection ─────────────────────
 detect_os() {
-  if [ -r /etc/os-release ] && grep -q '^ID=nixos$' /etc/os-release; then
-    echo "nixos"
-  elif command -v pacman >/dev/null 2>&1; then
-    echo "arch"
-  else
-    echo "unknown"
+  local id="" like=""
+  if [ -r /etc/os-release ]; then
+    id="$(. /etc/os-release; echo "${ID:-}")"; like="$(. /etc/os-release; echo "${ID_LIKE:-}")"
+  fi
+  local all=" $id $like "
+  if   [ "$id" = nixos ]; then echo nixos
+  elif command -v pacman >/dev/null 2>&1 || [[ "$all" == *" arch "* ]]; then echo arch
+  elif [[ "$all" == *" debian "* || "$all" == *" ubuntu "* ]]; then echo debian
+  elif [[ "$all" == *" fedora "* || "$all" == *" rhel "* ]]; then echo fedora
+  elif [[ "$all" == *" suse "* || "$all" == *" opensuse "* ]]; then echo suse
+  elif [[ "$all" == *" gentoo "* ]]; then echo gentoo
+  else echo unknown
   fi
 }
 OS="$(detect_os)"
@@ -93,6 +140,36 @@ if [ "$EUID" -eq 0 ]; then
   exit 1
 fi
 
+
+# ───────────────────── --restore ─────────────────────
+do_restore() {
+  local cfg="${XDG_CONFIG_HOME:-$HOME/.config}" last name dst
+  [ -x "$REPO_DIR/sync.sh" ] || { c_err "sync.sh not found in $REPO_DIR — nothing to unlink."; return 1; }
+  last="$(ls -d "$HOME"/.config-backup-* 2>/dev/null | sort | tail -1)"
+  c_info "Will remove our symlinks (sync.sh unlink)${last:+ and move back files from $last}."
+  if [ "$AUTO" = 1 ]; then ans=y; else rd "Continue? [y/N]: " ans; fi
+  case "${ans:-n}" in [Yy]*) ;; *) c_info "Cancelled."; return 0 ;; esac
+  "$REPO_DIR/sync.sh" unlink
+  [ -n "$last" ] || { c_warn "No ~/.config-backup-* found — nothing to restore."; return 0; }
+  for p in "$last"/* "$last"/.[!.]*; do
+    [ -e "$p" ] || continue
+    name="$(basename "$p")"
+    case "$name" in
+      edots)                  dst="$HOME/edots" ;;
+      Wallpapers)             dst="$HOME/Pictures/Wallpapers" ;;
+      upkg|utimer|gtk-reload) dst="/usr/local/bin/$name" ;;
+      *)                      dst="$cfg/$name" ;;
+    esac
+    if [ -e "$dst" ] || [ -L "$dst" ]; then c_warn "skip $name — $dst already exists"; continue; fi
+    case "$dst" in
+      /usr/*) sudo mv "$p" "$dst" ;;
+      *) mkdir -p "$(dirname "$dst")"; mv "$p" "$dst" ;;
+    esac && c_ok "restored $dst"
+  done
+}
+
+[ "$RESTORE" = 1 ] && { do_restore; exit $?; }
+
 # ───────────────────── wallpapers (shared across OSes) ─────────────────────
 WALLPAPERS_REPO="https://github.com/Edgit13/Edot-Wallpapers.git"
 WALLPAPERS_DIR="$HOME/Pictures/Wallpapers"
@@ -101,7 +178,7 @@ echo
 echo "Wallpapers live in a separate repo: $WALLPAPERS_REPO"
 echo "If you agree, they will be cloned to: $WALLPAPERS_DIR"
 if [ "$AUTO" = "1" ]; then wp_answer="y"; else
-  read -r -p "Install wallpapers? [y/N]: " wp_answer
+  rd "Install wallpapers? [y/N]: " wp_answer
 fi
 case "$wp_answer" in
   [Yy]*)
@@ -216,7 +293,7 @@ nixos_auto_install() {
       return 1
     fi
   else
-    read -r -p "Target disk (e.g. nvme0n1 or sda), Enter to cancel: " DISK
+    rd "Target disk (e.g. nvme0n1 or sda), Enter to cancel: " DISK
     [ -n "$DISK" ] || { c_info "Cancelled."; return 1; }
   fi
   case "$DISK" in /dev/*) ;; *) DISK="/dev/$DISK" ;; esac
@@ -245,7 +322,7 @@ nixos_auto_install() {
     c_warn "AUTO: $base will be WIPED. Continuing..."
     sleep 2
   else
-    read -r -p "CONFIRM: type '$base' again to WIPE all data: " CONFIRM
+    rd "CONFIRM: type '$base' again to WIPE all data: " CONFIRM
     if [ "$CONFIRM" != "$base" ]; then c_info "Mismatch — cancelled."; return 1; fi
   fi
 
@@ -297,7 +374,7 @@ nixos_auto_install() {
     sleep 5
     sudo reboot
   fi
-  read -r -p "Reboot now? [y/N]: " rb
+  rd "Reboot now? [y/N]: " rb
   case "$rb" in
     [Yy]*) sudo reboot ;;
     *) c_info "Reboot later: sudo reboot" ;;
@@ -356,7 +433,7 @@ EOF2
       MODE="install"
       c_warn "AUTO: chose install mode [a]."
     else
-      read -r -p "Choice [a/m/s]: " m
+      rd "Choice [a/m/s]: " m
       case "$m" in
         [Aa]*) MODE="install" ;;
         [Mm]*)
@@ -415,6 +492,94 @@ EOF3
 }
 
 # ════════════════════════ ARCH-BASED ════════════════════════
+post_install() {
+  # ───────────────────── Edots QuickSnip (capture) ─────────────────────
+  # rishot is replaced by QuickSnip, which ships inside the rice.
+  # No external installer needed — just make sure the QML config is present.
+  if [ -d "$REPO_DIR/quickshell/QuickSnip" ]; then
+    c_ok "QuickSnip present (part of the rice)"
+  else
+    c_warn "quickshell/QuickSnip missing — capture bind will not work"
+    FAILED+=("quicksnip:missing")
+  fi
+
+  # ───────────────────── tui-player venv ─────────────────────
+  TUI_DIR="$REPO_DIR/edots/tui-player"
+  if [ -d "$TUI_DIR" ]; then
+    c_info "venv for tui-player..."
+    python3 -m venv "$TUI_DIR/.venv" 2>/dev/null || { [ "$OS" = arch ] && sudo pacman -S --needed --noconfirm python; }
+    if [ -d "$TUI_DIR/.venv" ]; then
+      "$TUI_DIR/.venv/bin/pip" install --quiet --upgrade pip
+      "$TUI_DIR/.venv/bin/pip" install --quiet textual python-vlc mutagen && \
+        c_ok "tui-player venv" || { c_warn "pip (tui-player) failed"; FAILED+=("pip:tui-player"); }
+    fi
+  fi
+
+  # ───────────────────── pnpm ─────────────────────
+  if ! command -v pnpm >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+    c_info "pnpm via npm..."
+    sudo npm install -g pnpm >/dev/null 2>&1 && c_ok "pnpm" || { c_warn "pnpm failed"; FAILED+=("npm:pnpm"); }
+  fi
+
+  # ───────────────────── explicit skips ─────────────────────
+  c_warn "SF Pro Display — proprietary, not installed automatically (optional: yay -S otf-san-francisco)."
+  c_warn "Cursor 'Moga-Black' — install manually if you want it."
+
+  # ───────────────────── compile pam-auth for the lock screen ─────────────────────
+  PAM_SRC="$REPO_DIR/quickshell/lockscreen/pam-auth.c"
+  PAM_BIN="$REPO_DIR/quickshell/lockscreen/pam-auth"
+  if [ -f "$PAM_SRC" ]; then
+    c_info "Compiling lockscreen/pam-auth..."
+    if cc -O2 -o "$PAM_BIN" "$PAM_SRC" -lpam; then
+      chmod +x "$PAM_BIN"
+      c_ok "pam-auth compiled"
+    else
+      c_warn "pam-auth compile failed (need gcc + pam headers)"
+      FAILED+=("pam-auth")
+    fi
+  fi
+
+  # ───────────────────── sync.sh install (symlinks) ─────────────────────
+  if [ -x "$REPO_DIR/sync.sh" ]; then
+    c_info "Symlinking configs via sync.sh install..."
+    "$REPO_DIR/sync.sh" $([ "$DRY" = 1 ] && echo --dry-run) install
+  else
+    c_warn "sync.sh not found or not executable — link configs manually."
+  fi
+
+  # ───────────────────── systemd user services ─────────────────────
+  mkdir -p "$HOME/.config/systemd/user"
+  systemctl --user daemon-reload || true
+
+  for unit in swayidle edots-lockscreen; do
+    if [ -f "$HOME/.config/systemd/user/$unit.service" ]; then
+      if systemctl --user enable --now "$unit.service"; then
+        c_ok "$unit.service enabled + started"
+      else
+        c_warn "$unit.service failed to enable"; FAILED+=("systemd:$unit")
+      fi
+    else
+      c_warn "$unit.service missing (sync.sh should have linked it)"
+      FAILED+=("systemd:missing:$unit")
+    fi
+  done
+
+  # ───────────────────── enable initial colour generation ─────────────────────
+  if command -v python3 >/dev/null; then
+    wp=$(find "$HOME/Pictures/Wallpapers" -type f \
+         \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
+         2>/dev/null | head -n 1)
+    if [ -n "${wp:-}" ]; then
+      c_info "Generating palette from $wp ..."
+      python3 "$REPO_DIR/mango/scripts/wallcolors.py" "$wp" \
+        && c_ok "palette generated" \
+        || { c_warn "wallcolors.py failed"; FAILED+=("wallcolors"); }
+    else
+      c_warn "no wallpapers found — palette not generated"
+    fi
+  fi
+}
+
 install_arch() {
   c_info "Detected Arch-based distribution."
   sudo -v
@@ -449,6 +614,13 @@ install_arch() {
     # OCR (QuickSnip)
     tesseract tesseract-data-eng
   )
+
+  if [ "$MINIMAL" = 1 ]; then
+    OPT_APPS=" nautilus dolphin firefox vlc vlc-plugins-all flatpak figlet tree starship gamemode alacritty ghostty blueman kdialog "
+    _f=(); for _p in "${PACMAN_PKGS[@]}"; do case "$OPT_APPS" in *" $_p "*) ;; *) _f+=("$_p") ;; esac; done
+    PACMAN_PKGS=("${_f[@]}")
+    c_info "--minimal: optional apps skipped"
+  fi
 
   c_info "Syncing pacman databases..."
   sudo pacman -Sy --noconfirm
@@ -502,6 +674,10 @@ install_arch() {
     tesseract-data-rus
   )
 
+  if [ "$MINIMAL" = 1 ]; then
+    _f=(); for _p in "${AUR_PKGS[@]}"; do case "$_p" in zen-browser-bin|tesseract-data-ukr|tesseract-data-rus) ;; *) _f+=("$_p") ;; esac; done
+    AUR_PKGS=("${_f[@]}")
+  fi
   if command -v yay >/dev/null 2>&1; then
     c_info "Installing AUR packages (${#AUR_PKGS[@]})..."
     for pkg in "${AUR_PKGS[@]}"; do
@@ -514,104 +690,109 @@ install_arch() {
     FAILED+=("aur:all (no yay)")
   fi
 
-  # ───────────────────── Edots QuickSnip (capture) ─────────────────────
-  # rishot is replaced by QuickSnip, which ships inside the rice.
-  # No external installer needed — just make sure the QML config is present.
-  if [ -d "$REPO_DIR/quickshell/QuickSnip" ]; then
-    c_ok "QuickSnip present (part of the rice)"
-  else
-    c_warn "quickshell/QuickSnip missing — capture bind will not work"
-    FAILED+=("quicksnip:missing")
-  fi
+  post_install
+}
 
-  # ───────────────────── tui-player venv ─────────────────────
-  TUI_DIR="$REPO_DIR/edots/tui-player"
-  if [ -d "$TUI_DIR" ]; then
-    c_info "venv for tui-player..."
-    python3 -m venv "$TUI_DIR/.venv" 2>/dev/null || sudo pacman -S --needed --noconfirm python
-    if [ -d "$TUI_DIR/.venv" ]; then
-      "$TUI_DIR/.venv/bin/pip" install --quiet --upgrade pip
-      "$TUI_DIR/.venv/bin/pip" install --quiet textual python-vlc mutagen && \
-        c_ok "tui-player venv" || { c_warn "pip (tui-player) failed"; FAILED+=("pip:tui-player"); }
-    fi
-  fi
 
-  # ───────────────────── pnpm ─────────────────────
-  if ! command -v pnpm >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
-    c_info "pnpm via npm..."
-    sudo npm install -g pnpm >/dev/null 2>&1 && c_ok "pnpm" || { c_warn "pnpm failed"; FAILED+=("npm:pnpm"); }
-  fi
+# ════════════════════════ DEBIAN / FEDORA / openSUSE / GENTOO ════════════════════════
+# Логічна назва → пакет дистрибутива. «a|b» = пробувати по черзі. Порожньо = нема в репозиторіях → вручну.
+pkgname() {
+  local k="$1"
+  case "$OS:$k" in
+    debian:nm) echo network-manager ;;           fedora:nm) echo NetworkManager ;;     suse:nm) echo NetworkManager ;;
+    gentoo:nm) echo net-misc/networkmanager ;;
+    debian:swaync) echo sway-notification-center ;; fedora:swaync|suse:swaync) echo SwayNotificationCenter ;;
+    gentoo:swaync) echo gui-apps/swaync ;;
+    debian:notify) echo libnotify-bin ;;    fedora:notify) echo libnotify ;;         suse:notify) echo libnotify-tools ;;  gentoo:notify) echo x11-libs/libnotify ;;
+    debian:imagemagick) echo imagemagick ;;    gentoo:imagemagick) echo media-gfx/imagemagick ;;
+    fedora:imagemagick|suse:imagemagick) echo ImageMagick ;;
+    debian:tesseract|suse:tesseract) echo tesseract-ocr ;; fedora:tesseract) echo tesseract ;; gentoo:tesseract) echo app-text/tesseract ;;
+    debian:python) echo python3 ;; fedora:python|suse:python) echo python3 ;; gentoo:python) echo dev-lang/python ;;
+    debian:pam-dev) echo libpam0g-dev ;;         fedora:pam-dev|suse:pam-dev) echo pam-devel ;; gentoo:pam-dev) echo sys-libs/pam ;;
+    gentoo:gcc) echo sys-devel/gcc ;;
+    debian:fonts-mono) echo fonts-jetbrains-mono ;; fedora:fonts-mono) echo jetbrains-mono-fonts-all ;; suse:fonts-mono) echo jetbrains-mono-fonts ;;
+    fedora:rofi) echo "rofi-wayland|rofi" ;;
+    fedora:quickshell) echo "quickshell" ;;       # потребує COPR (див. install_generic)
+    debian:quickshell|suse:quickshell|gentoo:quickshell) echo "" ;;
+    *:mangowm|*:awww|*:matugen|*:fonts-icons) echo "" ;;
+    gentoo:brightnessctl) echo app-misc/brightnessctl ;;   gentoo:cliphist) echo gui-apps/cliphist ;;
+    gentoo:wl-clipboard) echo gui-apps/wl-clipboard ;;     gentoo:swayidle) echo gui-apps/swayidle ;;
+    gentoo:grim) echo gui-apps/grim ;;                     gentoo:slurp) echo gui-apps/slurp ;;
+    gentoo:wf-recorder) echo gui-apps/wf-recorder ;;       gentoo:wlr-randr) echo gui-apps/wlr-randr ;;
+    gentoo:kitty) echo x11-terms/kitty ;;                  gentoo:rofi) echo x11-misc/rofi ;;
+    gentoo:ppd) echo sys-power/power-profiles-daemon ;;    gentoo:xdg-utils) echo x11-misc/xdg-utils ;;
+    gentoo:pipewire) echo media-video/pipewire ;;          gentoo:wireplumber) echo media-video/wireplumber ;;
+    gentoo:upower) echo sys-power/upower ;;                gentoo:playerctl) echo media-sound/playerctl ;;
+    gentoo:jq) echo app-misc/jq ;;                         gentoo:git) echo dev-vcs/git ;;
+    gentoo:fish) echo app-shells/fish ;;                   gentoo:neovim) echo app-editors/neovim ;;
+    gentoo:fastfetch) echo app-misc/fastfetch ;;           gentoo:curl) echo net-misc/curl ;;
+    gentoo:*) echo "" ;;
+    *:ppd) echo power-profiles-daemon ;;
+    *) echo "$k" ;;                                        # однакова назва (kitty, grim, slurp, jq, fish, ...)
+  esac
+}
 
-  # ───────────────────── explicit skips ─────────────────────
-  c_warn "SF Pro Display — proprietary, not installed automatically (optional: yay -S otf-san-francisco)."
-  c_warn "Cursor 'Moga-Black' — install manually if you want it."
+pm_install_one() {  # $1 = «a|b|c»
+  local alt pkg; IFS='|' read -ra alt <<< "$1"
+  for pkg in "${alt[@]}"; do
+    case "$OS" in
+      debian) sudo apt-get install -y "$pkg" >/dev/null 2>&1 ;;
+      fedora) sudo dnf install -y "$pkg" >/dev/null 2>&1 ;;
+      suse)   sudo zypper --non-interactive install "$pkg" >/dev/null 2>&1 ;;
+      gentoo) sudo emerge --noreplace --quiet "$pkg" >/dev/null 2>&1 ;;
+    esac && { c_ok "$pkg"; return 0; }
+  done
+  return 1
+}
 
-  # ───────────────────── compile pam-auth for the lock screen ─────────────────────
-  PAM_SRC="$REPO_DIR/quickshell/lockscreen/pam-auth.c"
-  PAM_BIN="$REPO_DIR/quickshell/lockscreen/pam-auth"
-  if [ -f "$PAM_SRC" ]; then
-    c_info "Compiling lockscreen/pam-auth..."
-    if cc -O2 -o "$PAM_BIN" "$PAM_SRC" -lpam; then
-      chmod +x "$PAM_BIN"
-      c_ok "pam-auth compiled"
-    else
-      c_warn "pam-auth compile failed (need gcc + pam headers)"
-      FAILED+=("pam-auth")
-    fi
-  fi
+install_generic() {
+  c_info "Detected $OS — generic path (packages one by one; missing ones are listed at the end)."
+  sudo -v
+  case "$OS" in
+    debian) sudo apt-get update >/dev/null 2>&1 || true ;;
+    fedora) sudo dnf copr enable -y errornointernet/quickshell >/dev/null 2>&1 || c_warn "COPR errornointernet/quickshell not enabled" ;;
+  esac
 
-  # ───────────────────── sync.sh install (symlinks) ─────────────────────
-  if [ -x "$REPO_DIR/sync.sh" ]; then
-    c_info "Symlinking configs via sync.sh install..."
-    "$REPO_DIR/sync.sh" install
-  else
-    c_warn "sync.sh not found or not executable — link configs manually."
-  fi
+  local CORE=(git curl gcc pam-dev python nm brightnessctl cliphist wl-clipboard notify swaync swayidle wlr-randr ppd
+              pipewire wireplumber upower playerctl grim slurp wf-recorder imagemagick tesseract rofi kitty jq xdg-utils
+              fonts-mono quickshell mangowm awww matugen fonts-icons)
+  local OPT=(fish neovim fastfetch)
+  local list=("${CORE[@]}"); [ "$MINIMAL" = 0 ] && list+=("${OPT[@]}")
 
-  # ───────────────────── systemd user services ─────────────────────
-  mkdir -p "$HOME/.config/systemd/user"
-  systemctl --user daemon-reload || true
-
-  for unit in swayidle edots-lockscreen; do
-    if [ -f "$HOME/.config/systemd/user/$unit.service" ]; then
-      if systemctl --user enable --now "$unit.service"; then
-        c_ok "$unit.service enabled + started"
-      else
-        c_warn "$unit.service failed to enable"; FAILED+=("systemd:$unit")
-      fi
-    else
-      c_warn "$unit.service missing (sync.sh should have linked it)"
-      FAILED+=("systemd:missing:$unit")
-    fi
+  local k name
+  for k in "${list[@]}"; do
+    name="$(pkgname "$k")"
+    if [ -z "$name" ]; then MANUAL+=("$k"); continue; fi
+    pm_install_one "$name" || { c_warn "failed: $k ($name)"; FAILED+=("pkg:$k ($name)"); }
   done
 
-  # ───────────────────── enable initial colour generation ─────────────────────
-  if command -v python3 >/dev/null; then
-    wp=$(find "$HOME/Pictures/Wallpapers" -type f \
-         \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' \) \
-         2>/dev/null | head -n 1)
-    if [ -n "${wp:-}" ]; then
-      c_info "Generating palette from $wp ..."
-      python3 "$REPO_DIR/mango/scripts/wallcolors.py" "$wp" \
-        && c_ok "palette generated" \
-        || { c_warn "wallcolors.py failed"; FAILED+=("wallcolors"); }
-    else
-      c_warn "no wallpapers found — palette not generated"
-    fi
+  # matugen є в crates.io
+  if [[ " ${MANUAL[*]} " == *" matugen "* ]] && command -v cargo >/dev/null 2>&1; then
+    c_info "matugen via cargo..."
+    cargo install matugen >/dev/null 2>&1 && { c_ok "matugen (cargo)"; MANUAL=("${MANUAL[@]/matugen}"); } || true
   fi
+  for k in "${MANUAL[@]}"; do
+    [ -n "$k" ] && FAILED+=("manual:$k")
+  done
+  c_warn "SF Pro Display — proprietary, install manually if you want it."
+  post_install
 }
 
 # ───────────────────── dispatch ─────────────────────
 case "$OS" in
-  nixos) install_nixos ;;
-  arch)  install_arch ;;
+  nixos)
+    if [ "$DRY" = 1 ]; then c_err "--dry-run is not supported on NixOS (the flow partitions/rebuilds)."; exit 1; fi
+    install_nixos ;;
+  arch)
+    if [ "$NODEPS" = 1 ]; then c_info "--no-deps: packages skipped"; post_install; else install_arch; fi ;;
+  debian|fedora|suse|gentoo)
+    if [ "$NODEPS" = 1 ]; then c_info "--no-deps: packages skipped"; post_install; else install_generic; fi ;;
   *)
-    c_err "Unsupported distribution: neither /etc/os-release ID=nixos nor pacman found."
-    c_err "Supported: NixOS and Arch-based (Arch/EndeavourOS/Manjaro/CachyOS/...)."
+    c_err "Unsupported distribution (no pacman, apt, dnf, zypper or emerge recognised)."
+    c_err "Supported: NixOS, Arch-based, Debian/Ubuntu, Fedora, openSUSE, Gentoo. Try: ./install.sh --no-deps  (configs only)"
     exit 1
     ;;
 esac
-
 # ───────────────────── summary ─────────────────────
 echo
 if [ "${#FAILED[@]}" -eq 0 ]; then
@@ -620,6 +801,15 @@ else
   c_warn "Finished with ${#FAILED[@]} skipped items:"
   for f in "${FAILED[@]}"; do echo "    - $f"; done
   c_warn "Install those manually."
+  for f in "${FAILED[@]}"; do
+    case "$f" in
+      manual:quickshell)  echo "    quickshell   → https://quickshell.org (build from source / distro overlay)" ;;
+      manual:mangowm)     echo "    MangoWM      → https://github.com/DreamMaoMao/mangowc (build from source)" ;;
+      manual:matugen)     echo "    matugen      → cargo install matugen  (or a release from github.com/InioX/matugen)" ;;
+      manual:awww)        echo "    awww         → https://github.com/LGFae/swww (build from source)" ;;
+      manual:fonts-icons) echo "    Material Symbols Rounded → fonts.google.com/icons → ~/.local/share/fonts, then fc-cache -f" ;;
+    esac
+  done
 fi
 
 echo
